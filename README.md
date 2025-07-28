@@ -5,6 +5,8 @@ DigiSim is a digital logic circuit simulator that offers two primary methods for
 1.  **Manual Drag-and-Drop**: Users can build circuits interactively on a canvas using a drag-and-drop interface.
 2.  **Automated Gate Detection**: The application can detect logic gates from uploaded images and automatically construct the corresponding circuit on the canvas.
 
+![Image_Alt](https://github.com/Mani212005/DigiSim/blob/9b033c92956f57554ba65c35a82733eeb28f1065/1st.jpg)
+
 ## Features
 *   **Interactive Canvas**: Build and simulate logic circuits using a user-friendly drag-and-drop interface.
 *   **Variety of Logic Gates**: Includes common logic gates such as AND, OR, NOT, XOR, NAND, XNOR, along with Input and Output nodes.
@@ -104,6 +106,9 @@ The frontend application should open in your browser, usually at `http://localho
 *   **Image Upload**: Use the "Image Upload" section to upload an image of a circuit. The system will attempt to detect and draw the gates.
 *   **Sample Circuits**: Select a sample circuit from the dropdown to load a pre-defined example.
 *   **Clear Canvas**: Click the "Clear Canvas" button to remove all nodes and edges.
+
+![Image_Alt](https://github.com/Mani212005/DigiSim/blob/9b033c92956f57554ba65c35a82733eeb28f1065/2nd.jpg)
+![Image_Alt](https://github.com/Mani212005/DigiSim/blob/9b033c92956f57554ba65c35a82733eeb28f1065/3rd.jpg)
 
 ## Future Enhancements
 *   Saving and loading custom circuits.
