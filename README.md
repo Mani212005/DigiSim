@@ -109,6 +109,7 @@ The frontend application should open in your browser, usually at `http://localho
 
 ![Image_Alt](https://github.com/Mani212005/DigiSim/blob/9b033c92956f57554ba65c35a82733eeb28f1065/2nd.jpg)
 ![Image_Alt](https://github.com/Mani212005/DigiSim/blob/9b033c92956f57554ba65c35a82733eeb28f1065/3rd.jpg)
+![Image_Alt](https://github.com/Mani212005/DigiSim/blob/6e55af24fae40b0146e5fc03d8339efd8320935d/4th.jpg)
 
 ## Future Enhancements
 *   Saving and loading custom circuits.
