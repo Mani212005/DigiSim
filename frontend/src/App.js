@@ -105,7 +105,8 @@ function App() {
     formData.append('image', file);
 
     try {
-      const response = await fetch('http://localhost:5001/detect_gates', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${apiUrl}/detect_gates`, {
         method: 'POST',
         body: formData,
       });
