@@ -37,7 +37,6 @@ Thumbs.db
 
 
 # Claude 
-CLAUDE.local.md
 backend/model/weights/
 *.pt
 *.pth
