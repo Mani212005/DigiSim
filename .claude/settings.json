@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{
+          "type": "command",
+          "command": "cd frontend && npm run tsc --noEmit 2>&1 | tail -5"
+        }]
+      }
+    ]
+  }
+}

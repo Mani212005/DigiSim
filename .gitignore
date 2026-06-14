@@ -34,3 +34,16 @@ Thumbs.db
 *.pem
 *.key
 *.env
+
+
+# Claude 
+CLAUDE.local.md
+backend/model/weights/
+*.pt
+*.pth
+ml/experiments/
+CLAUDE.local.md
+.env
+__pycache__/
+.venv/
+node_modules/
