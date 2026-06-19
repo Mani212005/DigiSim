@@ -16,6 +16,7 @@ import { useCallback } from 'react';
  * @returns {number} 0 or 1 output value
  */
 const evaluateGate = (type, inputs) => {
+  if (inputs.length === 0) return 0;
   switch (type) {
     case 'andGate':
       return inputs.every(input => input === 1) ? 1 : 0;

@@ -1,6 +1,16 @@
+/**
+ * @file OrGateNode.js
+ * @description ReactFlow custom node for an OR logic gate — renders two inputs and one output handle.
+ */
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
+/**
+ * OR gate node component for the DigiSim canvas.
+ * @param {{ data: { label: string, value: number } }} props - Node data from ReactFlow
+ * @returns {React.ReactElement} Rendered OR gate node
+ */
 function OrGateNode({ data }) {
   return (
     <div style={{

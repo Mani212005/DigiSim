@@ -1,6 +1,16 @@
+/**
+ * @file AndGateNode.js
+ * @description ReactFlow custom node for an AND logic gate — renders two inputs and one output handle.
+ */
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
+/**
+ * AND gate node component for the DigiSim canvas.
+ * @param {{ data: { label: string, value: number } }} props - Node data from ReactFlow
+ * @returns {React.ReactElement} Rendered AND gate node
+ */
 function AndGateNode({ data }) {
   return (
     <div style={{

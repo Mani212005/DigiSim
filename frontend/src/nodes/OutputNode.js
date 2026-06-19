@@ -1,6 +1,16 @@
+/**
+ * @file OutputNode.js
+ * @description ReactFlow custom node for a circuit output — displays the computed logic value.
+ */
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
+/**
+ * Output node that displays the final computed value from the simulation.
+ * @param {{ data: { label: string, value: number } }} props - Node data from ReactFlow
+ * @returns {React.ReactElement} Rendered output node
+ */
 function OutputNode({ data }) {
   return (
     <div style={{

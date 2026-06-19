@@ -1,6 +1,16 @@
+/**
+ * @file XorGateNode.js
+ * @description ReactFlow custom node for an XOR logic gate — renders two inputs and one output handle.
+ */
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
+/**
+ * XOR gate node component for the DigiSim canvas.
+ * @param {{ data: { label: string, value: number } }} props - Node data from ReactFlow
+ * @returns {React.ReactElement} Rendered XOR gate node
+ */
 function XorGateNode({ data }) {
   return (
     <div style={{
