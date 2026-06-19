@@ -1,3 +1,9 @@
+/**
+ * @file App.js
+ * @description Root application component — owns all node/edge state and wires together
+ * the ReactFlow canvas, logic simulation, and image detection pipeline.
+ */
+
 import React, { useCallback, useEffect, useMemo } from 'react';
 import SampleImages from './components/SampleImages';
 import './components/SampleImages.css';
@@ -21,6 +27,7 @@ import OrGateNode from './nodes/OrGateNode';
 import XorGateNode from './nodes/XorGateNode';
 import NandGateNode from './nodes/NandGateNode';
 import XnorGateNode from './nodes/XnorGateNode';
+import NorGateNode from './nodes/NorGateNode';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
 
@@ -70,6 +77,7 @@ function App() {
     xorGate: XorGateNode,
     nandGate: NandGateNode,
     xnorGate: XnorGateNode,
+    norGate: NorGateNode,
   }), [updateNodeData]);
 
   useEffect(() => {
@@ -216,6 +224,7 @@ function App() {
           <button onClick={() => addNode('orGate', 'OR Gate')}>Add OR Gate</button>
           <button onClick={() => addNode('xorGate', 'XOR Gate')}>Add XOR Gate</button>
           <button onClick={() => addNode('nandGate', 'NAND Gate')}>Add NAND Gate</button>
+          <button onClick={() => addNode('norGate', 'NOR Gate')}>Add NOR Gate</button>
           <button onClick={() => addNode('xnorGate', 'XNOR Gate')}>Add XNOR Gate</button>
           <hr />
           <h3>Image Upload</h3>

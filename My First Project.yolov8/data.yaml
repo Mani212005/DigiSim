@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 6
+names: ['and gate', 'nand gate', 'nor gate', 'not gate', 'or gate', 'xor gate']
+
+roboflow:
+  workspace: cirzer
+  project: my-first-project-yz9wf
+  version: dataset
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/cirzer/my-first-project-yz9wf/dataset/dataset

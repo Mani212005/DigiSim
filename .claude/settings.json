@@ -5,7 +5,7 @@
         "matcher": "Edit|Write",
         "hooks": [{
           "type": "command",
-          "command": "cd frontend && npm run tsc --noEmit 2>&1 | tail -5"
+          "command": "cd /home/mani/digi/DigiSim/frontend && [ -f tsconfig.json ] && npx tsc --noEmit 2>&1 | tail -5 || true"
         }]
       }
     ]
