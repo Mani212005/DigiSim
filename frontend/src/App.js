@@ -14,6 +14,7 @@ import ReactFlow, {
   Controls,
   Background,
   ReactFlowProvider,
+  SelectionMode,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -21,6 +22,9 @@ import ReactFlow, {
 
 import 'reactflow/dist/style.css';
 import './App.css';
+
+import SelectionToolbar from './components/SelectionToolbar';
+import { useIsTouch } from './hooks/useIsTouch';
 
 import InputNode from './nodes/InputNode';
 import OutputNode from './nodes/OutputNode';
@@ -34,6 +38,9 @@ import NorGateNode from './nodes/NorGateNode';
 import { GateGlyph } from './nodes/GateShell';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
+import { useAuth } from './hooks/useAuth';
+import CameraCapture from './components/CameraCapture';
+import DetectionReview from './components/DetectionReview';
 
 const initialNodes = [
   { id: '1', position: { x: 0, y: 0 }, data: { label: 'Input A', value: 0 }, type: 'input' },
@@ -76,6 +83,13 @@ function App() {
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectError, setDetectError] = useState(null);
   const [rfInstance, setRfInstance] = useState(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [reviewPayload, setReviewPayload] = useState(null);
+  const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 });
+  const { user, logout } = useAuth();
+  const [touchSelectMode, setTouchSelectMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isTouch = useIsTouch();
   const { simulateCircuit } = useLogicSimulation();
 
   const updateNodeData = useCallback((nodeId, newData) => {
@@ -184,7 +198,9 @@ function App() {
 
     setNodes((nds) => nds.concat(newNodes));
     setEdges((eds) => eds.concat(newEdges));
-  }, [setNodes, setEdges]);
+    // Camera photos can be 4k wide — bring the placed circuit into view.
+    setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+  }, [setNodes, setEdges, rfInstance]);
 
   /**
    * Fall back to cloud gate detection (boxes only, no wires).
@@ -194,6 +210,7 @@ function App() {
   const detectGatesFallback = useCallback(async (formData, apiUrl) => {
     const response = await fetch(`${apiUrl}/detect_gates`, {
       method: 'POST',
+      credentials: 'include',
       body: formData,
     });
 
@@ -267,17 +284,17 @@ function App() {
   }, [setNodes]);
 
   /**
-   * Upload an image and rebuild its circuit: tries the full local pipeline
+   * Run circuit detection on an image: tries the full local pipeline
    * (/detect_circuit — gates AND wires) first, falling back to cloud gate
-   * detection while local model weights are unavailable.
-   * @param {{ target: { files: File[] } }} event - File input change event
+   * detection while local model weights are unavailable. Low-confidence
+   * results are routed through the review step instead of the canvas.
+   * @param {File|Blob} file - Circuit image to analyse
    */
-  const handleImageUpload = useCallback(async (event) => {
-    const file = event.target.files[0];
+  const runDetection = useCallback(async (file) => {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', file, file.name || 'capture.jpg');
     const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
     setIsDetecting(true);
@@ -285,13 +302,20 @@ function App() {
     try {
       const response = await fetch(`${apiUrl}/detect_circuit`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
       if (response.ok) {
         const payload = await response.json();
         console.log('Detected circuit:', payload);
-        importCircuit(payload);
+        // Don't silently trust low-confidence detections — let the user
+        // correct or drop them first (model gate is F1/acc >= 0.95).
+        if (payload.components.some((c) => c.confidence < 0.95)) {
+          setReviewPayload(payload);
+        } else {
+          importCircuit(payload);
+        }
       } else if (response.status === 503) {
         // Local pipeline not trained yet — cloud fallback (boxes only).
         console.warn('Local pipeline not ready, falling back to /detect_gates');
@@ -307,6 +331,93 @@ function App() {
       setIsDetecting(false);
     }
   }, [importCircuit, detectGatesFallback]);
+
+  /**
+   * File-input change handler feeding the detection flow.
+   * @param {{ target: { files: File[], value: string } }} event - Input change
+   */
+  const handleImageUpload = useCallback((event) => {
+    const file = event.target.files[0];
+    event.target.value = ''; // allow re-selecting the same file
+    runDetection(file);
+  }, [runDetection]);
+
+  /**
+   * Camera modal capture handler.
+   * @param {Blob} blob - Captured JPEG frame
+   */
+  const handleCameraCapture = useCallback((blob) => {
+    setCameraOpen(false);
+    runDetection(blob);
+  }, [runDetection]);
+
+  /** Fall back from the camera modal to a capture-enabled file input. */
+  const handleCameraFallback = useCallback(() => {
+    setCameraOpen(false);
+    document.getElementById('camera-fallback-input')?.click();
+  }, []);
+
+  const selectedNodes = useMemo(() => nodes.filter((n) => n.selected), [nodes]);
+
+  /**
+   * Bulk-delete the selected nodes and every edge touching them.
+   */
+  const deleteSelection = useCallback(() => {
+    const ids = new Set(selectedNodes.map((n) => n.id));
+    setNodes((nds) => nds.filter((n) => !ids.has(n.id)));
+    setEdges((eds) => eds.filter((e) => !ids.has(e.source) && !ids.has(e.target)));
+  }, [selectedNodes, setNodes, setEdges]);
+
+  /**
+   * Duplicate the selected nodes (and edges between them) offset down-right.
+   */
+  const duplicateSelection = useCallback(() => {
+    const idMap = new Map();
+    const clones = selectedNodes.map((node) => {
+      const cloneId = getId();
+      idMap.set(node.id, cloneId);
+      return {
+        ...node,
+        id: cloneId,
+        selected: false,
+        position: { x: node.position.x + 48, y: node.position.y + 48 },
+        data: { ...node.data },
+      };
+    });
+    setNodes((nds) => nds.concat(clones));
+    setEdges((eds) =>
+      eds.concat(
+        eds
+          .filter((e) => idMap.has(e.source) && idMap.has(e.target))
+          .map((e) => ({
+            ...e,
+            id: `e${idMap.get(e.source)}-${idMap.get(e.target)}-${e.targetHandle || 'in'}`,
+            source: idMap.get(e.source),
+            target: idMap.get(e.target),
+            selected: false,
+          }))
+      )
+    );
+  }, [selectedNodes, setNodes, setEdges]);
+
+  // Long-press on the canvas (touch only) toggles drag-to-select mode.
+  const longPressTimer = React.useRef(null);
+
+  /**
+   * Arm the long-press timer that enables touch selection mode.
+   * @param {React.TouchEvent} event - Touch start on the canvas wrapper
+   */
+  const onWrapperTouchStart = useCallback((event) => {
+    if (event.touches.length !== 1) return;
+    longPressTimer.current = setTimeout(() => {
+      setTouchSelectMode(true);
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 550);
+  }, []);
+
+  const cancelLongPress = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+  }, []);
 
   const clearCanvas = useCallback(() => {
     setNodes([]);
@@ -371,10 +482,41 @@ function App() {
           <span className="stat-chip stat-chip--live">
             <span className="pulse-dot" /> {highCount} HIGH
           </span>
+          {user && (
+            <span className="stat-chip user-chip">
+              {user.email}
+              <button className="logout-btn" onClick={logout}>Log out</button>
+            </span>
+          )}
         </div>
       </div>
+      {cameraOpen && (
+        <CameraCapture
+          onCapture={handleCameraCapture}
+          onClose={() => setCameraOpen(false)}
+          onFallback={handleCameraFallback}
+        />
+      )}
+      {reviewPayload && (
+        <DetectionReview
+          payload={reviewPayload}
+          onConfirm={(corrected) => {
+            setReviewPayload(null);
+            importCircuit(corrected);
+          }}
+          onCancel={() => setReviewPayload(null)}
+        />
+      )}
       <div className="content-wrapper">
-        <div className="sidebar">
+        <button
+          className="sidebar-toggle"
+          aria-label="Toggle component drawer"
+          aria-expanded={sidebarOpen}
+          onClick={() => setSidebarOpen((open) => !open)}
+        >
+          {sidebarOpen ? '✕ Close' : '☰ Components'}
+        </button>
+        <div className={`sidebar${sidebarOpen ? ' sidebar--open' : ''}`}>
           <section className="palette-section">
             <h3>I/O</h3>
             <div className="palette-grid palette-grid--io">
@@ -428,6 +570,18 @@ function App() {
               Image Upload
             </label>
             <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
+            <button className="upload-button camera-button" onClick={() => setCameraOpen(true)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+              Camera Capture
+            </button>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleImageUpload}
+              className="hidden-file-input"
+              id="camera-fallback-input"
+            />
             <SampleImages images={sampleImages} onImageSelect={handleSampleImageSelect} />
           </section>
 
@@ -435,7 +589,28 @@ function App() {
             <button className="danger-button" onClick={clearCanvas}>Clear Canvas</button>
           </div>
         </div>
-        <div className="reactflow-wrapper" onDrop={onCanvasDrop} onDragOver={onCanvasDragOver}>
+        <div
+          className="reactflow-wrapper"
+          onDrop={onCanvasDrop}
+          onDragOver={onCanvasDragOver}
+          onTouchStart={isTouch ? onWrapperTouchStart : undefined}
+          onTouchMove={isTouch ? cancelLongPress : undefined}
+          onTouchEnd={isTouch ? cancelLongPress : undefined}
+        >
+          {isTouch && touchSelectMode && (
+            <button
+              className="select-mode-chip"
+              onClick={() => setTouchSelectMode(false)}
+            >
+              ▣ Selection mode — tap to exit
+            </button>
+          )}
+          <SelectionToolbar
+            selectedNodes={selectedNodes}
+            viewport={viewport}
+            onDelete={deleteSelection}
+            onDuplicate={duplicateSelection}
+          />
           {isDetecting && (
             <div className="detect-overlay" role="status">
               <span className="spinner" /> Detecting circuit…
@@ -456,12 +631,21 @@ function App() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onInit={setRfInstance}
+            onMove={(_, vp) => setViewport(vp)}
             nodeTypes={nodeTypes}
             fitView
             minZoom={0.2}
             maxZoom={2.5}
-            panOnScroll
+            panOnScroll={!isTouch}
             zoomOnPinch
+            // Desktop: left-drag draws a selection box, middle/right-drag pans.
+            // Touch: single-finger pan stays off (conflicts with node drag);
+            // two-finger pinch pans/zooms, long-press enables drag-select.
+            selectionOnDrag={isTouch ? touchSelectMode : true}
+            panOnDrag={isTouch ? !touchSelectMode : [1, 2]}
+            selectionMode={SelectionMode.Partial}
+            multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
+            deleteKeyCode={['Backspace', 'Delete']}
             proOptions={{ hideAttribution: true }}
             connectionLineType="smoothstep"
           >

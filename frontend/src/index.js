@@ -1,13 +1,25 @@
+/**
+ * @file index.js
+ * @description Application entry point — mounts the auth provider, the auth gate,
+ * and the DigiSim app.
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import AuthGate from './AuthGate';
+import { AuthProvider } from './hooks/useAuth';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <AuthGate>
+        <App />
+      </AuthGate>
+    </AuthProvider>
   </React.StrictMode>
 );
 
