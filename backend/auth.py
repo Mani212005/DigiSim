@@ -15,7 +15,7 @@ from typing import Callable
 
 import bcrypt
 import jwt
-from flask import Blueprint, g, jsonify, make_response, request
+from flask import Blueprint, Response, g, jsonify, make_response, request
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -46,39 +46,51 @@ def _get_db() -> sqlite3.Connection:
     return conn
 
 
-def _issue_token(user_id: int, email: str) -> str:
+def _issue_token(sub: str, email: str | None, guest: bool = False) -> str:
     """
-    Create a signed JWT for a user.
+    Create a signed JWT for a user or guest session.
 
     Args:
-        user_id: Database id of the user.
-        email: User email embedded as a convenience claim.
+        sub: Token subject — the user id as a string, or "guest".
+        email: User email embedded as a convenience claim (None for guests).
+        guest: True for anonymous guest sessions.
     Returns:
         Encoded JWT string.
     """
     now = datetime.now(timezone.utc)
     return jwt.encode(
-        {"sub": str(user_id), "email": email, "iat": now, "exp": now + _TOKEN_TTL},
+        {
+            "sub": sub,
+            "email": email,
+            "guest": guest,
+            "iat": now,
+            "exp": now + _TOKEN_TTL,
+        },
         _JWT_SECRET,
         algorithm=_JWT_ALGO,
     )
 
 
-def _auth_response(user_id: int, email: str, status: int = 200):
+def _auth_response(
+    user_id: int | None, email: str | None, status: int = 200, guest: bool = False
+) -> Response:
     """
     Build a JSON response carrying the auth cookie.
 
     Args:
-        user_id: Database id of the user.
-        email: User email echoed in the body.
+        user_id: Database id of the user (None for guests).
+        email: User email echoed in the body (None for guests).
         status: HTTP status code.
+        guest: True for anonymous guest sessions.
     Returns:
         Flask response with the httpOnly session cookie set.
     """
-    resp = make_response(jsonify({"user": {"id": user_id, "email": email}}), status)
+    resp = make_response(
+        jsonify({"user": {"id": user_id, "email": email, "guest": guest}}), status
+    )
     resp.set_cookie(
         _COOKIE_NAME,
-        _issue_token(user_id, email),
+        _issue_token("guest" if guest else str(user_id), email, guest),
         max_age=int(_TOKEN_TTL.total_seconds()),
         httponly=True,
         samesite="Lax",
@@ -108,6 +120,36 @@ def require_auth(fn: Callable) -> Callable:
             g.user = jwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGO])
         except jwt.InvalidTokenError:
             return jsonify({"error": "Invalid or expired session"}), 401
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def require_user(fn: Callable) -> Callable:
+    """
+    Decorator requiring a full (non-guest) account; 403 for guest sessions.
+
+    Reserved for future login-only features — defined now, applied to no route yet.
+
+    Args:
+        fn: Flask view function to protect.
+    Returns:
+        Wrapped view returning 401 without a token and 403 for guest tokens.
+    """
+
+    @wraps(fn)
+    def wrapper(*args: object, **kwargs: object):
+        """Reject anonymous and guest sessions before invoking the view."""
+        token = request.cookies.get(_COOKIE_NAME)
+        if not token:
+            return jsonify({"error": "Authentication required"}), 401
+        try:
+            claims = jwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGO])
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid or expired session"}), 401
+        if claims.get("guest"):
+            return jsonify({"error": "This feature requires a full account"}), 403
+        g.user = claims
         return fn(*args, **kwargs)
 
     return wrapper
@@ -189,6 +231,17 @@ def login() -> tuple:
     return _auth_response(row[0], email)
 
 
+@auth_bp.route("/auth/guest", methods=["POST"])
+def guest() -> Response:
+    """
+    Start an anonymous, cookie-backed guest session (no account required).
+
+    Returns:
+        200 with a guest user body and a guest session cookie.
+    """
+    return _auth_response(None, None, 200, guest=True)
+
+
 @auth_bp.route("/auth/logout", methods=["POST"])
 def logout() -> tuple:
     """
@@ -206,12 +259,17 @@ def logout() -> tuple:
 @require_auth
 def me() -> tuple:
     """
-    Return the authenticated user for session restoration on page load.
+    Return the authenticated user (or guest) for session restoration on page load.
 
     Returns:
         200 with user claims from the verified token.
     """
+    claims = g.user
+    is_guest = bool(claims.get("guest"))
+    user_id = None if is_guest else int(claims["sub"])
     return (
-        jsonify({"user": {"id": int(g.user["sub"]), "email": g.user["email"]}}),
+        jsonify(
+            {"user": {"id": user_id, "email": claims.get("email"), "guest": is_guest}}
+        ),
         200,
     )
