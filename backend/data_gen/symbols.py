@@ -300,7 +300,9 @@ def draw_symbol(
         DrawnSymbol with pixel-space bbox and wire ports.
     """
     if class_name == "JUNCTION":
-        r = max(3.0, 4.5 * scale)
+        # Fat dot like real hand-drawn junctions — tiny dots vanish at
+        # training resolution and tanked JUNCTION F1 in run_20260703_1507.
+        r = max(5.0, 7.5 * scale)
         cv2.circle(img, (int(cx), int(cy)), int(r), color, -1, cv2.LINE_AA)
         pad = r + 6.0
         return DrawnSymbol(
