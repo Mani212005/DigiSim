@@ -13,6 +13,11 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from inference_sdk import InferenceHTTPClient
 
+from pipeline.circuit_exporter import CircuitExporter
+from pipeline.detector import GateDetector
+from pipeline.graph_builder import GraphBuilder
+from pipeline.wire_extractor import WireExtractor
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -24,6 +29,27 @@ _CLIENT = InferenceHTTPClient(
 )
 
 MODEL_ID = "my-first-project-yz9wf/1"
+
+_BACKEND_DIR = Path(__file__).resolve().parent
+_WEIGHTS_PATH = Path(
+    os.getenv("MODEL_WEIGHTS_PATH", _BACKEND_DIR / "model" / "weights" / "best.pt")
+)
+_CONFIDENCE = float(os.getenv("DETECTION_CONFIDENCE_THRESHOLD", "0.35"))
+
+_detector: GateDetector | None = None
+
+
+def _get_detector() -> GateDetector | None:
+    """
+    Lazily load the local YOLO detector once weights exist.
+
+    Returns:
+        A cached GateDetector, or None while weights are missing.
+    """
+    global _detector
+    if _detector is None and _WEIGHTS_PATH.exists():
+        _detector = GateDetector(_WEIGHTS_PATH, _CONFIDENCE)
+    return _detector
 
 
 @app.route("/health", methods=["GET"])
@@ -75,24 +101,65 @@ def detect_circuit() -> tuple:
     """
     Run the full local pipeline: detection → wire extraction → graph → JSON export.
 
-    This endpoint is a stub until Phase 1 ML training is complete and model weights
-    are available at MODEL_WEIGHTS_PATH.
-
     Returns:
-        JSON with pipeline status. Returns 503 until weights are ready.
+        JSON with 'components' and 'connections' (CircuitExportJSON) on success,
+        503 while model weights are missing, or an 'error' key on failure.
+    Raises:
+        400: When no image file is included in the request.
+        500: When any pipeline stage fails.
     """
-    return (
-        jsonify(
+    detector = _get_detector()
+    if detector is None:
+        return (
+            jsonify(
+                {
+                    "status": "pipeline_not_ready",
+                    "message": (
+                        f"Model weights not found at {_WEIGHTS_PATH}. "
+                        "Train with ml/train.py, or use /detect_gates for "
+                        "cloud inference."
+                    ),
+                }
+            ),
+            503,
+        )
+
+    if "image" not in request.files:
+        return jsonify({"error": "No image provided"}), 400
+
+    image_file = request.files["image"]
+    temp_path: Path | None = None
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            image_file.save(tmp.name)
+            temp_path = Path(tmp.name)
+
+        detections = detector.detect(temp_path)
+        gate_boxes = [d.box for d in detections if d.class_name != "JUNCTION"]
+        wires = WireExtractor().extract(temp_path, exclude_boxes=gate_boxes)
+        graph = GraphBuilder().build(detections, wires)
+        payload = CircuitExporter().export(graph)
+        payload["status"] = "ok"
+        payload["detections"] = [
             {
-                "status": "pipeline_not_ready",
-                "message": (
-                    "Local YOLO pipeline not yet trained. "
-                    "Use /detect_gates for cloud inference."
-                ),
+                "class": d.class_name,
+                "confidence": round(d.confidence, 3),
+                "x": round(d.x, 1),
+                "y": round(d.y, 1),
+                "width": round(d.width, 1),
+                "height": round(d.height, 1),
             }
-        ),
-        503,
-    )
+            for d in detections
+        ]
+        return jsonify(payload), 200
+
+    except (OSError, ValueError, RuntimeError) as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    finally:
+        if temp_path is not None and temp_path.exists():
+            temp_path.unlink()
 
 
 if __name__ == "__main__":
