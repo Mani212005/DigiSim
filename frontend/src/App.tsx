@@ -1,23 +1,32 @@
 /**
- * @file App.js
+ * @file App.tsx
  * @description Root application component — owns all node/edge state and wires together
  * the ReactFlow canvas, logic simulation, and image detection pipeline. Renders the
- * circuit-lab UI: schematic palette sidebar (click or drag to add), signal-aware
- * animated wires, and the vision upload flow.
+ * circuit-lab UI: a collapsible schematic palette sidebar (click or drag to add),
+ * signal-aware animated wires, multi-select tools, and the vision/camera flow.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SampleImages from './components/SampleImages';
 import './components/SampleImages.css';
 import ReactFlow, {
   MiniMap,
   Controls,
   Background,
+  BackgroundVariant,
+  ConnectionLineType,
   ReactFlowProvider,
   SelectionMode,
   addEdge,
   useNodesState,
   useEdgesState,
+} from 'reactflow';
+import type {
+  Connection,
+  NodeProps,
+  NodeTypes,
+  ReactFlowInstance,
+  Viewport,
 } from 'reactflow';
 
 import 'reactflow/dist/style.css';
@@ -41,22 +50,33 @@ import { useLogicSimulation } from './hooks/useLogicSimulation';
 import { useAuth } from './hooks/useAuth';
 import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
+import type {
+  ApiErrorResponse,
+  CircuitExportJSON,
+  DetectGatesResponse,
+  DigiEdge,
+  DigiNode,
+  GateDetection,
+  NodeData,
+  PaletteEntry,
+  UpdateNodeData,
+} from './types';
 
-const initialNodes = [
+const initialNodes: DigiNode[] = [
   { id: '1', position: { x: 0, y: 0 }, data: { label: 'Input A', value: 0 }, type: 'input' },
   { id: '2', position: { x: 0, y: 160 }, data: { label: 'Input B', value: 0 }, type: 'input' },
   { id: '3', position: { x: 260, y: 70 }, data: { label: 'AND Gate', value: 0 }, type: 'andGate' },
   { id: '4', position: { x: 520, y: 78 }, data: { label: 'Output', value: 0 }, type: 'output' },
 ];
 
-const initialEdges = [
+const initialEdges: DigiEdge[] = [
   { id: 'e1-3', source: '1', target: '3', sourceHandle: null, targetHandle: 'a' },
   { id: 'e2-3', source: '2', target: '3', sourceHandle: null, targetHandle: 'b' },
   { id: 'e3-4', source: '3', target: '4' },
 ];
 
 let id = 5;
-const getId = () => `${id++}`;
+const getId = (): string => `${id++}`;
 
 const sampleImages = [
   'fifth_image.jpg',
@@ -67,7 +87,7 @@ const sampleImages = [
 ];
 
 /** Sidebar palette definition: gate chips rendered with their schematic glyphs. */
-const GATE_PALETTE = [
+const GATE_PALETTE: PaletteEntry[] = [
   { type: 'andGate', label: 'AND Gate', glyph: 'and', name: 'AND' },
   { type: 'orGate', label: 'OR Gate', glyph: 'or', name: 'OR' },
   { type: 'notGate', label: 'NOT Gate', glyph: 'not', name: 'NOT' },
@@ -77,22 +97,23 @@ const GATE_PALETTE = [
   { type: 'xnorGate', label: 'XNOR Gate', glyph: 'xnor', name: 'XNOR' },
 ];
 
-function App() {
+function App(): React.ReactElement {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [isDetecting, setIsDetecting] = useState(false);
-  const [detectError, setDetectError] = useState(null);
-  const [rfInstance, setRfInstance] = useState(null);
+  const [detectError, setDetectError] = useState<string | null>(null);
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [reviewPayload, setReviewPayload] = useState(null);
-  const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 });
-  const { user, logout } = useAuth();
+  const [reviewPayload, setReviewPayload] = useState<CircuitExportJSON | null>(null);
+  const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
+  const { user, isGuest, logout } = useAuth();
   const [touchSelectMode, setTouchSelectMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
   const isTouch = useIsTouch();
   const { simulateCircuit } = useLogicSimulation();
 
-  const updateNodeData = useCallback((nodeId, newData) => {
+  const updateNodeData = useCallback<UpdateNodeData>((nodeId, newData) => {
     setNodes((nds) =>
       nds.map((node) =>
         node.id === nodeId ? { ...node, data: { ...node.data, ...newData } } : node
@@ -100,8 +121,10 @@ function App() {
     );
   }, [setNodes]);
 
-  const nodeTypes = useMemo(() => ({
-    input: (props) => <InputNode {...props} updateNodeData={updateNodeData} />,
+  const nodeTypes = useMemo<NodeTypes>(() => ({
+    input: (props: NodeProps<NodeData>) => (
+      <InputNode {...props} updateNodeData={updateNodeData} />
+    ),
     output: OutputNode,
     andGate: AndGateNode,
     notGate: NotGateNode,
@@ -125,231 +148,261 @@ function App() {
     }
   }, [nodes, edges, simulateCircuit, setNodes]);
 
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
+  );
 
-  const addNode = useCallback((type, label, position) => {
-    const newNode = {
-      id: getId(),
-      position: position || { x: 120 + Math.random() * 200, y: 80 + Math.random() * 220 },
-      data: { label: label, value: 0 },
-      type: type,
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
+  const addNode = useCallback(
+    (type: string, label: string, position?: { x: number; y: number }) => {
+      const newNode: DigiNode = {
+        id: getId(),
+        position: position || { x: 120 + Math.random() * 200, y: 80 + Math.random() * 220 },
+        data: { label, value: 0 },
+        type,
+      };
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [setNodes]
+  );
 
   /**
    * Stash the dragged palette chip's node type for the canvas drop handler.
-   * @param {DragEvent} event - HTML5 drag start event
-   * @param {string} type - ReactFlow node type
-   * @param {string} label - Node label
+   * @param event - HTML5 drag start event
+   * @param type - ReactFlow node type
+   * @param label - Node label
    */
-  const onPaletteDragStart = useCallback((event, type, label) => {
-    event.dataTransfer.setData('application/digisim', JSON.stringify({ type, label }));
-    event.dataTransfer.effectAllowed = 'move';
-  }, []);
+  const onPaletteDragStart = useCallback(
+    (event: React.DragEvent, type: string, label: string) => {
+      event.dataTransfer.setData('application/digisim', JSON.stringify({ type, label }));
+      event.dataTransfer.effectAllowed = 'move';
+    },
+    []
+  );
 
-  const onCanvasDragOver = useCallback((event) => {
+  const onCanvasDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
   /**
    * Drop a palette chip onto the canvas at the pointer's flow position.
-   * @param {DragEvent} event - HTML5 drop event
+   * @param event - HTML5 drop event
    */
-  const onCanvasDrop = useCallback((event) => {
-    event.preventDefault();
-    const raw = event.dataTransfer.getData('application/digisim');
-    if (!raw || !rfInstance) return;
-    const { type, label } = JSON.parse(raw);
-    const position = rfInstance.screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
-    addNode(type, label, position);
-  }, [rfInstance, addNode]);
+  const onCanvasDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const raw = event.dataTransfer.getData('application/digisim');
+      if (!raw || !rfInstance) return;
+      const { type, label } = JSON.parse(raw) as { type: string; label: string };
+      const position = rfInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      addNode(type, label, position);
+    },
+    [rfInstance, addNode]
+  );
 
   /**
    * Place a full detected circuit (components + wires) onto the canvas.
-   * @param {import('./types/api').CircuitExportJSON} payload - /detect_circuit response
+   * @param payload - /detect_circuit response
    */
-  const importCircuit = useCallback((payload) => {
-    const idMap = new Map();
-    const newNodes = payload.components.map((component) => {
-      const nodeId = getId();
-      idMap.set(component.id, nodeId);
-      return {
-        id: nodeId,
-        position: { x: component.x, y: component.y },
-        data: { label: component.label, value: 0 },
-        type: component.type,
-      };
-    });
+  const importCircuit = useCallback(
+    (payload: CircuitExportJSON) => {
+      const idMap = new Map<string, string>();
+      const newNodes: DigiNode[] = payload.components.map((component) => {
+        const nodeId = getId();
+        idMap.set(component.id, nodeId);
+        return {
+          id: nodeId,
+          position: { x: component.x, y: component.y },
+          data: { label: component.label, value: 0 },
+          type: component.type,
+        };
+      });
 
-    const newEdges = payload.connections
-      .filter((c) => idMap.has(c.from) && idMap.has(c.to))
-      .map((c) => ({
-        id: `e${idMap.get(c.from)}-${idMap.get(c.to)}-${c.toPort || 'in'}`,
-        source: idMap.get(c.from),
-        target: idMap.get(c.to),
-        sourceHandle: null,
-        targetHandle: c.toPort,
-      }));
+      const newEdges: DigiEdge[] = payload.connections
+        .filter((c) => idMap.has(c.from) && idMap.has(c.to))
+        .map((c) => ({
+          id: `e${idMap.get(c.from)}-${idMap.get(c.to)}-${c.toPort || 'in'}`,
+          source: idMap.get(c.from) as string,
+          target: idMap.get(c.to) as string,
+          sourceHandle: null,
+          targetHandle: c.toPort,
+        }));
 
-    setNodes((nds) => nds.concat(newNodes));
-    setEdges((eds) => eds.concat(newEdges));
-    // Camera photos can be 4k wide — bring the placed circuit into view.
-    setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
-  }, [setNodes, setEdges, rfInstance]);
+      setNodes((nds) => nds.concat(newNodes));
+      setEdges((eds) => eds.concat(newEdges));
+      // Camera photos can be 4k wide — bring the placed circuit into view.
+      setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+    },
+    [setNodes, setEdges, rfInstance]
+  );
 
   /**
    * Fall back to cloud gate detection (boxes only, no wires).
-   * @param {FormData} formData - Multipart body carrying the image
-   * @param {string} apiUrl - Backend base URL
+   * @param formData - Multipart body carrying the image
+   * @param apiUrl - Backend base URL
    */
-  const detectGatesFallback = useCallback(async (formData, apiUrl) => {
-    const response = await fetch(`${apiUrl}/detect_gates`, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    });
+  const detectGatesFallback = useCallback(
+    async (formData: FormData, apiUrl: string) => {
+      const response = await fetch(`${apiUrl}/detect_gates`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    const detections = result.detections || result.predictions || [];
-    console.log('Detected Gates:', detections);
-
-    const newDetectedNodes = detections.map(detection => {
-      let nodeType = '';
-      let nodeLabel = '';
-
-      // Map detector classes ('AND', 'and gate', ...) to node types and labels
-      const detectedClass = (detection.class || '').toUpperCase().replace(' GATE', '');
-      switch (detectedClass) {
-        case 'AND':
-          nodeType = 'andGate';
-          nodeLabel = 'AND Gate';
-          break;
-        case 'OR':
-          nodeType = 'orGate';
-          nodeLabel = 'OR Gate';
-          break;
-        case 'NOT':
-          nodeType = 'notGate';
-          nodeLabel = 'NOT Gate';
-          break;
-        case 'NAND':
-          nodeType = 'nandGate';
-          nodeLabel = 'NAND Gate';
-          break;
-        case 'NOR':
-          nodeType = 'norGate';
-          nodeLabel = 'NOR Gate';
-          break;
-        case 'XOR':
-          nodeType = 'xorGate';
-          nodeLabel = 'XOR Gate';
-          break;
-        case 'XNOR':
-          nodeType = 'xnorGate';
-          nodeLabel = 'XNOR Gate';
-          break;
-        case 'INPUT':
-        case 'SWITCH':
-          nodeType = 'input';
-          nodeLabel = 'Input';
-          break;
-        case 'OUTPUT':
-        case 'LED':
-          nodeType = 'output';
-          nodeLabel = 'Output';
-          break;
-        default:
-          nodeType = 'unknown'; // Handle unknown types
-          nodeLabel = detection.class;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return {
-        id: getId(),
-        position: { x: detection.x - detection.width / 2, y: detection.y - detection.height / 2 },
-        data: { label: nodeLabel, value: 0 },
-        type: nodeType,
-      };
-    });
+      const result = (await response.json()) as DetectGatesResponse;
+      const detections: GateDetection[] = result.detections || result.predictions || [];
+      console.log('Detected Gates:', detections);
 
-    setNodes((nds) => nds.concat(newDetectedNodes));
-  }, [setNodes]);
+      const newDetectedNodes: DigiNode[] = detections.map((detection) => {
+        let nodeType = '';
+        let nodeLabel = '';
+
+        // Map detector classes ('AND', 'and gate', ...) to node types and labels
+        const detectedClass = (detection.class || '').toUpperCase().replace(' GATE', '');
+        switch (detectedClass) {
+          case 'AND':
+            nodeType = 'andGate';
+            nodeLabel = 'AND Gate';
+            break;
+          case 'OR':
+            nodeType = 'orGate';
+            nodeLabel = 'OR Gate';
+            break;
+          case 'NOT':
+            nodeType = 'notGate';
+            nodeLabel = 'NOT Gate';
+            break;
+          case 'NAND':
+            nodeType = 'nandGate';
+            nodeLabel = 'NAND Gate';
+            break;
+          case 'NOR':
+            nodeType = 'norGate';
+            nodeLabel = 'NOR Gate';
+            break;
+          case 'XOR':
+            nodeType = 'xorGate';
+            nodeLabel = 'XOR Gate';
+            break;
+          case 'XNOR':
+            nodeType = 'xnorGate';
+            nodeLabel = 'XNOR Gate';
+            break;
+          case 'INPUT':
+          case 'SWITCH':
+            nodeType = 'input';
+            nodeLabel = 'Input';
+            break;
+          case 'OUTPUT':
+          case 'LED':
+            nodeType = 'output';
+            nodeLabel = 'Output';
+            break;
+          default:
+            nodeType = 'unknown'; // Handle unknown types
+            nodeLabel = detection.class;
+        }
+
+        return {
+          id: getId(),
+          position: {
+            x: detection.x - detection.width / 2,
+            y: detection.y - detection.height / 2,
+          },
+          data: { label: nodeLabel, value: 0 },
+          type: nodeType,
+        };
+      });
+
+      setNodes((nds) => nds.concat(newDetectedNodes));
+    },
+    [setNodes]
+  );
 
   /**
    * Run circuit detection on an image: tries the full local pipeline
    * (/detect_circuit — gates AND wires) first, falling back to cloud gate
    * detection while local model weights are unavailable. Low-confidence
    * results are routed through the review step instead of the canvas.
-   * @param {File|Blob} file - Circuit image to analyse
+   * @param file - Circuit image to analyse
    */
-  const runDetection = useCallback(async (file) => {
-    if (!file) return;
+  const runDetection = useCallback(
+    async (file: File | Blob) => {
+      const formData = new FormData();
+      const filename = file instanceof File ? file.name : 'capture.jpg';
+      formData.append('image', file, filename);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
-    const formData = new FormData();
-    formData.append('image', file, file.name || 'capture.jpg');
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      setIsDetecting(true);
+      setDetectError(null);
+      try {
+        const response = await fetch(`${apiUrl}/detect_circuit`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
 
-    setIsDetecting(true);
-    setDetectError(null);
-    try {
-      const response = await fetch(`${apiUrl}/detect_circuit`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const payload = await response.json();
-        console.log('Detected circuit:', payload);
-        // Don't silently trust low-confidence detections — let the user
-        // correct or drop them first (model gate is F1/acc >= 0.95).
-        if (payload.components.some((c) => c.confidence < 0.95)) {
-          setReviewPayload(payload);
+        if (response.ok) {
+          const payload = (await response.json()) as CircuitExportJSON;
+          console.log('Detected circuit:', payload);
+          // Don't silently trust low-confidence detections — let the user
+          // correct or drop them first (model gate is F1/acc >= 0.95).
+          if (payload.components.some((c) => c.confidence < 0.95)) {
+            setReviewPayload(payload);
+          } else {
+            importCircuit(payload);
+          }
+        } else if (response.status === 503) {
+          // Local pipeline not trained yet — cloud fallback (boxes only).
+          console.warn('Local pipeline not ready, falling back to /detect_gates');
+          await detectGatesFallback(formData, apiUrl);
         } else {
-          importCircuit(payload);
+          const body = (await response.json().catch(() => ({}))) as Partial<ApiErrorResponse>;
+          throw new Error(body.error || `HTTP error! status: ${response.status}`);
         }
-      } else if (response.status === 503) {
-        // Local pipeline not trained yet — cloud fallback (boxes only).
-        console.warn('Local pipeline not ready, falling back to /detect_gates');
-        await detectGatesFallback(formData, apiUrl);
-      } else {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP error! status: ${response.status}`);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        const message = error instanceof Error ? error.message : String(error);
+        setDetectError(`Circuit detection failed: ${message}`);
+      } finally {
+        setIsDetecting(false);
       }
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      setDetectError(`Circuit detection failed: ${error.message}`);
-    } finally {
-      setIsDetecting(false);
-    }
-  }, [importCircuit, detectGatesFallback]);
+    },
+    [importCircuit, detectGatesFallback]
+  );
 
   /**
    * File-input change handler feeding the detection flow.
-   * @param {{ target: { files: File[], value: string } }} event - Input change
+   * @param event - Input change event
    */
-  const handleImageUpload = useCallback((event) => {
-    const file = event.target.files[0];
-    event.target.value = ''; // allow re-selecting the same file
-    runDetection(file);
-  }, [runDetection]);
+  const handleImageUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = ''; // allow re-selecting the same file
+      if (file) runDetection(file);
+    },
+    [runDetection]
+  );
 
   /**
    * Camera modal capture handler.
-   * @param {Blob} blob - Captured JPEG frame
+   * @param blob - Captured JPEG frame
    */
-  const handleCameraCapture = useCallback((blob) => {
-    setCameraOpen(false);
-    runDetection(blob);
-  }, [runDetection]);
+  const handleCameraCapture = useCallback(
+    (blob: Blob) => {
+      setCameraOpen(false);
+      runDetection(blob);
+    },
+    [runDetection]
+  );
 
   /** Fall back from the camera modal to a capture-enabled file input. */
   const handleCameraFallback = useCallback(() => {
@@ -359,21 +412,17 @@ function App() {
 
   const selectedNodes = useMemo(() => nodes.filter((n) => n.selected), [nodes]);
 
-  /**
-   * Bulk-delete the selected nodes and every edge touching them.
-   */
+  /** Bulk-delete the selected nodes and every edge touching them. */
   const deleteSelection = useCallback(() => {
     const ids = new Set(selectedNodes.map((n) => n.id));
     setNodes((nds) => nds.filter((n) => !ids.has(n.id)));
     setEdges((eds) => eds.filter((e) => !ids.has(e.source) && !ids.has(e.target)));
   }, [selectedNodes, setNodes, setEdges]);
 
-  /**
-   * Duplicate the selected nodes (and edges between them) offset down-right.
-   */
+  /** Duplicate the selected nodes (and edges between them) offset down-right. */
   const duplicateSelection = useCallback(() => {
-    const idMap = new Map();
-    const clones = selectedNodes.map((node) => {
+    const idMap = new Map<string, string>();
+    const clones: DigiNode[] = selectedNodes.map((node) => {
       const cloneId = getId();
       idMap.set(node.id, cloneId);
       return {
@@ -392,8 +441,8 @@ function App() {
           .map((e) => ({
             ...e,
             id: `e${idMap.get(e.source)}-${idMap.get(e.target)}-${e.targetHandle || 'in'}`,
-            source: idMap.get(e.source),
-            target: idMap.get(e.target),
+            source: idMap.get(e.source) as string,
+            target: idMap.get(e.target) as string,
             selected: false,
           }))
       )
@@ -401,13 +450,13 @@ function App() {
   }, [selectedNodes, setNodes, setEdges]);
 
   // Long-press on the canvas (touch only) toggles drag-to-select mode.
-  const longPressTimer = React.useRef(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Arm the long-press timer that enables touch selection mode.
-   * @param {React.TouchEvent} event - Touch start on the canvas wrapper
+   * @param event - Touch start on the canvas wrapper
    */
-  const onWrapperTouchStart = useCallback((event) => {
+  const onWrapperTouchStart = useCallback((event: React.TouchEvent) => {
     if (event.touches.length !== 1) return;
     longPressTimer.current = setTimeout(() => {
       setTouchSelectMode(true);
@@ -416,7 +465,7 @@ function App() {
   }, []);
 
   const cancelLongPress = useCallback(() => {
-    clearTimeout(longPressTimer.current);
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
   }, []);
 
   const clearCanvas = useCallback(() => {
@@ -425,26 +474,31 @@ function App() {
     id = 5; // Reset ID counter
   }, [setNodes, setEdges]);
 
-  const handleSampleImageSelect = useCallback(async (imageUrl) => {
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const file = new File([blob], imageUrl.split('/').pop(), { type: blob.type });
-
-      const event = { target: { files: [file] } };
-      handleImageUpload(event);
-    } catch (error) {
-      console.error('Error loading sample image:', error);
-      alert('Failed to load sample image. Check console for details.');
-    }
-  }, [handleImageUpload]);
+  /**
+   * Load a bundled sample image and run it through detection.
+   * @param imageUrl - Public URL of the sample image
+   */
+  const handleSampleImageSelect = useCallback(
+    async (imageUrl: string) => {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const name = imageUrl.split('/').pop() ?? 'sample.jpg';
+        runDetection(new File([blob], name, { type: blob.type }));
+      } catch (error) {
+        console.error('Error loading sample image:', error);
+        setDetectError('Failed to load sample image.');
+      }
+    },
+    [runDetection]
+  );
 
   // Wires carry their signal: edges driven by a HIGH source animate and glow.
   const nodeValues = useMemo(
     () => new Map(nodes.map((n) => [n.id, n.data.value])),
     [nodes]
   );
-  const liveEdges = useMemo(
+  const liveEdges = useMemo<DigiEdge[]>(
     () =>
       edges.map((edge) => {
         const on = nodeValues.get(edge.source) === 1;
@@ -482,12 +536,17 @@ function App() {
           <span className="stat-chip stat-chip--live">
             <span className="pulse-dot" /> {highCount} HIGH
           </span>
-          {user && (
+          {user ? (
             <span className="stat-chip user-chip">
               {user.email}
               <button className="logout-btn" onClick={logout}>Log out</button>
             </span>
-          )}
+          ) : isGuest ? (
+            <span className="stat-chip user-chip">
+              Guest
+              <button className="logout-btn" onClick={logout}>Log in</button>
+            </span>
+          ) : null}
         </div>
       </div>
       {cameraOpen && (
@@ -516,7 +575,32 @@ function App() {
         >
           {sidebarOpen ? '✕ Close' : '☰ Components'}
         </button>
-        <div className={`sidebar${sidebarOpen ? ' sidebar--open' : ''}`}>
+        {desktopSidebarCollapsed && (
+          <button
+            className="sidebar-reveal-btn"
+            aria-label="Show toolbox"
+            title="Show toolbox"
+            onClick={() => setDesktopSidebarCollapsed(false)}
+          >
+            ☰
+          </button>
+        )}
+        <div
+          className={`sidebar${sidebarOpen ? ' sidebar--open' : ''}${
+            desktopSidebarCollapsed ? ' sidebar--collapsed' : ''
+          }`}
+        >
+          <div className="sidebar-head">
+            <span className="sidebar-head__title">Toolbox</span>
+            <button
+              className="sidebar-collapse-btn"
+              aria-label="Collapse sidebar"
+              title="Collapse"
+              onClick={() => setDesktopSidebarCollapsed(true)}
+            >
+              «
+            </button>
+          </div>
           <section className="palette-section">
             <h3>I/O</h3>
             <div className="palette-grid palette-grid--io">
@@ -647,7 +731,7 @@ function App() {
             multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
             deleteKeyCode={['Backspace', 'Delete']}
             proOptions={{ hideAttribution: true }}
-            connectionLineType="smoothstep"
+            connectionLineType={ConnectionLineType.SmoothStep}
           >
             <MiniMap
               pannable
@@ -656,7 +740,7 @@ function App() {
               maskColor="rgba(8, 12, 22, 0.72)"
             />
             <Controls />
-            <Background variant="dots" gap={22} size={1.2} color="#1e293b" />
+            <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="#1e293b" />
           </ReactFlow>
         </div>
       </div>
@@ -666,9 +750,9 @@ function App() {
 
 /**
  * App wrapped in ReactFlowProvider so drag-and-drop can resolve flow coordinates.
- * @returns {React.ReactElement} Provider-wrapped application
+ * @returns Provider-wrapped application
  */
-function AppWithProvider() {
+function AppWithProvider(): React.ReactElement {
   return (
     <ReactFlowProvider>
       <App />

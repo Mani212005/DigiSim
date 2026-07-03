@@ -1,24 +1,23 @@
 /**
- * @file InputNode.js
+ * @file InputNode.tsx
  * @description ReactFlow custom node for a circuit input — a toggle switch the user
  * clicks to flip between logic 0 and 1. Glows when driving a HIGH signal.
  */
 
 import React from 'react';
 import { Handle, Position } from 'reactflow';
+import type { InputNodeProps } from '../types';
 
 /**
  * Clickable toggle-switch input node that flips its value between 0 and 1.
- * @param {{ data: { label: string, value: number }, id: string, updateNodeData: Function }} props
- * @returns {React.ReactElement} Rendered input node
+ * @param props - Node id, data, and the shared updateNodeData callback
+ * @returns Rendered input node
  */
-function InputNode({ data, id, updateNodeData }) {
+function InputNode({ data, id, updateNodeData }: InputNodeProps): React.ReactElement {
   const active = data.value === 1;
 
-  /**
-   * Toggle the input value between 0 and 1 and propagate via updateNodeData.
-   */
-  const toggleInput = () => {
+  /** Toggle the input value between 0 and 1 and propagate via updateNodeData. */
+  const toggleInput = (): void => {
     updateNodeData(id, { value: active ? 0 : 1 });
   };
 

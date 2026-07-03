@@ -1,21 +1,29 @@
 /**
- * @file LoginPage.js
- * @description Liquid-glass login/signup page shown to unauthenticated users.
- * Reuses the app's dark circuit-lab tokens; a floating glass card with
- * floating-label fields sits over slowly drifting neon blobs.
+ * @file LoginPage.tsx
+ * @description Liquid-glass login/signup page shown to signed-out users. Reuses the
+ * app's dark circuit-lab tokens; a floating glass card with floating-label fields
+ * sits over slowly drifting neon blobs. Offers a "Continue as guest" path that
+ * starts a cookie-backed anonymous session.
  */
 
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import type { GlassFieldProps, LoginMode } from '../types';
 import './LoginPage.css';
 
 /**
  * Floating-label input field with glow-ring focus.
- * @param {{ id: string, type: string, label: string, value: string,
- *   onChange: (e: object) => void, autoComplete: string }} props - Field config
- * @returns {React.ReactElement} Rendered field
+ * @param props - Field id, type, label, value, change handler and autocomplete hint
+ * @returns Rendered field
  */
-function GlassField({ id, type, label, value, onChange, autoComplete }) {
+function GlassField({
+  id,
+  type,
+  label,
+  value,
+  onChange,
+  autoComplete,
+}: GlassFieldProps): React.ReactElement {
   return (
     <div className="glass-field">
       <input
@@ -33,29 +41,42 @@ function GlassField({ id, type, label, value, onChange, autoComplete }) {
 }
 
 /**
- * Login/signup card with mode toggle, loading and error states.
- * @returns {React.ReactElement} Rendered login page
+ * Login/signup card with mode toggle, guest entry, and loading/error states.
+ * @returns Rendered login page
  */
-function LoginPage() {
-  const { login, signup } = useAuth();
-  const [mode, setMode] = useState('login');
+function LoginPage(): React.ReactElement {
+  const { login, signup, continueAsGuest } = useAuth();
+  const [mode, setMode] = useState<LoginMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   /**
    * Submit credentials to the active mode's endpoint.
-   * @param {React.FormEvent} event - Form submit event
+   * @param event - Form submit event
    */
-  const onSubmit = async (event) => {
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     setError(null);
     setBusy(true);
     try {
       await (mode === 'login' ? login(email, password) : signup(email, password));
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Start an anonymous guest session. */
+  const onGuest = async (): Promise<void> => {
+    setError(null);
+    setBusy(true);
+    try {
+      await continueAsGuest();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -102,6 +123,10 @@ function LoginPage() {
             {busy ? 'Signing in…' : mode === 'login' ? 'Log in' : 'Sign up'}
           </button>
         </form>
+
+        <button className="glass-guest" onClick={onGuest} disabled={busy}>
+          Continue as guest
+        </button>
 
         <button
           className="glass-switch"

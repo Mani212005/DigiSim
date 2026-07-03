@@ -48,6 +48,13 @@ export interface GateDetection {
   height: number;
 }
 
+/** Success payload of POST /detect_gates (cloud fallback — boxes only). */
+export interface DetectGatesResponse {
+  detections?: GateDetection[];
+  /** Roboflow-style responses use this key instead of `detections`. */
+  predictions?: GateDetection[];
+}
+
 /** Success payload of POST /detect_circuit. */
 export interface CircuitExportJSON {
   status: 'ok';
@@ -65,4 +72,17 @@ export interface PipelineNotReadyResponse {
 /** Error payload returned by backend endpoints. */
 export interface ApiErrorResponse {
   error: string;
+}
+
+/** Authenticated (or guest) user as returned by /auth/* endpoints. */
+export interface AuthUser {
+  id: number | null;
+  email: string | null;
+  /** True for anonymous guest sessions issued by POST /auth/guest. */
+  guest?: boolean;
+}
+
+/** Body of POST /auth/login, /auth/signup, /auth/guest and GET /auth/me. */
+export interface AuthResponse {
+  user: AuthUser;
 }

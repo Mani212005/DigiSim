@@ -1,32 +1,33 @@
 /**
- * @file useLogicSimulation.test.js
+ * @file useLogicSimulation.test.ts
  * @description Truth-table tests for all 7 gate types and Kahn's algorithm edge cases
  * in the useLogicSimulation hook.
  */
 
 import { renderHook } from '@testing-library/react';
 import { useLogicSimulation } from './useLogicSimulation';
+import type { DigiEdge, DigiNode } from '../types';
 
-/** Build a minimal node/edge setup and return the computed output value. */
-const simulate = (gateType, inputValues) => {
+/** Build a minimal node/edge setup and return the computed gate output value. */
+const simulate = (gateType: string, inputValues: number[]): number => {
   const { result } = renderHook(() => useLogicSimulation());
   const { simulateCircuit } = result.current;
 
-  const inputNodes = inputValues.map((val, i) => ({
+  const inputNodes: DigiNode[] = inputValues.map((val, i) => ({
     id: `in${i}`,
     type: 'input',
     data: { label: `Input ${i}`, value: val },
     position: { x: 0, y: i * 100 },
   }));
 
-  const gateNode = {
+  const gateNode: DigiNode = {
     id: 'gate',
     type: gateType,
     data: { label: 'Gate', value: 0 },
     position: { x: 200, y: 0 },
   };
 
-  const outputNode = {
+  const outputNode: DigiNode = {
     id: 'out',
     type: 'output',
     data: { label: 'Output', value: 0 },
@@ -34,20 +35,20 @@ const simulate = (gateType, inputValues) => {
   };
 
   const handleIds = ['a', 'b'];
-  const inputEdges = inputNodes.map((n, i) => ({
+  const inputEdges: DigiEdge[] = inputNodes.map((n, i) => ({
     id: `e-in${i}-gate`,
     source: n.id,
     target: 'gate',
     targetHandle: handleIds[i] || 'a',
   }));
 
-  const outputEdge = { id: 'e-gate-out', source: 'gate', target: 'out' };
+  const outputEdge: DigiEdge = { id: 'e-gate-out', source: 'gate', target: 'out' };
 
   const nodes = [...inputNodes, gateNode, outputNode];
   const edges = [...inputEdges, outputEdge];
 
   const updated = simulateCircuit(nodes, edges);
-  return updated.find(n => n.id === 'gate').data.value;
+  return updated.find((n) => n.id === 'gate')!.data.value;
 };
 
 // ---------------------------------------------------------------------------
@@ -126,7 +127,7 @@ describe('simulateCircuit edge cases', () => {
     const { result } = renderHook(() => useLogicSimulation());
     const { simulateCircuit } = result.current;
 
-    const nodes = [
+    const nodes: DigiNode[] = [
       { id: 'a', type: 'andGate', data: { label: 'A', value: 0 }, position: { x: 0, y: 0 } },
     ];
     const updated = simulateCircuit(nodes, []);
@@ -137,32 +138,32 @@ describe('simulateCircuit edge cases', () => {
     const { result } = renderHook(() => useLogicSimulation());
     const { simulateCircuit } = result.current;
 
-    const nodes = [
+    const nodes: DigiNode[] = [
       { id: 'in0', type: 'input', data: { label: 'A', value: 1 }, position: { x: 0, y: 0 } },
       { id: 'in1', type: 'input', data: { label: 'B', value: 1 }, position: { x: 0, y: 100 } },
       { id: 'and', type: 'andGate', data: { label: 'AND', value: 0 }, position: { x: 200, y: 0 } },
       { id: 'not', type: 'notGate', data: { label: 'NOT', value: 0 }, position: { x: 400, y: 0 } },
     ];
-    const edges = [
+    const edges: DigiEdge[] = [
       { id: 'e1', source: 'in0', target: 'and', targetHandle: 'a' },
       { id: 'e2', source: 'in1', target: 'and', targetHandle: 'b' },
       { id: 'e3', source: 'and', target: 'not', targetHandle: 'a' },
     ];
     const updated = simulateCircuit(nodes, edges);
-    expect(updated.find(n => n.id === 'and').data.value).toBe(1);  // 1 AND 1 = 1
-    expect(updated.find(n => n.id === 'not').data.value).toBe(0);  // NOT 1 = 0
+    expect(updated.find((n) => n.id === 'and')!.data.value).toBe(1); // 1 AND 1 = 1
+    expect(updated.find((n) => n.id === 'not')!.data.value).toBe(0); // NOT 1 = 0
   });
 
   test('output node takes value from its source', () => {
     const { result } = renderHook(() => useLogicSimulation());
     const { simulateCircuit } = result.current;
 
-    const nodes = [
+    const nodes: DigiNode[] = [
       { id: 'in', type: 'input', data: { label: 'A', value: 1 }, position: { x: 0, y: 0 } },
       { id: 'out', type: 'output', data: { label: 'Out', value: 0 }, position: { x: 200, y: 0 } },
     ];
-    const edges = [{ id: 'e1', source: 'in', target: 'out' }];
+    const edges: DigiEdge[] = [{ id: 'e1', source: 'in', target: 'out' }];
     const updated = simulateCircuit(nodes, edges);
-    expect(updated.find(n => n.id === 'out').data.value).toBe(1);
+    expect(updated.find((n) => n.id === 'out')!.data.value).toBe(1);
   });
 });

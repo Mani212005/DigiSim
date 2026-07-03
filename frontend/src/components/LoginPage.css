@@ -168,6 +168,32 @@
   cursor: wait;
 }
 
+.glass-guest {
+  display: block;
+  width: 100%;
+  margin-top: 0.9rem;
+  min-height: 46px;
+  padding: 0.7rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.glass-guest:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.glass-guest:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .glass-switch {
   display: block;
   width: 100%;

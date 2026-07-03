@@ -1,5 +1,5 @@
 /**
- * @file DetectionReview.js
+ * @file DetectionReview.tsx
  * @description Review/confirm step shown when the detector returns any component
  * below the 0.95 confidence bar. Lists every detected component with a type
  * dropdown for correcting misclassifications and a checkbox to drop false
@@ -7,9 +7,10 @@
  */
 
 import React, { useState } from 'react';
+import type { CircuitNodeType, DetectionReviewProps, DetectionRow } from '../types';
 
 /** Selectable node types for correcting a detection. */
-const TYPE_OPTIONS = [
+const TYPE_OPTIONS: { type: string; label: string }[] = [
   { type: 'andGate', label: 'AND Gate' },
   { type: 'orGate', label: 'OR Gate' },
   { type: 'notGate', label: 'NOT Gate' },
@@ -25,44 +26,38 @@ const CONFIDENCE_BAR = 0.95;
 
 /**
  * Modal listing detections for review before committing to the canvas.
- * @param {{ payload: import('../types/api').CircuitExportJSON,
- *   onConfirm: (payload: object) => void, onCancel: () => void }} props -
- *   Raw detection payload and confirm/cancel callbacks
- * @returns {React.ReactElement} Rendered review dialog
+ * @param props - Raw detection payload and confirm/cancel callbacks
+ * @returns Rendered review dialog
  */
-function DetectionReview({ payload, onConfirm, onCancel }) {
-  const [rows, setRows] = useState(() =>
-    payload.components.map((component) => ({
-      ...component,
-      keep: true,
-    }))
+function DetectionReview({
+  payload,
+  onConfirm,
+  onCancel,
+}: DetectionReviewProps): React.ReactElement {
+  const [rows, setRows] = useState<DetectionRow[]>(() =>
+    payload.components.map((component) => ({ ...component, keep: true }))
   );
 
   /**
    * Update one review row.
-   * @param {string} id - Component id
-   * @param {object} patch - Fields to merge
+   * @param id - Component id
+   * @param patch - Fields to merge
    */
-  const updateRow = (id, patch) => {
+  const updateRow = (id: string, patch: Partial<DetectionRow>): void => {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
 
   /** Commit kept rows (with corrected types) and their surviving connections. */
-  const confirm = () => {
+  const confirm = (): void => {
     const kept = rows.filter((r) => r.keep);
     const keptIds = new Set(kept.map((r) => r.id));
     onConfirm({
       ...payload,
-      components: kept.map((row) => {
-        const { keep: _keep, ...component } = row;
-        void _keep;
-        return {
-          ...component,
-          label:
-            TYPE_OPTIONS.find((o) => o.type === component.type)?.label ||
-            component.label,
-        };
-      }),
+      components: kept.map(({ keep, ...component }) => ({
+        ...component,
+        label:
+          TYPE_OPTIONS.find((o) => o.type === component.type)?.label ?? component.label,
+      })),
       connections: payload.connections.filter(
         (c) => keptIds.has(c.from) && keptIds.has(c.to)
       ),
@@ -93,7 +88,7 @@ function DetectionReview({ payload, onConfirm, onCancel }) {
                 value={row.type}
                 aria-label={`Type for ${row.id}`}
                 disabled={!row.keep}
-                onChange={(e) => updateRow(row.id, { type: e.target.value })}
+                onChange={(e) => updateRow(row.id, { type: e.target.value as CircuitNodeType })}
               >
                 {TYPE_OPTIONS.map((o) => (
                   <option key={o.type} value={o.type}>

@@ -1,5 +1,5 @@
 /**
- * @file SelectionToolbar.js
+ * @file SelectionToolbar.tsx
  * @description Floating contextual toolbar shown near the bounding box of the
  * current multi-node selection — offers Delete and Duplicate bulk actions.
  * Position is derived from the selection rect projected into screen space, so
@@ -8,14 +8,19 @@
 
 import React from 'react';
 import { getRectOfNodes } from 'reactflow';
+import type { SelectionToolbarProps } from '../types';
 
 /**
  * Floating toolbar for the current selection.
- * @param {{ selectedNodes: object[], viewport: { x: number, y: number, zoom: number },
- *   onDelete: () => void, onDuplicate: () => void }} props - Selection state and actions
- * @returns {React.ReactElement|null} Rendered toolbar, or null without a selection
+ * @param props - Selected nodes, live viewport, and bulk action callbacks
+ * @returns Rendered toolbar, or null without a selection
  */
-function SelectionToolbar({ selectedNodes, viewport, onDelete, onDuplicate }) {
+function SelectionToolbar({
+  selectedNodes,
+  viewport,
+  onDelete,
+  onDuplicate,
+}: SelectionToolbarProps): React.ReactElement | null {
   if (selectedNodes.length < 1) return null;
 
   const rect = getRectOfNodes(selectedNodes);

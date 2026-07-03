@@ -1,5 +1,5 @@
 /**
- * @file CameraCapture.js
+ * @file CameraCapture.tsx
  * @description Full-screen camera modal: streams the device's environment-facing
  * camera via getUserMedia, captures a frame to a canvas, and hands the JPEG blob
  * to the detection flow. Falls back to a capture-enabled file input when no
@@ -7,19 +7,19 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { CameraCaptureProps } from '../types';
 
 /**
  * Camera preview modal with a shutter button.
- * @param {{ onCapture: (blob: Blob) => void, onClose: () => void,
- *   onFallback: () => void }} props - Capture/close/fallback callbacks
- * @returns {React.ReactElement} Rendered camera modal
+ * @param props - Capture, close, and fallback callbacks
+ * @returns Rendered camera modal
  */
-function CameraCapture({ onCapture, onClose, onFallback }) {
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const [error, setError] = useState(null);
+function CameraCapture({ onCapture, onClose, onFallback }: CameraCaptureProps): React.ReactElement {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const stopStream = useCallback(() => {
+  const stopStream = useCallback((): void => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   }, []);
@@ -27,7 +27,7 @@ function CameraCapture({ onCapture, onClose, onFallback }) {
   useEffect(() => {
     let cancelled = false;
     /** Request the back camera and attach it to the preview element. */
-    const start = async () => {
+    const start = async (): Promise<void> => {
       if (!navigator.mediaDevices?.getUserMedia) {
         onFallback();
         return;
@@ -56,10 +56,8 @@ function CameraCapture({ onCapture, onClose, onFallback }) {
     };
   }, [onFallback, stopStream]);
 
-  /**
-   * Draw the current video frame to a canvas and emit it as a JPEG blob.
-   */
-  const capture = useCallback(() => {
+  /** Draw the current video frame to a canvas and emit it as a JPEG blob. */
+  const capture = useCallback((): void => {
     const video = videoRef.current;
     if (!video || video.videoWidth === 0) {
       setError('Camera is still starting — try again in a second.');
@@ -68,7 +66,12 @@ function CameraCapture({ onCapture, onClose, onFallback }) {
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      setError('Could not access the drawing context — try again.');
+      return;
+    }
+    ctx.drawImage(video, 0, 0);
     canvas.toBlob(
       (blob) => {
         if (blob) {

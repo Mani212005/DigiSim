@@ -1,5 +1,5 @@
 /**
- * @file GateShell.js
+ * @file GateShell.tsx
  * @description Shared visual shell for all logic-gate nodes — renders the ANSI
  * schematic symbol as SVG, the gate label, and the input/output handles. The
  * output state (data.value) drives a neon glow via the `gate-node--on` class.
@@ -8,9 +8,10 @@
 
 import React from 'react';
 import { Handle, Position } from 'reactflow';
+import type { GateGlyphProps, GateShellProps, GlyphType } from '../types';
 
 /** SVG stroke geometry per gate type, drawn in a 110x70 viewBox. */
-const SYMBOLS = {
+const SYMBOLS: Record<GlyphType, React.ReactElement> = {
   and: (
     <>
       <path d="M15 10 L50 10 A25 25 0 0 1 50 60 L15 60 Z" />
@@ -76,10 +77,10 @@ const SYMBOLS = {
 
 /**
  * Small standalone gate glyph for the sidebar palette.
- * @param {{ type: keyof typeof SYMBOLS }} props - Gate symbol key
- * @returns {React.ReactElement} SVG glyph
+ * @param props - Gate symbol key
+ * @returns SVG glyph
  */
-export function GateGlyph({ type }) {
+export function GateGlyph({ type }: GateGlyphProps): React.ReactElement {
   return (
     <svg viewBox="0 0 110 70" className="gate-glyph" aria-hidden="true">
       {SYMBOLS[type]}
@@ -89,11 +90,10 @@ export function GateGlyph({ type }) {
 
 /**
  * Visual shell shared by every gate node: symbol + label + handles.
- * @param {{ type: keyof typeof SYMBOLS, data: { label: string, value: number },
- *   inputs?: number }} props - Gate type, node data, input handle count (1 or 2)
- * @returns {React.ReactElement} Rendered gate node
+ * @param props - Gate type, node data, input handle count (1 or 2)
+ * @returns Rendered gate node
  */
-function GateShell({ type, data, inputs = 2 }) {
+function GateShell({ type, data, inputs = 2 }: GateShellProps): React.ReactElement {
   const active = data.value === 1;
   return (
     <div className={`gate-node${active ? ' gate-node--on' : ''}`}>

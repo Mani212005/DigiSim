@@ -1,18 +1,19 @@
 /**
- * @file SampleImages.js
+ * @file SampleImages.tsx
  * @description Thumbnail gallery of bundled hand-drawn circuit photos — clicking one
  * feeds it straight into the detection pipeline.
  */
 
 import React from 'react';
+import type { SampleImagesProps } from '../types';
 
 /**
  * Renders clickable thumbnails of sample circuit images and fires onImageSelect
  * with the chosen URL.
- * @param {{ images: string[], onImageSelect: (url: string) => void }} props
- * @returns {React.ReactElement} Rendered sample image gallery
+ * @param props - Image filenames and the selection callback
+ * @returns Rendered sample image gallery
  */
-const SampleImages = ({ images, onImageSelect }) => {
+const SampleImages = ({ images, onImageSelect }: SampleImagesProps): React.ReactElement => {
   return (
     <div className="sample-images">
       <h4 className="sample-title">Sample Circuits</h4>

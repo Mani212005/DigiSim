@@ -1,5 +1,5 @@
 /**
- * @file index.js
+ * @file index.tsx
  * @description Application entry point — mounts the auth provider, the auth gate,
  * and the DigiSim app.
  */
@@ -12,7 +12,7 @@ import AuthGate from './AuthGate';
 import { AuthProvider } from './hooks/useAuth';
 import reportWebVitals from './reportWebVitals';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
     <AuthProvider>
