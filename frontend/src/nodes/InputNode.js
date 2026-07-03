@@ -1,39 +1,40 @@
 /**
  * @file InputNode.js
- * @description ReactFlow custom node for a circuit input — click to toggle between 0 and 1.
+ * @description ReactFlow custom node for a circuit input — a toggle switch the user
+ * clicks to flip between logic 0 and 1. Glows when driving a HIGH signal.
  */
 
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
 /**
- * Clickable input node that toggles its value between 0 and 1.
+ * Clickable toggle-switch input node that flips its value between 0 and 1.
  * @param {{ data: { label: string, value: number }, id: string, updateNodeData: Function }} props
  * @returns {React.ReactElement} Rendered input node
  */
 function InputNode({ data, id, updateNodeData }) {
+  const active = data.value === 1;
+
   /**
    * Toggle the input value between 0 and 1 and propagate via updateNodeData.
    */
   const toggleInput = () => {
-    const newValue = data.value === 0 ? 1 : 0;
-    updateNodeData(id, { value: newValue });
+    updateNodeData(id, { value: active ? 0 : 1 });
   };
 
   return (
     <div
-      style={{
-        padding: 10,
-        border: '1px solid #ccc',
-        borderRadius: 5,
-        background: data.value === 1 ? 'yellow' : '#ffaaaa',
-        textAlign: 'center',
-        cursor: 'pointer',
-      }}
+      className={`io-node input-node${active ? ' io-node--on' : ''}`}
       onClick={toggleInput}
+      role="switch"
+      aria-checked={active}
+      aria-label={`${data.label} toggle`}
     >
-      <div>{data.label}</div>
-      <div>Value: {data.value}</div>
+      <span className="io-node__label">{data.label}</span>
+      <div className="toggle-track">
+        <div className="toggle-thumb">{data.value}</div>
+      </div>
+      <span className="io-node__state">{active ? 'HIGH' : 'LOW'}</span>
       <Handle type="source" position={Position.Right} style={{ top: '50%' }} />
     </div>
   );

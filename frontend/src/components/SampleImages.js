@@ -1,27 +1,34 @@
 /**
  * @file SampleImages.js
- * @description Dropdown selector that lets the user pick a pre-loaded sample circuit image.
+ * @description Thumbnail gallery of bundled hand-drawn circuit photos — clicking one
+ * feeds it straight into the detection pipeline.
  */
 
 import React from 'react';
 
 /**
- * Renders a dropdown of sample circuit images and fires onImageSelect with the chosen URL.
+ * Renders clickable thumbnails of sample circuit images and fires onImageSelect
+ * with the chosen URL.
  * @param {{ images: string[], onImageSelect: (url: string) => void }} props
- * @returns {React.ReactElement} Rendered sample image selector
+ * @returns {React.ReactElement} Rendered sample image gallery
  */
 const SampleImages = ({ images, onImageSelect }) => {
   return (
     <div className="sample-images">
-      <h3>Sample Circuits</h3>
-      <select onChange={(e) => onImageSelect(`/samples/${e.target.value}`)} className="sample-dropdown">
-        <option value="">Select a sample circuit</option>
+      <h4 className="sample-title">Sample Circuits</h4>
+      <div className="sample-grid">
         {images.map((image, index) => (
-          <option key={index} value={image}>
-            Sample Circuit ${index + 1}
-          </option>
+          <button
+            key={image}
+            className="sample-thumb"
+            aria-label={`Detect sample circuit ${index + 1}`}
+            onClick={() => onImageSelect(`/samples/${image}`)}
+          >
+            <img src={`/samples/${image}`} alt={`Sample circuit ${index + 1}`} loading="lazy" />
+            <span className="sample-thumb__tag">#{index + 1}</span>
+          </button>
         ))}
-      </select>
+      </div>
     </div>
   );
 };

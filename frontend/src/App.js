@@ -1,7 +1,9 @@
 /**
  * @file App.js
  * @description Root application component — owns all node/edge state and wires together
- * the ReactFlow canvas, logic simulation, and image detection pipeline.
+ * the ReactFlow canvas, logic simulation, and image detection pipeline. Renders the
+ * circuit-lab UI: schematic palette sidebar (click or drag to add), signal-aware
+ * animated wires, and the vision upload flow.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,6 +13,7 @@ import ReactFlow, {
   MiniMap,
   Controls,
   Background,
+  ReactFlowProvider,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -28,14 +31,15 @@ import XorGateNode from './nodes/XorGateNode';
 import NandGateNode from './nodes/NandGateNode';
 import XnorGateNode from './nodes/XnorGateNode';
 import NorGateNode from './nodes/NorGateNode';
+import { GateGlyph } from './nodes/GateShell';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
 
 const initialNodes = [
   { id: '1', position: { x: 0, y: 0 }, data: { label: 'Input A', value: 0 }, type: 'input' },
-  { id: '2', position: { x: 0, y: 100 }, data: { label: 'Input B', value: 0 }, type: 'input' },
-  { id: '3', position: { x: 200, y: 50 }, data: { label: 'AND Gate', value: 0 }, type: 'andGate' },
-  { id: '4', position: { x: 400, y: 50 }, data: { label: 'Output', value: 0 }, type: 'output' },
+  { id: '2', position: { x: 0, y: 160 }, data: { label: 'Input B', value: 0 }, type: 'input' },
+  { id: '3', position: { x: 260, y: 70 }, data: { label: 'AND Gate', value: 0 }, type: 'andGate' },
+  { id: '4', position: { x: 520, y: 78 }, data: { label: 'Output', value: 0 }, type: 'output' },
 ];
 
 const initialEdges = [
@@ -55,11 +59,23 @@ const sampleImages = [
   'fortyeight_image.jpg',
 ];
 
+/** Sidebar palette definition: gate chips rendered with their schematic glyphs. */
+const GATE_PALETTE = [
+  { type: 'andGate', label: 'AND Gate', glyph: 'and', name: 'AND' },
+  { type: 'orGate', label: 'OR Gate', glyph: 'or', name: 'OR' },
+  { type: 'notGate', label: 'NOT Gate', glyph: 'not', name: 'NOT' },
+  { type: 'nandGate', label: 'NAND Gate', glyph: 'nand', name: 'NAND' },
+  { type: 'norGate', label: 'NOR Gate', glyph: 'nor', name: 'NOR' },
+  { type: 'xorGate', label: 'XOR Gate', glyph: 'xor', name: 'XOR' },
+  { type: 'xnorGate', label: 'XNOR Gate', glyph: 'xnor', name: 'XNOR' },
+];
+
 function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectError, setDetectError] = useState(null);
+  const [rfInstance, setRfInstance] = useState(null);
   const { simulateCircuit } = useLogicSimulation();
 
   const updateNodeData = useCallback((nodeId, newData) => {
@@ -97,15 +113,47 @@ function App() {
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
 
-  const addNode = useCallback((type, label) => {
+  const addNode = useCallback((type, label, position) => {
     const newNode = {
       id: getId(),
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
+      position: position || { x: 120 + Math.random() * 200, y: 80 + Math.random() * 220 },
       data: { label: label, value: 0 },
       type: type,
     };
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
+
+  /**
+   * Stash the dragged palette chip's node type for the canvas drop handler.
+   * @param {DragEvent} event - HTML5 drag start event
+   * @param {string} type - ReactFlow node type
+   * @param {string} label - Node label
+   */
+  const onPaletteDragStart = useCallback((event, type, label) => {
+    event.dataTransfer.setData('application/digisim', JSON.stringify({ type, label }));
+    event.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const onCanvasDragOver = useCallback((event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  /**
+   * Drop a palette chip onto the canvas at the pointer's flow position.
+   * @param {DragEvent} event - HTML5 drop event
+   */
+  const onCanvasDrop = useCallback((event) => {
+    event.preventDefault();
+    const raw = event.dataTransfer.getData('application/digisim');
+    if (!raw || !rfInstance) return;
+    const { type, label } = JSON.parse(raw);
+    const position = rfInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    addNode(type, label, position);
+  }, [rfInstance, addNode]);
 
   /**
    * Place a full detected circuit (components + wires) onto the canvas.
@@ -158,62 +206,62 @@ function App() {
     console.log('Detected Gates:', detections);
 
     const newDetectedNodes = detections.map(detection => {
-        let nodeType = '';
-        let nodeLabel = '';
+      let nodeType = '';
+      let nodeLabel = '';
 
-        // Map detector classes ('AND', 'and gate', ...) to node types and labels
-        const detectedClass = (detection.class || '').toUpperCase().replace(' GATE', '');
-        switch (detectedClass) {
-          case 'AND':
-            nodeType = 'andGate';
-            nodeLabel = 'AND Gate';
-            break;
-          case 'OR':
-            nodeType = 'orGate';
-            nodeLabel = 'OR Gate';
-            break;
-          case 'NOT':
-            nodeType = 'notGate';
-            nodeLabel = 'NOT Gate';
-            break;
-          case 'NAND':
-            nodeType = 'nandGate';
-            nodeLabel = 'NAND Gate';
-            break;
-          case 'NOR':
-            nodeType = 'norGate';
-            nodeLabel = 'NOR Gate';
-            break;
-          case 'XOR':
-            nodeType = 'xorGate';
-            nodeLabel = 'XOR Gate';
-            break;
-          case 'XNOR':
-            nodeType = 'xnorGate';
-            nodeLabel = 'XNOR Gate';
-            break;
-          case 'INPUT':
-          case 'SWITCH':
-            nodeType = 'input';
-            nodeLabel = 'Input';
-            break;
-          case 'OUTPUT':
-          case 'LED':
-            nodeType = 'output';
-            nodeLabel = 'Output';
-            break;
-          default:
-            nodeType = 'unknown'; // Handle unknown types
-            nodeLabel = detection.class;
-        }
+      // Map detector classes ('AND', 'and gate', ...) to node types and labels
+      const detectedClass = (detection.class || '').toUpperCase().replace(' GATE', '');
+      switch (detectedClass) {
+        case 'AND':
+          nodeType = 'andGate';
+          nodeLabel = 'AND Gate';
+          break;
+        case 'OR':
+          nodeType = 'orGate';
+          nodeLabel = 'OR Gate';
+          break;
+        case 'NOT':
+          nodeType = 'notGate';
+          nodeLabel = 'NOT Gate';
+          break;
+        case 'NAND':
+          nodeType = 'nandGate';
+          nodeLabel = 'NAND Gate';
+          break;
+        case 'NOR':
+          nodeType = 'norGate';
+          nodeLabel = 'NOR Gate';
+          break;
+        case 'XOR':
+          nodeType = 'xorGate';
+          nodeLabel = 'XOR Gate';
+          break;
+        case 'XNOR':
+          nodeType = 'xnorGate';
+          nodeLabel = 'XNOR Gate';
+          break;
+        case 'INPUT':
+        case 'SWITCH':
+          nodeType = 'input';
+          nodeLabel = 'Input';
+          break;
+        case 'OUTPUT':
+        case 'LED':
+          nodeType = 'output';
+          nodeLabel = 'Output';
+          break;
+        default:
+          nodeType = 'unknown'; // Handle unknown types
+          nodeLabel = detection.class;
+      }
 
-        return {
-          id: getId(),
-          position: { x: detection.x - detection.width / 2, y: detection.y - detection.height / 2 },
-          data: { label: nodeLabel, value: 0 },
-          type: nodeType,
-        };
-      });
+      return {
+        id: getId(),
+        position: { x: detection.x - detection.width / 2, y: detection.y - detection.height / 2 },
+        data: { label: nodeLabel, value: 0 },
+        type: nodeType,
+      };
+    });
 
     setNodes((nds) => nds.concat(newDetectedNodes));
   }, [setNodes]);
@@ -280,43 +328,117 @@ function App() {
     }
   }, [handleImageUpload]);
 
+  // Wires carry their signal: edges driven by a HIGH source animate and glow.
+  const nodeValues = useMemo(
+    () => new Map(nodes.map((n) => [n.id, n.data.value])),
+    [nodes]
+  );
+  const liveEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        const on = nodeValues.get(edge.source) === 1;
+        return {
+          ...edge,
+          type: 'smoothstep',
+          pathOptions: { borderRadius: 16 },
+          animated: on,
+          className: on ? 'edge-on' : 'edge-off',
+        };
+      }),
+    [edges, nodeValues]
+  );
+
+  const highCount = useMemo(
+    () => nodes.filter((n) => n.data.value === 1).length,
+    [nodes]
+  );
+
   return (
     <div className="app-container">
       <div className="navbar">
         <div className="navbar-brand">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12 7L17 10L12 13L7 10L12 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M2 7L12 12L22 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12 13L12 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="5" y="5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            <circle cx="12" cy="12" r="2.6" fill="currentColor" />
           </svg>
-          Circuit Analyzer
+          <span className="brand-name">DigiSim</span>
+          <span className="brand-tag">Circuit Analyzer</span>
+        </div>
+        <div className="navbar-status">
+          <span className="stat-chip"><span className="stat-value">{nodes.length}</span> components</span>
+          <span className="stat-chip"><span className="stat-value">{edges.length}</span> wires</span>
+          <span className="stat-chip stat-chip--live">
+            <span className="pulse-dot" /> {highCount} HIGH
+          </span>
         </div>
       </div>
       <div className="content-wrapper">
         <div className="sidebar">
-          <h3>Add Components</h3>
-          <button onClick={() => addNode('input', 'Input')}>Add Input</button>
-          <button onClick={() => addNode('output', 'Output')}>Add Output</button>
-          <button onClick={() => addNode('andGate', 'AND Gate')}>Add AND Gate</button>
-          <button onClick={() => addNode('notGate', 'NOT Gate')}>Add NOT Gate</button>
-          <button onClick={() => addNode('orGate', 'OR Gate')}>Add OR Gate</button>
-          <button onClick={() => addNode('xorGate', 'XOR Gate')}>Add XOR Gate</button>
-          <button onClick={() => addNode('nandGate', 'NAND Gate')}>Add NAND Gate</button>
-          <button onClick={() => addNode('norGate', 'NOR Gate')}>Add NOR Gate</button>
-          <button onClick={() => addNode('xnorGate', 'XNOR Gate')}>Add XNOR Gate</button>
-          <hr />
-          <h3>Image Upload</h3>
-          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
-          <hr />
-          <SampleImages images={sampleImages} onImageSelect={handleSampleImageSelect} />
-          <hr />
-          <button onClick={clearCanvas}>Clear Canvas</button>
+          <section className="palette-section">
+            <h3>I/O</h3>
+            <div className="palette-grid palette-grid--io">
+              <button
+                className="palette-chip"
+                aria-label="Add Input"
+                draggable
+                onDragStart={(e) => onPaletteDragStart(e, 'input', 'Input')}
+                onClick={() => addNode('input', 'Input')}
+              >
+                <span className="chip-icon chip-icon--switch" aria-hidden="true">⏻</span>
+                <span className="chip-name">Input</span>
+              </button>
+              <button
+                className="palette-chip"
+                aria-label="Add Output"
+                draggable
+                onDragStart={(e) => onPaletteDragStart(e, 'output', 'Output')}
+                onClick={() => addNode('output', 'Output')}
+              >
+                <span className="chip-icon chip-icon--led" aria-hidden="true" />
+                <span className="chip-name">Output</span>
+              </button>
+            </div>
+          </section>
+
+          <section className="palette-section">
+            <h3>Logic Gates</h3>
+            <div className="palette-grid">
+              {GATE_PALETTE.map((gate) => (
+                <button
+                  key={gate.type}
+                  className="palette-chip"
+                  aria-label={`Add ${gate.label}`}
+                  draggable
+                  onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
+                  onClick={() => addNode(gate.type, gate.label)}
+                >
+                  <GateGlyph type={gate.glyph} />
+                  <span className="chip-name">{gate.name}</span>
+                </button>
+              ))}
+            </div>
+            <p className="palette-hint">click or drag onto the canvas</p>
+          </section>
+
+          <section className="palette-section">
+            <h3>Vision</h3>
+            <label htmlFor="image-upload-input" className="upload-button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+              Image Upload
+            </label>
+            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
+            <SampleImages images={sampleImages} onImageSelect={handleSampleImageSelect} />
+          </section>
+
+          <div className="sidebar-footer">
+            <button className="danger-button" onClick={clearCanvas}>Clear Canvas</button>
+          </div>
         </div>
-        <div className="reactflow-wrapper">
+        <div className="reactflow-wrapper" onDrop={onCanvasDrop} onDragOver={onCanvasDragOver}>
           {isDetecting && (
             <div className="detect-overlay" role="status">
-              Detecting circuit…
+              <span className="spinner" /> Detecting circuit…
             </div>
           )}
           {detectError && (
@@ -328,29 +450,46 @@ function App() {
             </div>
           )}
           <ReactFlow
-            nodes={nodes.map(node => ({
-              ...node,
-              className: node.data.value === 1 ? 'node-on' : 'node-off',
-            }))}
-            edges={edges}
+            nodes={nodes}
+            edges={liveEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onInit={setRfInstance}
             nodeTypes={nodeTypes}
             fitView
+            minZoom={0.2}
+            maxZoom={2.5}
+            panOnScroll
+            zoomOnPinch
+            proOptions={{ hideAttribution: true }}
+            connectionLineType="smoothstep"
           >
-            <MiniMap />
+            <MiniMap
+              pannable
+              zoomable
+              nodeColor={(n) => (n.data?.value === 1 ? '#4ade80' : '#334155')}
+              maskColor="rgba(8, 12, 22, 0.72)"
+            />
             <Controls />
-            <Background variant="dots" gap={12} size={1} />
+            <Background variant="dots" gap={22} size={1.2} color="#1e293b" />
           </ReactFlow>
         </div>
-      </div>
-      <div className="fab-container">
-        <label htmlFor="image-upload-input" className="fab-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        </label>
       </div>
     </div>
   );
 }
-export default App;
+
+/**
+ * App wrapped in ReactFlowProvider so drag-and-drop can resolve flow coordinates.
+ * @returns {React.ReactElement} Provider-wrapped application
+ */
+function AppWithProvider() {
+  return (
+    <ReactFlowProvider>
+      <App />
+    </ReactFlowProvider>
+  );
+}
+
+export default AppWithProvider;
