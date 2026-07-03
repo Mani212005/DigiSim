@@ -45,7 +45,17 @@ def evaluate(weights: Path, data: Path, split: str) -> dict:
         raise FileNotFoundError(f"Dataset yaml not found: {data}")
 
     model = YOLO(str(weights))
-    metrics = model.val(data=str(data), split=split, device="cpu", plots=False)
+    # plots=True is required: ultralytics only accumulates the confusion
+    # matrix (our accuracy source) when plotting is enabled.
+    metrics = model.val(
+        data=str(data),
+        split=split,
+        device="cpu",
+        plots=True,
+        project=str(ML_DIR / "experiments" / "eval"),
+        name=split,
+        exist_ok=True,
+    )
     names: dict[int, str] = model.names
 
     per_class: dict[str, dict[str, float]] = {}
