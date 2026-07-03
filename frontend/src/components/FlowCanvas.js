@@ -1,3 +1,9 @@
+/**
+ * @file FlowCanvas.js
+ * @description Self-contained ReactFlow canvas with sidebar controls, image upload,
+ * and logic simulation — an alternative canvas component to App.js.
+ */
+
 // eslint-disable-next-line no-unused-vars
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {

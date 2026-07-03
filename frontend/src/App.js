@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+/**
+ * @file App.js
+ * @description Root application component — owns all node/edge state and wires together
+ * the ReactFlow canvas, logic simulation, and image detection pipeline.
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import SampleImages from './components/SampleImages';
 import './components/SampleImages.css';
 import ReactFlow, {
@@ -21,6 +27,7 @@ import OrGateNode from './nodes/OrGateNode';
 import XorGateNode from './nodes/XorGateNode';
 import NandGateNode from './nodes/NandGateNode';
 import XnorGateNode from './nodes/XnorGateNode';
+import NorGateNode from './nodes/NorGateNode';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
 
@@ -51,6 +58,8 @@ const sampleImages = [
 function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [detectError, setDetectError] = useState(null);
   const { simulateCircuit } = useLogicSimulation();
 
   const updateNodeData = useCallback((nodeId, newData) => {
@@ -70,6 +79,7 @@ function App() {
     xorGate: XorGateNode,
     nandGate: NandGateNode,
     xnorGate: XnorGateNode,
+    norGate: NorGateNode,
   }), [updateNodeData]);
 
   useEffect(() => {
@@ -97,33 +107,63 @@ function App() {
     setNodes((nds) => nds.concat(newNode));
   }, [setNodes]);
 
-  const handleImageUpload = useCallback(async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  /**
+   * Place a full detected circuit (components + wires) onto the canvas.
+   * @param {import('./types/api').CircuitExportJSON} payload - /detect_circuit response
+   */
+  const importCircuit = useCallback((payload) => {
+    const idMap = new Map();
+    const newNodes = payload.components.map((component) => {
+      const nodeId = getId();
+      idMap.set(component.id, nodeId);
+      return {
+        id: nodeId,
+        position: { x: component.x, y: component.y },
+        data: { label: component.label, value: 0 },
+        type: component.type,
+      };
+    });
 
-    const formData = new FormData();
-    formData.append('image', file);
+    const newEdges = payload.connections
+      .filter((c) => idMap.has(c.from) && idMap.has(c.to))
+      .map((c) => ({
+        id: `e${idMap.get(c.from)}-${idMap.get(c.to)}-${c.toPort || 'in'}`,
+        source: idMap.get(c.from),
+        target: idMap.get(c.to),
+        sourceHandle: null,
+        targetHandle: c.toPort,
+      }));
 
-    try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/detect_gates`, {
-        method: 'POST',
-        body: formData,
-      });
+    setNodes((nds) => nds.concat(newNodes));
+    setEdges((eds) => eds.concat(newEdges));
+  }, [setNodes, setEdges]);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+  /**
+   * Fall back to cloud gate detection (boxes only, no wires).
+   * @param {FormData} formData - Multipart body carrying the image
+   * @param {string} apiUrl - Backend base URL
+   */
+  const detectGatesFallback = useCallback(async (formData, apiUrl) => {
+    const response = await fetch(`${apiUrl}/detect_gates`, {
+      method: 'POST',
+      body: formData,
+    });
 
-      const result = await response.json();
-      console.log('Detected Gates:', result.detections);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-      const newDetectedNodes = result.detections.map(detection => {
+    const result = await response.json();
+    const detections = result.detections || result.predictions || [];
+    console.log('Detected Gates:', detections);
+
+    const newDetectedNodes = detections.map(detection => {
         let nodeType = '';
         let nodeLabel = '';
 
-        // Map Roboflow classes to our node types and labels
-        switch (detection.class) {
+        // Map detector classes ('AND', 'and gate', ...) to node types and labels
+        const detectedClass = (detection.class || '').toUpperCase().replace(' GATE', '');
+        switch (detectedClass) {
           case 'AND':
             nodeType = 'andGate';
             nodeLabel = 'AND Gate';
@@ -152,6 +192,16 @@ function App() {
             nodeType = 'xnorGate';
             nodeLabel = 'XNOR Gate';
             break;
+          case 'INPUT':
+          case 'SWITCH':
+            nodeType = 'input';
+            nodeLabel = 'Input';
+            break;
+          case 'OUTPUT':
+          case 'LED':
+            nodeType = 'output';
+            nodeLabel = 'Output';
+            break;
           default:
             nodeType = 'unknown'; // Handle unknown types
             nodeLabel = detection.class;
@@ -165,13 +215,50 @@ function App() {
         };
       });
 
-      setNodes((nds) => nds.concat(newDetectedNodes));
+    setNodes((nds) => nds.concat(newDetectedNodes));
+  }, [setNodes]);
 
+  /**
+   * Upload an image and rebuild its circuit: tries the full local pipeline
+   * (/detect_circuit — gates AND wires) first, falling back to cloud gate
+   * detection while local model weights are unavailable.
+   * @param {{ target: { files: File[] } }} event - File input change event
+   */
+  const handleImageUpload = useCallback(async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
+    setIsDetecting(true);
+    setDetectError(null);
+    try {
+      const response = await fetch(`${apiUrl}/detect_circuit`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const payload = await response.json();
+        console.log('Detected circuit:', payload);
+        importCircuit(payload);
+      } else if (response.status === 503) {
+        // Local pipeline not trained yet — cloud fallback (boxes only).
+        console.warn('Local pipeline not ready, falling back to /detect_gates');
+        await detectGatesFallback(formData, apiUrl);
+      } else {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP error! status: ${response.status}`);
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Failed to upload image or detect gates. Check console for details.');
+      setDetectError(`Circuit detection failed: ${error.message}`);
+    } finally {
+      setIsDetecting(false);
     }
-  }, [setNodes]);
+  }, [importCircuit, detectGatesFallback]);
 
   const clearCanvas = useCallback(() => {
     setNodes([]);
@@ -216,6 +303,7 @@ function App() {
           <button onClick={() => addNode('orGate', 'OR Gate')}>Add OR Gate</button>
           <button onClick={() => addNode('xorGate', 'XOR Gate')}>Add XOR Gate</button>
           <button onClick={() => addNode('nandGate', 'NAND Gate')}>Add NAND Gate</button>
+          <button onClick={() => addNode('norGate', 'NOR Gate')}>Add NOR Gate</button>
           <button onClick={() => addNode('xnorGate', 'XNOR Gate')}>Add XNOR Gate</button>
           <hr />
           <h3>Image Upload</h3>
@@ -226,6 +314,19 @@ function App() {
           <button onClick={clearCanvas}>Clear Canvas</button>
         </div>
         <div className="reactflow-wrapper">
+          {isDetecting && (
+            <div className="detect-overlay" role="status">
+              Detecting circuit…
+            </div>
+          )}
+          {detectError && (
+            <div className="detect-error" role="alert">
+              {detectError}
+              <button className="detect-error-dismiss" onClick={() => setDetectError(null)}>
+                ✕
+              </button>
+            </div>
+          )}
           <ReactFlow
             nodes={nodes.map(node => ({
               ...node,

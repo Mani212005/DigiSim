@@ -306,6 +306,7 @@ code {
 
 /* Main Canvas Area */
 .reactflow-wrapper {
+  position: relative; /* anchors the detect overlay/error banner */
   flex-grow: 1;
   height: 100%;
   background-color: var(--background-color);
@@ -515,4 +516,43 @@ code {
     font-size: 0.85rem;
     padding: 0.5rem 0.75rem;
   }
+}
+/* Circuit detection status overlay + error banner */
+.detect-overlay {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  background: rgba(30, 30, 30, 0.85);
+  color: #fff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
+
+.detect-error {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #b3261e;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  max-width: 80%;
+}
+
+.detect-error-dismiss {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
 }

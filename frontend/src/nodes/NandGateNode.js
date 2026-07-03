@@ -1,6 +1,16 @@
+/**
+ * @file NandGateNode.js
+ * @description ReactFlow custom node for a NAND logic gate — renders two inputs and one output handle.
+ */
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
+/**
+ * NAND gate node component for the DigiSim canvas.
+ * @param {{ data: { label: string, value: number } }} props - Node data from ReactFlow
+ * @returns {React.ReactElement} Rendered NAND gate node
+ */
 function NandGateNode({ data }) {
   return (
     <div style={{

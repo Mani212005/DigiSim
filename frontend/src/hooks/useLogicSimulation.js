@@ -1,6 +1,22 @@
+/**
+ * @file useLogicSimulation.js
+ * @description Custom hook that runs full circuit evaluation on every nodes/edges change.
+ * Uses Kahn's algorithm (BFS topological sort) to propagate logic values gate-by-gate.
+ * All gate evaluation logic lives exclusively in evaluateGate — never in node components.
+ */
+
 import { useCallback } from 'react';
 
+/**
+ * Evaluate a single gate's output given its type and input values.
+ * This is the single dispatch point for all gate logic in DigiSim.
+ *
+ * @param {string} type - ReactFlow node type string (e.g. 'andGate', 'norGate')
+ * @param {number[]} inputs - Array of 0/1 input values from connected source nodes
+ * @returns {number} 0 or 1 output value
+ */
 const evaluateGate = (type, inputs) => {
+  if (inputs.length === 0) return 0;
   switch (type) {
     case 'andGate':
       return inputs.every(input => input === 1) ? 1 : 0;
@@ -13,49 +29,72 @@ const evaluateGate = (type, inputs) => {
     case 'norGate':
       return inputs.some(input => input === 1) ? 0 : 1;
     case 'xorGate':
-      return (inputs[0] !== inputs[1]) ? 1 : 0;
+      return inputs[0] !== inputs[1] ? 1 : 0;
     case 'xnorGate':
-      return (inputs[0] === inputs[1]) ? 1 : 0;
+      return inputs[0] === inputs[1] ? 1 : 0;
     default:
       return 0;
   }
 };
 
+/**
+ * Hook that exposes simulateCircuit — call it with current nodes and edges to get
+ * back a new nodes array with updated data.value on every node.
+ *
+ * @returns {{ simulateCircuit: Function }}
+ */
 export const useLogicSimulation = () => {
 
+  /**
+   * Run a full topological evaluation of the circuit using Kahn's algorithm.
+   * Nodes in cycles are skipped and default to value 0.
+   *
+   * @param {object[]} currentNodes - ReactFlow node array (read-only — returns a new array)
+   * @param {object[]} currentEdges - ReactFlow edge array
+   * @returns {object[]} New node array with updated data.value fields
+   */
   const simulateCircuit = useCallback((currentNodes, currentEdges) => {
-    const newNodes = currentNodes.map(node => ({ ...node }));
+    const newNodes = currentNodes.map(node => ({
+      ...node,
+      data: { ...node.data },
+    }));
     const nodeMap = new Map(newNodes.map(node => [node.id, node]));
 
-    // Initialize input nodes (if not already set)
-    newNodes.forEach(node => {
-      if (node.type === 'input' && node.data.value === undefined) {
-        node.data.value = 0; // Default input to 0
+    // Build adjacency list: sourceId → [targetId, ...]
+    const successors = new Map(newNodes.map(n => [n.id, []]));
+    // Build in-degree count per node
+    const inDegree = new Map(newNodes.map(n => [n.id, 0]));
+
+    for (const edge of currentEdges) {
+      if (successors.has(edge.source) && inDegree.has(edge.target)) {
+        successors.get(edge.source).push(edge.target);
+        inDegree.set(edge.target, inDegree.get(edge.target) + 1);
       }
-    });
+    }
 
-    // Simple topological sort (for now, assume no cycles and process in order)
-    const sortedNodes = [...newNodes].sort((a, b) => {
-      // Inputs should come first
-      if (a.type === 'input' && b.type !== 'input') return -1;
-      if (b.type === 'input' && a.type !== 'input') return 1;
+    // Seed queue with all zero-in-degree nodes; input nodes go first
+    const queue = [];
+    for (const node of newNodes) {
+      if (inDegree.get(node.id) === 0) {
+        if (node.type === 'input') {
+          queue.unshift(node.id);
+        } else {
+          queue.push(node.id);
+        }
+      }
+    }
 
-      // For other nodes, try to order based on dependencies (simple heuristic)
-      const aIncomingEdges = currentEdges.filter(edge => edge.target === a.id);
-      const bIncomingEdges = currentEdges.filter(edge => edge.target === b.id);
+    // Kahn's BFS — process each node once its all inputs are resolved
+    while (queue.length > 0) {
+      const id = queue.shift();
+      const node = nodeMap.get(id);
+      if (!node) continue;
 
-      if (aIncomingEdges.some(edge => edge.source === b.id)) return 1;
-      if (bIncomingEdges.some(edge => edge.source === a.id)) return -1;
-
-      return 0;
-    });
-
-    sortedNodes.forEach(node => {
       if (node.type !== 'input') {
-        const incomingEdges = currentEdges.filter(edge => edge.target === node.id);
+        const incomingEdges = currentEdges.filter(edge => edge.target === id);
         const inputs = incomingEdges.map(edge => {
-          const sourceNode = nodeMap.get(edge.source);
-          return sourceNode && sourceNode.data.value !== undefined ? sourceNode.data.value : 0;
+          const src = nodeMap.get(edge.source);
+          return src && src.data.value !== undefined ? src.data.value : 0;
         });
 
         if (node.type === 'output') {
@@ -64,7 +103,18 @@ export const useLogicSimulation = () => {
           node.data.value = evaluateGate(node.type, inputs);
         }
       }
-    });
+
+      // Decrement in-degree of successors; enqueue those that reach 0
+      for (const successorId of (successors.get(id) || [])) {
+        const newDegree = inDegree.get(successorId) - 1;
+        inDegree.set(successorId, newDegree);
+        if (newDegree === 0) {
+          queue.push(successorId);
+        }
+      }
+    }
+
+    // Nodes never dequeued (cycle members) keep their current value (defaults to 0)
     return newNodes;
   }, []);
 

@@ -1,6 +1,16 @@
+/**
+ * @file XnorGateNode.js
+ * @description ReactFlow custom node for an XNOR logic gate — renders two inputs and one output handle.
+ */
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
+/**
+ * XNOR gate node component for the DigiSim canvas.
+ * @param {{ data: { label: string, value: number } }} props - Node data from ReactFlow
+ * @returns {React.ReactElement} Rendered XNOR gate node
+ */
 function XnorGateNode({ data }) {
   return (
     <div style={{

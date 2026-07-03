@@ -1,5 +1,15 @@
+/**
+ * @file SampleImages.js
+ * @description Dropdown selector that lets the user pick a pre-loaded sample circuit image.
+ */
+
 import React from 'react';
 
+/**
+ * Renders a dropdown of sample circuit images and fires onImageSelect with the chosen URL.
+ * @param {{ images: string[], onImageSelect: (url: string) => void }} props
+ * @returns {React.ReactElement} Rendered sample image selector
+ */
 const SampleImages = ({ images, onImageSelect }) => {
   return (
     <div className="sample-images">

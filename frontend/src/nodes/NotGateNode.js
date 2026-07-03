@@ -1,6 +1,16 @@
+/**
+ * @file NotGateNode.js
+ * @description ReactFlow custom node for a NOT logic gate — renders one input and one output handle.
+ */
+
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 
+/**
+ * NOT gate node component for the DigiSim canvas.
+ * @param {{ data: { label: string, value: number } }} props - Node data from ReactFlow
+ * @returns {React.ReactElement} Rendered NOT gate node
+ */
 function NotGateNode({ data }) {
   return (
     <div style={{

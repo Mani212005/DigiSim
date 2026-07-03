@@ -1,0 +1,27 @@
+[project]
+name = "digisim-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "flask-cors>=4.0",
+    "python-dotenv>=1.0",
+    "requests>=2.31",
+    "inference-sdk>=0.9",
+    "gunicorn>=21.0",
+    "ultralytics>=8.0",
+    "opencv-python-headless>=4.9",
+    "networkx>=3.2",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.4",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
