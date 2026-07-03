@@ -1062,3 +1062,50 @@
 .review-confirm:hover {
   box-shadow: 0 0 18px rgba(34, 211, 238, 0.4);
 }
+
+/* ---------- Canvas column (canvas + docked terminal) ---------- */
+
+.canvas-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas-column .reactflow-wrapper {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+/* Navbar terminal toggle (button styled as a stat chip) */
+.terminal-toggle {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.terminal-toggle:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+}
+
+.terminal-toggle--on {
+  color: var(--accent);
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+}
+
+/* On phones the netlist panel floats over the canvas instead of taking a column */
+@media (max-width: 768px) {
+  .netlist-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(85vw, 320px);
+    z-index: 36;
+  }
+}

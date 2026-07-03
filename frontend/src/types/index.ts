@@ -129,6 +129,131 @@ export interface AuthContextValue {
   continueAsGuest: () => Promise<void>;
 }
 
+// ---------------------------------------------------------------------------
+// Circuit analysis (netlist + truth tables)
+// ---------------------------------------------------------------------------
+
+/** One independent circuit = a connected component of the node graph. */
+export interface Circuit {
+  id: string;
+  /** Human label, e.g. "Circuit 1". */
+  name: string;
+  nodeIds: string[];
+  inputIds: string[];
+  outputIds: string[];
+}
+
+/** A single column (input or output) in a truth table. */
+export interface TruthTableColumn {
+  /** Source/output node id. */
+  id: string;
+  label: string;
+}
+
+/** One row: input value assignment → resulting output values. */
+export interface TruthTableRow {
+  inputs: number[];
+  outputs: number[];
+}
+
+/** A fully enumerated truth table for one circuit. */
+export interface TruthTable {
+  inputs: TruthTableColumn[];
+  outputs: TruthTableColumn[];
+  rows: TruthTableRow[];
+  /** True when the input count exceeded the enumeration cap (rows omitted). */
+  truncated: boolean;
+}
+
+/** One line of a netlist: a gate or output and the nets it connects. */
+export interface NetlistComponent {
+  /** Reference designator, e.g. "U1" or "OUT1". */
+  ref: string;
+  /** Uppercased component type, e.g. "ANDGATE". */
+  type: string;
+  /** Net names feeding this component's inputs. */
+  inputs: string[];
+  /** Net name this component drives, or null for sinks (outputs). */
+  output: string | null;
+}
+
+/** The netlist for a single circuit, both structured and rendered. */
+export interface NetlistCircuit {
+  circuitId: string;
+  name: string;
+  /** Input net names (the circuit's primary inputs). */
+  inputs: string[];
+  components: NetlistComponent[];
+  /** Ready-to-copy multi-line text rendering. */
+  text: string;
+}
+
+/** Clean, portable component entry for the JSON view. */
+export interface CircuitGraphComponent {
+  id: string;
+  type: string;
+  label: string;
+  x: number;
+  y: number;
+}
+
+/** Clean, portable connection entry for the JSON view. */
+export interface CircuitGraphConnection {
+  from: string;
+  to: string;
+  fromPort: string | null;
+  toPort: string | null;
+}
+
+/** Clean circuit graph (mirrors the backend components/connections shape). */
+export interface CircuitGraphJSON {
+  components: CircuitGraphComponent[];
+  connections: CircuitGraphConnection[];
+}
+
+/** Both JSON renderings of one circuit for the terminal's Clean/Raw toggle. */
+export interface CircuitGraphExport {
+  clean: CircuitGraphJSON;
+  raw: { nodes: DigiNode[]; edges: DigiEdge[] };
+}
+
+// ---------------------------------------------------------------------------
+// Terminal + netlist panels
+// ---------------------------------------------------------------------------
+
+/** What a terminal tab renders. */
+export type TerminalTabKind = 'truthTable' | 'json' | 'config';
+
+/** Clean vs raw JSON rendering in a JSON tab. */
+export type JsonViewMode = 'clean' | 'raw';
+
+/** One tab in the bottom terminal panel. */
+export interface TerminalTab {
+  id: string;
+  title: string;
+  kind: TerminalTabKind;
+  /** Circuit this tab targets; null for an unconfigured config tab. */
+  circuitId: string | null;
+  /** Auto tabs (2 per circuit) are not closable; user tabs are. */
+  closable: boolean;
+}
+
+/** Props for the bottom terminal panel. */
+export interface TerminalPanelProps {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+  open: boolean;
+  onClose: () => void;
+}
+
+/** Props for the right-hand netlist sidebar. */
+export interface NetlistPanelProps {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+  open: boolean;
+  onToggle: () => void;
+}
+
 /** Login form mode. */
 export type LoginMode = 'login' | 'signup';
 

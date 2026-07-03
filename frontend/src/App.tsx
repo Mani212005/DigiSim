@@ -50,6 +50,8 @@ import { useLogicSimulation } from './hooks/useLogicSimulation';
 import { useAuth } from './hooks/useAuth';
 import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
+import TerminalPanel from './components/TerminalPanel';
+import NetlistPanel from './components/NetlistPanel';
 import type {
   ApiErrorResponse,
   CircuitExportJSON,
@@ -110,6 +112,8 @@ function App(): React.ReactElement {
   const [touchSelectMode, setTouchSelectMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [netlistOpen, setNetlistOpen] = useState(true);
   const isTouch = useIsTouch();
   const { simulateCircuit } = useLogicSimulation();
 
@@ -147,6 +151,18 @@ function App(): React.ReactElement {
       setNodes(simulatedNodes);
     }
   }, [nodes, edges, simulateCircuit, setNodes]);
+
+  // Ctrl/Cmd+J toggles the bottom terminal (like a code editor).
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        setTerminalOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -536,6 +552,13 @@ function App(): React.ReactElement {
           <span className="stat-chip stat-chip--live">
             <span className="pulse-dot" /> {highCount} HIGH
           </span>
+          <button
+            className={`stat-chip terminal-toggle${terminalOpen ? ' terminal-toggle--on' : ''}`}
+            onClick={() => setTerminalOpen((open) => !open)}
+            title="Toggle terminal (Ctrl+J)"
+          >
+            ⌘ Terminal
+          </button>
           {user ? (
             <span className="stat-chip user-chip">
               {user.email}
@@ -673,6 +696,7 @@ function App(): React.ReactElement {
             <button className="danger-button" onClick={clearCanvas}>Clear Canvas</button>
           </div>
         </div>
+        <div className="canvas-column">
         <div
           className="reactflow-wrapper"
           onDrop={onCanvasDrop}
@@ -743,6 +767,19 @@ function App(): React.ReactElement {
             <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="#1e293b" />
           </ReactFlow>
         </div>
+          <TerminalPanel
+            nodes={nodes}
+            edges={edges}
+            open={terminalOpen}
+            onClose={() => setTerminalOpen(false)}
+          />
+        </div>
+        <NetlistPanel
+          nodes={nodes}
+          edges={edges}
+          open={netlistOpen}
+          onToggle={() => setNetlistOpen((netOpen) => !netOpen)}
+        />
       </div>
     </div>
   );
