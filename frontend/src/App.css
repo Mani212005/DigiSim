@@ -108,7 +108,8 @@
 /* ---------- Sidebar palette ---------- */
 
 .sidebar {
-  width: 250px;
+  position: relative;
+  width: var(--sidebar-w, 250px);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -119,7 +120,26 @@
   border-right: 1px solid var(--border);
   overflow-y: auto;
   z-index: 20;
-  transition: transform 0.25s ease, width 0.25s ease, padding 0.25s ease;
+  transition: transform 0.25s ease, padding 0.25s ease;
+}
+
+/* Drag strip between panels and the canvas (desktop resize) */
+.panel-resizer {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: ew-resize;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.panel-resizer:hover {
+  background: rgba(34, 211, 238, 0.3);
+}
+
+@media (max-width: 768px) {
+  .panel-resizer {
+    display: none;
+  }
 }
 
 /* Sidebar header with the desktop collapse control (hidden on mobile) */
@@ -727,7 +747,7 @@
   }
 }
 
-/* ---------- Desktop sidebar collapse (>=769px only) ---------- */
+/* ---------- Desktop sidebar collapse + hover peek (>=769px only) ---------- */
 
 @media (min-width: 769px) {
   .sidebar--collapsed {
@@ -741,13 +761,24 @@
     overflow: hidden;
     pointer-events: none;
   }
+
+  /* Hover peek: the toolbox floats over the canvas instead of reflowing it */
+  .sidebar--peek {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 21;
+    border-right: 1px solid var(--border-bright);
+    box-shadow: 14px 0 36px rgba(0, 0, 0, 0.45);
+  }
 }
 
 /* ---------- Responsive breakpoints: 1024 / 768 / 480 ---------- */
 
 @media (max-width: 1024px) {
   .sidebar {
-    width: clamp(200px, 24vw, 250px);
+    width: min(var(--sidebar-w, 250px), 42vw);
   }
 
   .navbar {
@@ -1139,4 +1170,173 @@
     width: min(85vw, 320px);
     z-index: 36;
   }
+}
+
+/* ---------- Library palette (shared component catalog) ---------- */
+
+.library-search {
+  width: 100%;
+  margin-bottom: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-canvas);
+  color: var(--text);
+  font-size: 0.76rem;
+}
+
+.library-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+  scrollbar-width: thin;
+}
+
+.library-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(30, 41, 59, 0.5);
+  color: var(--text);
+  cursor: grab;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.library-chip:hover {
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+}
+
+.library-chip__name {
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.library-chip__check {
+  color: var(--signal);
+}
+
+.library-chip__meta {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+/* ---------- Hardware node (library component on the canvas) ---------- */
+
+.hw-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.hw-node__thumb {
+  width: 62px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+
+.hw-node__glyph {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.hw-node__name {
+  max-width: 190px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.hw-node__meta {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+/* Pin labels hug the card edges next to their handles */
+.hw-pin-label {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  color: var(--muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hw-pin-label--left {
+  left: 7px;
+  transform: translateY(-50%);
+}
+
+.hw-pin-label--right {
+  right: 7px;
+  transform: translateY(-50%);
+}
+
+.hw-pin-label--top {
+  top: 6px;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+}
+
+.hw-pin-label--bottom {
+  bottom: 6px;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+}
+
+/* Pin handles colored by electrical role */
+.react-flow__handle.hw-pin {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #0b1220;
+  background: var(--accent);
+}
+
+.react-flow__handle.hw-pin--power {
+  background: #f87171;
+}
+
+.react-flow__handle.hw-pin--ground {
+  background: #94a3b8;
+}
+
+.react-flow__handle.hw-pin--analog {
+  background: #fbbf24;
+}
+
+.react-flow__handle.hw-pin--pwm,
+.react-flow__handle.hw-pin--data,
+.react-flow__handle.hw-pin--clock {
+  background: #a78bfa;
+}
+
+.react-flow__handle.hw-pin--nc {
+  background: #334155;
 }

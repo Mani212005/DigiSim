@@ -61,6 +61,12 @@ function jsonRequest<T>(path: string, method: string, body: unknown): Promise<T>
 export function useLibrary(): LibraryApi {
   return useMemo<LibraryApi>(
     () => ({
+      list: async (category?: string) =>
+        (
+          await libraryRequest<{ components: LibraryComponent[] }>(
+            `/library/components${category ? `?category=${encodeURIComponent(category)}` : ''}`
+          )
+        ).components,
       search: async (query: string) =>
         (
           await libraryRequest<{ results: LibrarySearchResult[] }>(

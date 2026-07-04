@@ -16,6 +16,7 @@ import type {
   InventoryItem,
   LibraryComponent,
   LibraryComponentDetail,
+  LibraryPin,
   LibrarySearchResult,
   ProjectFolder,
 } from './api';
@@ -32,6 +33,14 @@ export interface NodeData {
   /** Logic level: 0 (LOW) or 1 (HIGH). Kept as `number` so the simulation and
    *  its tests can build values from plain `number[]` without literal-type friction. */
   value: number;
+  /** Hardware nodes only: pin layout copied from the library pin map. */
+  pins?: LibraryPin[];
+  /** Hardware nodes only: shared-library identity for this part. */
+  libraryComponentId?: number;
+  /** Hardware nodes only: library category (board, sensor, …). */
+  category?: string;
+  /** Hardware nodes only: reference image used as the node thumbnail. */
+  imageId?: number | null;
 }
 
 /** A ReactFlow node carrying DigiSim node data. */
@@ -57,6 +66,11 @@ export interface PaletteEntry {
   glyph: GlyphType;
   name: string;
 }
+
+/** Drag payload carried from a sidebar chip to the canvas drop handler. */
+export type CanvasDropPayload =
+  | { kind: 'palette'; type: string; label: string }
+  | { kind: 'library'; component: LibraryComponent };
 
 /** Merge new fields into a node's data, keyed by node id. */
 export type UpdateNodeData = (id: string, data: Partial<NodeData>) => void;
@@ -92,6 +106,11 @@ export interface InputNodeProps {
 
 /** Props for the output (LED) node. */
 export type OutputNodeProps = Pick<NodeProps<NodeData>, 'data'>;
+
+/** Props for the hardware (library component) node. */
+export interface HardwareNodeProps {
+  data: NodeData;
+}
 
 /** Props for the sidebar sample-image gallery. */
 export interface SampleImagesProps {
@@ -398,6 +417,8 @@ export interface InventoryDraft {
 
 /** Typed client for the /library and /projects/<id>/inventory endpoints. */
 export interface LibraryApi {
+  /** Full catalog (optionally one category) for the placement palette. */
+  list: (category?: string) => Promise<LibraryComponent[]>;
   search: (query: string) => Promise<LibrarySearchResult[]>;
   getComponent: (id: number) => Promise<LibraryComponentDetail>;
   createComponent: (canonicalName: string) => Promise<LibraryComponent>;

@@ -37,6 +37,7 @@ import { useIsTouch } from './hooks/useIsTouch';
 
 import InputNode from './nodes/InputNode';
 import OutputNode from './nodes/OutputNode';
+import HardwareNode from './nodes/HardwareNode';
 import AndGateNode from './nodes/AndGateNode';
 import NotGateNode from './nodes/NotGateNode';
 import OrGateNode from './nodes/OrGateNode';
@@ -48,6 +49,7 @@ import { GateGlyph } from './nodes/GateShell';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
 import { useAuth } from './hooks/useAuth';
+import { useLibrary } from './hooks/useLibrary';
 import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
 import TerminalPanel from './components/TerminalPanel';
@@ -60,11 +62,13 @@ import { useProjects } from './hooks/useProjects';
 import type {
   ActiveProject,
   ApiErrorResponse,
+  CanvasDropPayload,
   CircuitExportJSON,
   DetectGatesResponse,
   DigiEdge,
   DigiNode,
   GateDetection,
+  LibraryComponent,
   NetlistImportPayload,
   NodeData,
   PaletteEntry,
@@ -135,7 +139,11 @@ function App(): React.ReactElement {
   const { user, isGuest, logout } = useAuth();
   const [touchSelectMode, setTouchSelectMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
+  // Desktop toolbox: pinned = stays in layout; peek = hover overlay via ☰.
+  const [sidebarPinned, setSidebarPinned] = useState(true);
+  const [sidebarPeek, setSidebarPeek] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(250);
+  const sidebarPeekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [netlistOpen, setNetlistOpen] = useState(true);
   const [netlistImportOpen, setNetlistImportOpen] = useState(false);
@@ -146,8 +154,29 @@ function App(): React.ReactElement {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSave = useRef(false);
   const projectsApi = useProjects();
+  const libraryApi = useLibrary();
+  const [libraryComponents, setLibraryComponents] = useState<LibraryComponent[]>([]);
+  const [librarySearch, setLibrarySearch] = useState('');
   const isTouch = useIsTouch();
   const { simulateCircuit } = useLogicSimulation();
+
+  // Load the shared component library once for the placement palette.
+  useEffect(() => {
+    libraryApi
+      .list()
+      .then(setLibraryComponents)
+      .catch(() => {} /* palette section just stays empty */);
+  }, [libraryApi]);
+
+  const filteredLibrary = useMemo(() => {
+    const query = librarySearch.trim().toLowerCase();
+    if (!query) return libraryComponents;
+    return libraryComponents.filter((component) =>
+      [component.canonical_name, ...component.aliases].some((name) =>
+        name.toLowerCase().includes(query)
+      )
+    );
+  }, [libraryComponents, librarySearch]);
 
   const updateNodeData = useCallback<UpdateNodeData>((nodeId, newData) => {
     setNodes((nds) =>
@@ -169,6 +198,7 @@ function App(): React.ReactElement {
     nandGate: NandGateNode,
     xnorGate: XnorGateNode,
     norGate: NorGateNode,
+    hardware: HardwareNode,
   }), [updateNodeData]);
 
   useEffect(() => {
@@ -215,6 +245,44 @@ function App(): React.ReactElement {
   );
 
   /**
+   * Place a shared-library hardware component on the canvas with its pin map.
+   * @param component - Library entry to place
+   * @param position - Flow position (defaults to a jittered spot)
+   */
+  const addHardwareNode = useCallback(
+    (component: LibraryComponent, position?: { x: number; y: number }) => {
+      const nodeId = getId();
+      const newNode: DigiNode = {
+        id: nodeId,
+        position:
+          position || { x: 160 + Math.random() * 240, y: 90 + Math.random() * 200 },
+        type: 'hardware',
+        data: {
+          label: component.canonical_name,
+          value: 0,
+          pins: component.pin_map.pins,
+          libraryComponentId: component.id,
+          category: component.category,
+          imageId: null,
+        },
+      };
+      setNodes((nds) => nds.concat(newNode));
+      // Thumbnail: lazily fetch the part's first reference image, if any.
+      if ((component.image_count ?? 0) > 0) {
+        libraryApi
+          .getComponent(component.id)
+          .then((detail) => {
+            if (detail.images.length > 0) {
+              updateNodeData(nodeId, { imageId: detail.images[0].id });
+            }
+          })
+          .catch(() => {});
+      }
+    },
+    [setNodes, libraryApi, updateNodeData]
+  );
+
+  /**
    * Stash the dragged palette chip's node type for the canvas drop handler.
    * @param event - HTML5 drag start event
    * @param type - ReactFlow node type
@@ -222,7 +290,22 @@ function App(): React.ReactElement {
    */
   const onPaletteDragStart = useCallback(
     (event: React.DragEvent, type: string, label: string) => {
-      event.dataTransfer.setData('application/digisim', JSON.stringify({ type, label }));
+      const payload: CanvasDropPayload = { kind: 'palette', type, label };
+      event.dataTransfer.setData('application/digisim', JSON.stringify(payload));
+      event.dataTransfer.effectAllowed = 'move';
+    },
+    []
+  );
+
+  /**
+   * Stash a dragged library component for the canvas drop handler.
+   * @param event - HTML5 drag start event
+   * @param component - Library entry being dragged
+   */
+  const onLibraryDragStart = useCallback(
+    (event: React.DragEvent, component: LibraryComponent) => {
+      const payload: CanvasDropPayload = { kind: 'library', component };
+      event.dataTransfer.setData('application/digisim', JSON.stringify(payload));
       event.dataTransfer.effectAllowed = 'move';
     },
     []
@@ -242,14 +325,18 @@ function App(): React.ReactElement {
       event.preventDefault();
       const raw = event.dataTransfer.getData('application/digisim');
       if (!raw || !rfInstance) return;
-      const { type, label } = JSON.parse(raw) as { type: string; label: string };
+      const payload = JSON.parse(raw) as CanvasDropPayload;
       const position = rfInstance.screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
-      addNode(type, label, position);
+      if (payload.kind === 'library') {
+        addHardwareNode(payload.component, position);
+      } else {
+        addNode(payload.type, payload.label, position);
+      }
     },
-    [rfInstance, addNode]
+    [rfInstance, addNode, addHardwareNode]
   );
 
   /**
@@ -621,6 +708,39 @@ function App(): React.ReactElement {
     );
   }, [selectedNodes, setNodes, setEdges]);
 
+  /** Keep the hover-peeked toolbox open (cancel any scheduled close). */
+  const holdSidebarPeek = useCallback(() => {
+    if (sidebarPeekTimer.current) clearTimeout(sidebarPeekTimer.current);
+    setSidebarPeek(true);
+  }, []);
+
+  /** Schedule the hover-peeked toolbox to close shortly after mouse-out. */
+  const releaseSidebarPeek = useCallback(() => {
+    if (sidebarPeekTimer.current) clearTimeout(sidebarPeekTimer.current);
+    sidebarPeekTimer.current = setTimeout(() => setSidebarPeek(false), 260);
+  }, []);
+
+  /**
+   * Drag the toolbox's right edge to resize it.
+   * @param event - Mouse-down on the resize handle
+   */
+  const startSidebarResize = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      const startX = event.clientX;
+      const startWidth = sidebarWidth;
+      const onMove = (move: MouseEvent): void =>
+        setSidebarWidth(Math.min(430, Math.max(200, startWidth + (move.clientX - startX))));
+      const onUp = (): void => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
+    [sidebarWidth]
+  );
+
   // Long-press on the canvas (touch only) toggles drag-to-select mode.
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -812,30 +932,45 @@ function App(): React.ReactElement {
         >
           {sidebarOpen ? '✕ Close' : '☰ Components'}
         </button>
-        {desktopSidebarCollapsed && (
+        {!sidebarPinned && (
           <button
             className="sidebar-reveal-btn"
             aria-label="Show toolbox"
-            title="Show toolbox"
-            onClick={() => setDesktopSidebarCollapsed(false)}
+            title="Toolbox — hover to peek, click to pin"
+            onMouseEnter={isTouch ? undefined : holdSidebarPeek}
+            onMouseLeave={isTouch ? undefined : releaseSidebarPeek}
+            onClick={() => {
+              setSidebarPinned(true);
+              setSidebarPeek(false);
+            }}
           >
             ☰
           </button>
         )}
         <div
           className={`sidebar${sidebarOpen ? ' sidebar--open' : ''}${
-            desktopSidebarCollapsed ? ' sidebar--collapsed' : ''
-          }`}
+            !sidebarPinned && !sidebarPeek ? ' sidebar--collapsed' : ''
+          }${!sidebarPinned && sidebarPeek ? ' sidebar--peek' : ''}`}
+          style={{ '--sidebar-w': `${sidebarWidth}px` } as React.CSSProperties}
+          onMouseEnter={!sidebarPinned && !isTouch ? holdSidebarPeek : undefined}
+          onMouseLeave={!sidebarPinned && !isTouch ? releaseSidebarPeek : undefined}
         >
           <div className="sidebar-head">
             <span className="sidebar-head__title">Toolbox</span>
             <button
               className="sidebar-collapse-btn"
-              aria-label="Collapse sidebar"
-              title="Collapse"
-              onClick={() => setDesktopSidebarCollapsed(true)}
+              aria-label={sidebarPinned ? 'Close toolbox' : 'Pin toolbox open'}
+              title={sidebarPinned ? 'Close — hover ☰ to peek' : 'Pin open'}
+              onClick={() => {
+                if (sidebarPinned) {
+                  setSidebarPinned(false);
+                } else {
+                  setSidebarPinned(true);
+                  setSidebarPeek(false);
+                }
+              }}
             >
-              «
+              {sidebarPinned ? '☰' : '⊙'}
             </button>
           </div>
           <section className="palette-section">
@@ -885,6 +1020,41 @@ function App(): React.ReactElement {
           </section>
 
           <section className="palette-section">
+            <h3>Library</h3>
+            <input
+              className="library-search"
+              placeholder={`Search ${libraryComponents.length} parts…`}
+              value={librarySearch}
+              aria-label="Search component library"
+              onChange={(e) => setLibrarySearch(e.target.value)}
+            />
+            <div className="library-list">
+              {filteredLibrary.map((component) => (
+                <button
+                  key={component.id}
+                  className="library-chip"
+                  aria-label={`Add ${component.canonical_name}`}
+                  title={`${component.canonical_name} — click or drag onto the canvas`}
+                  draggable
+                  onDragStart={(e) => onLibraryDragStart(e, component)}
+                  onClick={() => addHardwareNode(component)}
+                >
+                  <span className="library-chip__name">
+                    {component.canonical_name}
+                    {component.verified && <span className="library-chip__check"> ✓</span>}
+                  </span>
+                  <span className="library-chip__meta">
+                    {component.category} · {component.pin_map.pins.length} pins
+                  </span>
+                </button>
+              ))}
+              {libraryComponents.length > 0 && filteredLibrary.length === 0 && (
+                <p className="palette-hint">no matching parts</p>
+              )}
+            </div>
+          </section>
+
+          <section className="palette-section">
             <h3>Vision</h3>
             <label htmlFor="image-upload-input" className="upload-button">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
@@ -910,6 +1080,13 @@ function App(): React.ReactElement {
             <button className="danger-button" onClick={clearCanvas}>Clear Canvas</button>
           </div>
         </div>
+        {sidebarPinned && !isTouch && (
+          <div
+            className="panel-resizer"
+            aria-hidden="true"
+            onMouseDown={startSidebarResize}
+          />
+        )}
         <div className="canvas-column">
         <div
           className="reactflow-wrapper"
