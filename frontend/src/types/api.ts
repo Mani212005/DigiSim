@@ -86,3 +86,18 @@ export interface AuthUser {
 export interface AuthResponse {
   user: AuthUser;
 }
+
+/** Project folder metadata as returned by the /projects endpoints. */
+export interface ProjectFolder {
+  id: number;
+  name: string;
+  description: string;
+  /** ISO-8601 UTC timestamps set by the backend. */
+  created_at: string;
+  updated_at: string;
+}
+
+/** Body of GET /projects. */
+export interface ProjectListResponse {
+  projects: ProjectFolder[];
+}

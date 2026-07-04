@@ -1,0 +1,259 @@
+/**
+ * @file ProjectsModal.css
+ * @description Styling for the projects overlay — folder card grid, create form,
+ * inline rename/delete-confirm, and the guest sign-in gate. Reuses the global
+ * review-card shell and circuit-lab tokens.
+ */
+
+.projects-card {
+  width: min(680px, calc(100vw - 2rem));
+  max-height: 84vh;
+}
+
+.projects-card--gate {
+  width: min(420px, calc(100vw - 2rem));
+}
+
+.projects-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.projects-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.projects-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.projects-new-btn {
+  min-height: 36px;
+  padding: 0.35rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-bright);
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.projects-new-btn:hover {
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.3);
+}
+
+.projects-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.projects-close:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+}
+
+/* Create form */
+.projects-create {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.8rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.45);
+}
+
+.projects-create__name,
+.projects-create__desc {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-canvas);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-family: inherit;
+}
+
+.projects-create__desc {
+  resize: vertical;
+  min-height: 52px;
+}
+
+.projects-create__name:focus,
+.projects-create__desc:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.projects-create .review-confirm {
+  align-self: flex-start;
+}
+
+.projects-error {
+  margin: 0 0 0.7rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 10px;
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+  font-size: 0.76rem;
+}
+
+/* Folder cards */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.7rem;
+  overflow-y: auto;
+  padding-bottom: 0.2rem;
+}
+
+.projects-empty {
+  grid-column: 1 / -1;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.project-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.project-card:hover {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.12);
+}
+
+.project-card--active {
+  border-color: var(--accent);
+}
+
+.project-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0.85rem 0.6rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.project-card__name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.project-card__desc {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.project-card__meta {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.project-card__rename {
+  margin: 0.6rem 0.7rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--bg-canvas);
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.project-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  padding: 0 0.5rem 0.5rem;
+}
+
+.project-card__actions button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.project-card__actions button:hover {
+  color: var(--accent);
+  border-color: var(--border-bright);
+}
+
+.project-card__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem 0.7rem;
+  border-top: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.07);
+  font-size: 0.74rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.project-card__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.project-card__confirm-actions button {
+  min-height: 32px;
+  padding: 0.25rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.project-card__confirm-delete {
+  border-color: rgba(248, 113, 113, 0.6) !important;
+  color: #fca5a5 !important;
+}
+
+.project-card__confirm-delete:hover {
+  background: rgba(248, 113, 113, 0.15) !important;
+}

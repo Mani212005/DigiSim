@@ -7,7 +7,13 @@
 
 import type { ChangeEvent } from 'react';
 import type { Edge, Node, NodeProps, Viewport } from 'reactflow';
-import type { AuthUser, CircuitComponent, CircuitExportJSON } from './api';
+import type {
+  AuthUser,
+  CircuitComponent,
+  CircuitExportJSON,
+  CircuitNodeType,
+  ProjectFolder,
+} from './api';
 
 export * from './api';
 
@@ -218,6 +224,71 @@ export interface CircuitGraphExport {
 }
 
 // ---------------------------------------------------------------------------
+// Netlist export / import (canonical JSON netlist format)
+// ---------------------------------------------------------------------------
+
+/** One gate entry in the canonical JSON netlist file. */
+export interface NetlistExportComponent {
+  /** Reference designator, e.g. "U1". */
+  id: string;
+  /** Uppercased gate type token, e.g. "AND_GATE". */
+  type: string;
+  /** Net names feeding the gate's inputs (handle order 'a' then 'b'). */
+  inputs: string[];
+  /** Net name the gate drives. */
+  output: string;
+  /** Optional canvas position — honored on import, omitted on export. */
+  x?: number;
+  y?: number;
+}
+
+/** Canonical JSON netlist: pure connectivity, no visual state. */
+export interface NetlistExportJSON {
+  circuit_name: string;
+  /** Gates only — input/output canvas nodes are implied by `io`. */
+  components: NetlistExportComponent[];
+  /** Every net name used anywhere in the netlist. */
+  nets: string[];
+  /** Nets driven by input nodes / consumed by output nodes. */
+  io: { inputs: string[]; outputs: string[] };
+}
+
+/** Id-agnostic node blueprint produced by parseNetlist (App assigns real ids). */
+export interface NetlistImportNode {
+  /** Local key unique within the parse result, referenced by import edges. */
+  key: string;
+  type: CircuitNodeType;
+  label: string;
+  x: number;
+  y: number;
+}
+
+/** Id-agnostic edge blueprint produced by parseNetlist. */
+export interface NetlistImportEdge {
+  sourceKey: string;
+  targetKey: string;
+  targetHandle: 'a' | 'b' | null;
+}
+
+/** Successfully parsed netlist ready to be placed on the canvas. */
+export interface NetlistImportPayload {
+  circuitName: string;
+  nodes: NetlistImportNode[];
+  edges: NetlistImportEdge[];
+}
+
+/** Result of validating + reconstructing a netlist JSON document. */
+export type NetlistParseResult =
+  | ({ ok: true } & NetlistImportPayload)
+  | { ok: false; errors: string[] };
+
+/** Props for the netlist import dialog (file picker + paste textarea). */
+export interface NetlistImportDialogProps {
+  onImport: (payload: NetlistImportPayload) => void;
+  onCancel: () => void;
+}
+
+// ---------------------------------------------------------------------------
 // Terminal + netlist panels
 // ---------------------------------------------------------------------------
 
@@ -252,6 +323,59 @@ export interface NetlistPanelProps {
   edges: DigiEdge[];
   open: boolean;
   onToggle: () => void;
+  /** Download the whole canvas as a canonical JSON netlist file. */
+  onExport: () => void;
+  /** Open the netlist import dialog. */
+  onImportOpen: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Project folders (persistent workspaces)
+// ---------------------------------------------------------------------------
+
+/** Circuit state persisted per folder — the raw canvas nodes/edges. */
+export interface ProjectState {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+}
+
+/** GET /projects/<id> response: folder metadata plus its saved circuit. */
+export interface ProjectWithState extends ProjectFolder {
+  state: ProjectState;
+}
+
+/** Fields accepted by PUT /projects/<id> (rename and/or autosave). */
+export interface ProjectPatch {
+  name?: string;
+  description?: string;
+  state?: ProjectState;
+}
+
+/** The folder currently open in the editor. */
+export interface ActiveProject {
+  id: number;
+  name: string;
+}
+
+/** Autosave lifecycle shown in the navbar project chip. */
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+/** Typed client for the /projects endpoints (returned by useProjects). */
+export interface ProjectsApi {
+  list: () => Promise<ProjectFolder[]>;
+  create: (name: string, description: string) => Promise<ProjectFolder>;
+  get: (id: number) => Promise<ProjectWithState>;
+  /** keepalive lets the final flush survive page unload. */
+  update: (id: number, patch: ProjectPatch, keepalive?: boolean) => Promise<ProjectFolder>;
+  remove: (id: number) => Promise<void>;
+}
+
+/** Props for the full-screen projects (folder list / create) modal. */
+export interface ProjectsModalProps {
+  /** Folder currently open in the editor, to highlight its card. */
+  activeProjectId: number | null;
+  onOpenProject: (folder: ProjectFolder) => void;
+  onClose: () => void;
 }
 
 /** Login form mode. */

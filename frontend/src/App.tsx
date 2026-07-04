@@ -52,15 +52,23 @@ import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
 import TerminalPanel from './components/TerminalPanel';
 import NetlistPanel from './components/NetlistPanel';
+import NetlistImportDialog from './components/NetlistImportDialog';
+import ProjectsModal from './components/ProjectsModal';
+import { exportNetlist } from './logic/netlistIO';
+import { useProjects } from './hooks/useProjects';
 import type {
+  ActiveProject,
   ApiErrorResponse,
   CircuitExportJSON,
   DetectGatesResponse,
   DigiEdge,
   DigiNode,
   GateDetection,
+  NetlistImportPayload,
   NodeData,
   PaletteEntry,
+  ProjectFolder,
+  SaveStatus,
   UpdateNodeData,
 } from './types';
 
@@ -79,6 +87,21 @@ const initialEdges: DigiEdge[] = [
 
 let id = 5;
 const getId = (): string => `${id++}`;
+
+/**
+ * Ensure future getId() calls never collide with ids restored from a saved project.
+ * @param loaded - Nodes loaded from a folder's saved circuit state
+ */
+const bumpIdCounter = (loaded: DigiNode[]): void => {
+  const maxId = loaded.reduce((max, node) => {
+    const value = Number(node.id);
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+  id = Math.max(id, maxId + 1);
+};
+
+/** Autosave debounce: how long the canvas must be quiet before a save fires. */
+const AUTOSAVE_MS = 1500;
 
 const sampleImages = [
   'fifth_image.jpg',
@@ -114,6 +137,13 @@ function App(): React.ReactElement {
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [netlistOpen, setNetlistOpen] = useState(true);
+  const [netlistImportOpen, setNetlistImportOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [activeProject, setActiveProject] = useState<ActiveProject | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextSave = useRef(false);
+  const projectsApi = useProjects();
   const isTouch = useIsTouch();
   const { simulateCircuit } = useLogicSimulation();
 
@@ -251,6 +281,130 @@ function App(): React.ReactElement {
       setNodes((nds) => nds.concat(newNodes));
       setEdges((eds) => eds.concat(newEdges));
       // Camera photos can be 4k wide — bring the placed circuit into view.
+      setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+    },
+    [setNodes, setEdges, rfInstance]
+  );
+
+  /** Download the whole canvas as a canonical JSON netlist file. */
+  const handleNetlistExport = useCallback(() => {
+    const name =
+      activeProject?.name.replace(/[^\w\- ]+/g, '').trim() || 'digisim-circuit';
+    const doc = exportNetlist(nodes, edges, name);
+    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${name}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [nodes, edges, activeProject]);
+
+  /** Save the open project immediately if an autosave is still pending. */
+  const flushPendingSave = useCallback(async () => {
+    if (!activeProject || saveTimer.current === null) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    await projectsApi
+      .update(activeProject.id, { state: { nodes, edges } })
+      .catch(() => {} /* best-effort — the folder keeps its previous save */);
+  }, [activeProject, nodes, edges, projectsApi]);
+
+  /**
+   * Open a project folder: flush the previous one, then restore its exact
+   * saved circuit state onto the canvas.
+   * @param folder - Folder chosen in the projects modal
+   */
+  const openProject = useCallback(
+    async (folder: ProjectFolder) => {
+      setProjectsOpen(false);
+      await flushPendingSave();
+      try {
+        const full = await projectsApi.get(folder.id);
+        skipNextSave.current = true;
+        setNodes(full.state.nodes ?? []);
+        setEdges(full.state.edges ?? []);
+        bumpIdCounter(full.state.nodes ?? []);
+        setActiveProject({ id: full.id, name: full.name });
+        setSaveStatus('saved');
+        setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        setDetectError(`Failed to open folder: ${message}`);
+      }
+    },
+    [flushPendingSave, projectsApi, setNodes, setEdges, rfInstance]
+  );
+
+  /** Close the open project (canvas stays as-is, autosaving stops). */
+  const closeProject = useCallback(async () => {
+    await flushPendingSave();
+    setActiveProject(null);
+    setSaveStatus('idle');
+  }, [flushPendingSave]);
+
+  // Debounced autosave: persist the canvas AUTOSAVE_MS after the last change
+  // while a project is open (skipping the render caused by loading it).
+  useEffect(() => {
+    if (!activeProject) return undefined;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return undefined;
+    }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      setSaveStatus('saving');
+      projectsApi
+        .update(activeProject.id, { state: { nodes, edges } })
+        .then(() => setSaveStatus('saved'))
+        .catch(() => setSaveStatus('error'));
+    }, AUTOSAVE_MS);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [nodes, edges, activeProject, projectsApi]);
+
+  // Best-effort flush of an unsaved project when the tab closes or reloads.
+  useEffect(() => {
+    const flushOnUnload = (): void => {
+      if (!activeProject || saveTimer.current === null) return;
+      projectsApi
+        .update(activeProject.id, { state: { nodes, edges } }, true)
+        .catch(() => {});
+    };
+    window.addEventListener('beforeunload', flushOnUnload);
+    return () => window.removeEventListener('beforeunload', flushOnUnload);
+  }, [activeProject, nodes, edges, projectsApi]);
+
+  /**
+   * Place a parsed netlist onto the canvas (appended, never replacing) by
+   * remapping its local keys to fresh node ids.
+   * @param payload - Validated netlist blueprints from the import dialog
+   */
+  const importNetlist = useCallback(
+    (payload: NetlistImportPayload) => {
+      setNetlistImportOpen(false);
+      const idByKey = new Map<string, string>();
+      const newNodes: DigiNode[] = payload.nodes.map((blueprint) => {
+        const nodeId = getId();
+        idByKey.set(blueprint.key, nodeId);
+        return {
+          id: nodeId,
+          position: { x: blueprint.x, y: blueprint.y },
+          data: { label: blueprint.label, value: 0 },
+          type: blueprint.type,
+        };
+      });
+      const newEdges: DigiEdge[] = payload.edges.map((e) => ({
+        id: `e${idByKey.get(e.sourceKey)}-${idByKey.get(e.targetKey)}-${e.targetHandle || 'in'}`,
+        source: idByKey.get(e.sourceKey) as string,
+        target: idByKey.get(e.targetKey) as string,
+        sourceHandle: null,
+        targetHandle: e.targetHandle,
+      }));
+      setNodes((nds) => nds.concat(newNodes));
+      setEdges((eds) => eds.concat(newEdges));
       setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
     },
     [setNodes, setEdges, rfInstance]
@@ -552,6 +706,35 @@ function App(): React.ReactElement {
           <span className="stat-chip stat-chip--live">
             <span className="pulse-dot" /> {highCount} HIGH
           </span>
+          {activeProject && (
+            <span className="stat-chip project-chip" title="Open project">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
+              {activeProject.name}
+              <span className={`save-status save-status--${saveStatus}`}>
+                {saveStatus === 'saving'
+                  ? 'Saving…'
+                  : saveStatus === 'saved'
+                    ? 'Saved ✓'
+                    : saveStatus === 'error'
+                      ? 'Save failed'
+                      : ''}
+              </span>
+              <button
+                className="logout-btn"
+                onClick={closeProject}
+                title="Close project (canvas stays, autosave stops)"
+              >
+                ✕
+              </button>
+            </span>
+          )}
+          <button
+            className="stat-chip terminal-toggle"
+            onClick={() => setProjectsOpen(true)}
+            title="Projects — saved circuit folders"
+          >
+            🗀 Projects
+          </button>
           <button
             className={`stat-chip terminal-toggle${terminalOpen ? ' terminal-toggle--on' : ''}`}
             onClick={() => setTerminalOpen((open) => !open)}
@@ -577,6 +760,19 @@ function App(): React.ReactElement {
           onCapture={handleCameraCapture}
           onClose={() => setCameraOpen(false)}
           onFallback={handleCameraFallback}
+        />
+      )}
+      {projectsOpen && (
+        <ProjectsModal
+          activeProjectId={activeProject?.id ?? null}
+          onOpenProject={openProject}
+          onClose={() => setProjectsOpen(false)}
+        />
+      )}
+      {netlistImportOpen && (
+        <NetlistImportDialog
+          onImport={importNetlist}
+          onCancel={() => setNetlistImportOpen(false)}
         />
       )}
       {reviewPayload && (
@@ -779,6 +975,8 @@ function App(): React.ReactElement {
           edges={edges}
           open={netlistOpen}
           onToggle={() => setNetlistOpen((netOpen) => !netOpen)}
+          onExport={handleNetlistExport}
+          onImportOpen={() => setNetlistImportOpen(true)}
         />
       </div>
     </div>

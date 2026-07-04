@@ -18,6 +18,7 @@ from pipeline.circuit_exporter import CircuitExporter
 from pipeline.detector import GateDetector
 from pipeline.graph_builder import GraphBuilder
 from pipeline.wire_extractor import WireExtractor
+from projects import projects_bp
 
 load_dotenv()
 
@@ -29,6 +30,7 @@ CORS(
     origins=os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").split(","),
 )
 app.register_blueprint(auth_bp)
+app.register_blueprint(projects_bp)
 
 _CLIENT = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",
