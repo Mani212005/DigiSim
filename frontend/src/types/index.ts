@@ -12,6 +12,11 @@ import type {
   CircuitComponent,
   CircuitExportJSON,
   CircuitNodeType,
+  EnrollResponse,
+  InventoryItem,
+  LibraryComponent,
+  LibraryComponentDetail,
+  LibrarySearchResult,
   ProjectFolder,
 } from './api';
 
@@ -375,6 +380,48 @@ export interface ProjectsModalProps {
   /** Folder currently open in the editor, to highlight its card. */
   activeProjectId: number | null;
   onOpenProject: (folder: ProjectFolder) => void;
+  onClose: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Component library + project inventory (open-set recognition, R1)
+// ---------------------------------------------------------------------------
+
+/** Fields accepted when creating/updating an inventory row. */
+export interface InventoryDraft {
+  designator?: string;
+  name: string;
+  qty?: number;
+  value?: string;
+  library_component_id?: number | null;
+}
+
+/** Typed client for the /library and /projects/<id>/inventory endpoints. */
+export interface LibraryApi {
+  search: (query: string) => Promise<LibrarySearchResult[]>;
+  getComponent: (id: number) => Promise<LibraryComponentDetail>;
+  createComponent: (canonicalName: string) => Promise<LibraryComponent>;
+  enrollImage: (
+    componentId: number,
+    file: File,
+    consentShared: boolean
+  ) => Promise<EnrollResponse>;
+  /** URL for an enrolled image (cookie-authenticated <img> source). */
+  imageUrl: (imageId: number) => string;
+  listInventory: (folderId: number) => Promise<InventoryItem[]>;
+  addInventory: (folderId: number, items: InventoryDraft[]) => Promise<InventoryItem[]>;
+  updateInventory: (
+    folderId: number,
+    itemId: number,
+    patch: Partial<InventoryDraft>
+  ) => Promise<InventoryItem>;
+  deleteInventory: (folderId: number, itemId: number) => Promise<void>;
+}
+
+/** Props for the project inventory modal. */
+export interface InventoryModalProps {
+  folderId: number;
+  projectName: string;
   onClose: () => void;
 }
 

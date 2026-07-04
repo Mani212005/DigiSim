@@ -1,0 +1,653 @@
+{
+  "_comment": "DigiSim seed component catalog. Entries load into library_components with source='seed', verified=1 on first DB use. Pin roles: power|ground|digital|analog|pwm|data|clock|io|anode|cathode|passive|nc. pin_map.partial=true means the seed omits some pins. Seed entries ship without images — the community library populates those.",
+  "components": [
+    {
+      "canonical_name": "Arduino Uno R3",
+      "aliases": ["arduino uno", "uno", "atmega328p board", "arduino uno rev3"],
+      "category": "board",
+      "package": "dev-board",
+      "sim_model": {"kind": "mcu_stub", "logic_v": 5.0},
+      "pin_map": {"pins": [
+        {"name": "D0/RX", "role": "digital", "side": "right"},
+        {"name": "D1/TX", "role": "digital", "side": "right"},
+        {"name": "D2", "role": "digital", "side": "right"},
+        {"name": "D3", "role": "pwm", "side": "right"},
+        {"name": "D4", "role": "digital", "side": "right"},
+        {"name": "D5", "role": "pwm", "side": "right"},
+        {"name": "D6", "role": "pwm", "side": "right"},
+        {"name": "D7", "role": "digital", "side": "right"},
+        {"name": "D8", "role": "digital", "side": "right"},
+        {"name": "D9", "role": "pwm", "side": "right"},
+        {"name": "D10", "role": "pwm", "side": "right"},
+        {"name": "D11", "role": "pwm", "side": "right"},
+        {"name": "D12", "role": "digital", "side": "right"},
+        {"name": "D13", "role": "digital", "side": "right"},
+        {"name": "GND", "role": "ground", "side": "right"},
+        {"name": "AREF", "role": "analog", "side": "right"},
+        {"name": "A0", "role": "analog", "side": "left"},
+        {"name": "A1", "role": "analog", "side": "left"},
+        {"name": "A2", "role": "analog", "side": "left"},
+        {"name": "A3", "role": "analog", "side": "left"},
+        {"name": "A4/SDA", "role": "data", "side": "left"},
+        {"name": "A5/SCL", "role": "clock", "side": "left"},
+        {"name": "5V", "role": "power", "side": "left"},
+        {"name": "3V3", "role": "power", "side": "left"},
+        {"name": "VIN", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "RESET", "role": "io", "side": "left"},
+        {"name": "IOREF", "role": "power", "side": "left"}
+      ]}
+    },
+    {
+      "canonical_name": "Arduino Nano",
+      "aliases": ["nano", "arduino nano v3", "atmega328 nano"],
+      "category": "board",
+      "package": "dev-board",
+      "sim_model": {"kind": "mcu_stub", "logic_v": 5.0},
+      "pin_map": {"pins": [
+        {"name": "D1/TX", "role": "digital", "side": "left"},
+        {"name": "D0/RX", "role": "digital", "side": "left"},
+        {"name": "RESET", "role": "io", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "D2", "role": "digital", "side": "left"},
+        {"name": "D3", "role": "pwm", "side": "left"},
+        {"name": "D4", "role": "digital", "side": "left"},
+        {"name": "D5", "role": "pwm", "side": "left"},
+        {"name": "D6", "role": "pwm", "side": "left"},
+        {"name": "D7", "role": "digital", "side": "left"},
+        {"name": "D8", "role": "digital", "side": "left"},
+        {"name": "D9", "role": "pwm", "side": "left"},
+        {"name": "D10", "role": "pwm", "side": "left"},
+        {"name": "D11", "role": "pwm", "side": "left"},
+        {"name": "D12", "role": "digital", "side": "left"},
+        {"name": "VIN", "role": "power", "side": "right"},
+        {"name": "GND", "role": "ground", "side": "right"},
+        {"name": "RESET", "role": "io", "side": "right"},
+        {"name": "5V", "role": "power", "side": "right"},
+        {"name": "A7", "role": "analog", "side": "right"},
+        {"name": "A6", "role": "analog", "side": "right"},
+        {"name": "A5/SCL", "role": "clock", "side": "right"},
+        {"name": "A4/SDA", "role": "data", "side": "right"},
+        {"name": "A3", "role": "analog", "side": "right"},
+        {"name": "A2", "role": "analog", "side": "right"},
+        {"name": "A1", "role": "analog", "side": "right"},
+        {"name": "A0", "role": "analog", "side": "right"},
+        {"name": "3V3", "role": "power", "side": "right"},
+        {"name": "D13", "role": "digital", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Arduino Mega 2560",
+      "aliases": ["mega", "arduino mega", "atmega2560 board"],
+      "category": "board",
+      "package": "dev-board",
+      "sim_model": {"kind": "mcu_stub", "logic_v": 5.0},
+      "pin_map": {"partial": true, "pins": [
+        {"name": "5V", "role": "power", "side": "left"},
+        {"name": "3V3", "role": "power", "side": "left"},
+        {"name": "VIN", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "D13", "role": "digital", "side": "right"},
+        {"name": "D2", "role": "digital", "side": "right"},
+        {"name": "SDA20", "role": "data", "side": "right"},
+        {"name": "SCL21", "role": "clock", "side": "right"},
+        {"name": "A0", "role": "analog", "side": "left"}
+      ]}
+    },
+    {
+      "canonical_name": "ESP32 DevKit V1",
+      "aliases": ["esp32", "esp32 devkit", "doit esp32", "esp-wroom-32", "esp32 wroom"],
+      "category": "board",
+      "package": "dev-board",
+      "sim_model": {"kind": "mcu_stub", "logic_v": 3.3},
+      "pin_map": {"pins": [
+        {"name": "EN", "role": "io", "side": "left"},
+        {"name": "VP/GPIO36", "role": "analog", "side": "left"},
+        {"name": "VN/GPIO39", "role": "analog", "side": "left"},
+        {"name": "GPIO34", "role": "analog", "side": "left"},
+        {"name": "GPIO35", "role": "analog", "side": "left"},
+        {"name": "GPIO32", "role": "io", "side": "left"},
+        {"name": "GPIO33", "role": "io", "side": "left"},
+        {"name": "GPIO25", "role": "io", "side": "left"},
+        {"name": "GPIO26", "role": "io", "side": "left"},
+        {"name": "GPIO27", "role": "io", "side": "left"},
+        {"name": "GPIO14", "role": "io", "side": "left"},
+        {"name": "GPIO12", "role": "io", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "GPIO13", "role": "io", "side": "left"},
+        {"name": "VIN", "role": "power", "side": "left"},
+        {"name": "GPIO23", "role": "io", "side": "right"},
+        {"name": "GPIO22/SCL", "role": "clock", "side": "right"},
+        {"name": "GPIO1/TX", "role": "digital", "side": "right"},
+        {"name": "GPIO3/RX", "role": "digital", "side": "right"},
+        {"name": "GPIO21/SDA", "role": "data", "side": "right"},
+        {"name": "GPIO19", "role": "io", "side": "right"},
+        {"name": "GPIO18", "role": "io", "side": "right"},
+        {"name": "GPIO5", "role": "io", "side": "right"},
+        {"name": "GPIO17", "role": "io", "side": "right"},
+        {"name": "GPIO16", "role": "io", "side": "right"},
+        {"name": "GPIO4", "role": "io", "side": "right"},
+        {"name": "GPIO0", "role": "io", "side": "right"},
+        {"name": "GPIO2", "role": "io", "side": "right"},
+        {"name": "GPIO15", "role": "io", "side": "right"},
+        {"name": "3V3", "role": "power", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "ESP32-S3 DevKitC",
+      "aliases": ["esp32-s3", "esp32 s3", "s3 devkit"],
+      "category": "board",
+      "package": "dev-board",
+      "sim_model": {"kind": "mcu_stub", "logic_v": 3.3},
+      "pin_map": {"partial": true, "pins": [
+        {"name": "3V3", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "GPIO4", "role": "io", "side": "left"},
+        {"name": "GPIO5", "role": "io", "side": "left"},
+        {"name": "GPIO8/SDA", "role": "data", "side": "right"},
+        {"name": "GPIO9/SCL", "role": "clock", "side": "right"},
+        {"name": "GPIO48", "role": "io", "side": "right"},
+        {"name": "5V", "role": "power", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "NodeMCU ESP8266",
+      "aliases": ["esp8266", "nodemcu", "esp-12e", "d1 mini"],
+      "category": "board",
+      "package": "dev-board",
+      "sim_model": {"kind": "mcu_stub", "logic_v": 3.3},
+      "pin_map": {"partial": true, "pins": [
+        {"name": "3V3", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "D1/GPIO5", "role": "clock", "side": "left"},
+        {"name": "D2/GPIO4", "role": "data", "side": "left"},
+        {"name": "D4/GPIO2", "role": "io", "side": "right"},
+        {"name": "A0", "role": "analog", "side": "right"},
+        {"name": "VIN", "role": "power", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Raspberry Pi Pico",
+      "aliases": ["pico", "rp2040", "raspberry pico", "pico w"],
+      "category": "board",
+      "package": "dev-board",
+      "sim_model": {"kind": "mcu_stub", "logic_v": 3.3},
+      "pin_map": {"partial": true, "pins": [
+        {"name": "GP0", "role": "io", "side": "left"},
+        {"name": "GP1", "role": "io", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "GP2", "role": "io", "side": "left"},
+        {"name": "GP3", "role": "io", "side": "left"},
+        {"name": "GP4/SDA", "role": "data", "side": "left"},
+        {"name": "GP5/SCL", "role": "clock", "side": "left"},
+        {"name": "GP25/LED", "role": "io", "side": "right"},
+        {"name": "3V3", "role": "power", "side": "right"},
+        {"name": "VSYS", "role": "power", "side": "right"},
+        {"name": "VBUS", "role": "power", "side": "right"},
+        {"name": "GND", "role": "ground", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "MPU6050",
+      "aliases": ["mpu-6050", "gy-521", "6-axis imu", "accelerometer gyroscope module"],
+      "category": "sensor",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"},
+        {"name": "SCL", "role": "clock", "side": "bottom"},
+        {"name": "SDA", "role": "data", "side": "bottom"},
+        {"name": "XDA", "role": "data", "side": "bottom"},
+        {"name": "XCL", "role": "clock", "side": "bottom"},
+        {"name": "AD0", "role": "io", "side": "bottom"},
+        {"name": "INT", "role": "io", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "MPU9250",
+      "aliases": ["mpu-9250", "9-axis imu", "gy-9250"],
+      "category": "sensor",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"},
+        {"name": "SCL", "role": "clock", "side": "bottom"},
+        {"name": "SDA", "role": "data", "side": "bottom"},
+        {"name": "EDA", "role": "data", "side": "bottom"},
+        {"name": "ECL", "role": "clock", "side": "bottom"},
+        {"name": "AD0", "role": "io", "side": "bottom"},
+        {"name": "INT", "role": "io", "side": "bottom"},
+        {"name": "NCS", "role": "io", "side": "bottom"},
+        {"name": "FSYNC", "role": "io", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "HC-SR04 Ultrasonic Sensor",
+      "aliases": ["hc-sr04", "hcsr04", "ultrasonic distance sensor", "sonar module"],
+      "category": "sensor",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "TRIG", "role": "digital", "side": "bottom"},
+        {"name": "ECHO", "role": "digital", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "DHT22 Temperature/Humidity Sensor",
+      "aliases": ["dht22", "am2302", "temperature humidity sensor"],
+      "category": "sensor",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "DATA", "role": "data", "side": "bottom"},
+        {"name": "NC", "role": "nc", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "DHT11 Temperature/Humidity Sensor",
+      "aliases": ["dht11", "temperature sensor module blue"],
+      "category": "sensor",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "DATA", "role": "data", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "BMP280 Pressure Sensor",
+      "aliases": ["bmp280", "bme280", "barometric pressure module"],
+      "category": "sensor",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"},
+        {"name": "SCL", "role": "clock", "side": "bottom"},
+        {"name": "SDA", "role": "data", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "HC-05 Bluetooth Module",
+      "aliases": ["hc-05", "hc05", "bluetooth serial module", "hc-06"],
+      "category": "comms",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "EN", "role": "io", "side": "bottom"},
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"},
+        {"name": "TXD", "role": "digital", "side": "bottom"},
+        {"name": "RXD", "role": "digital", "side": "bottom"},
+        {"name": "STATE", "role": "io", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "SSD1306 OLED Display 128x64",
+      "aliases": ["ssd1306", "oled display", "0.96 oled", "i2c oled"],
+      "category": "display",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "top"},
+        {"name": "GND", "role": "ground", "side": "top"},
+        {"name": "SCL", "role": "clock", "side": "top"},
+        {"name": "SDA", "role": "data", "side": "top"}
+      ]}
+    },
+    {
+      "canonical_name": "16x2 LCD Display",
+      "aliases": ["lcd 1602", "hd44780", "character lcd"],
+      "category": "display",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"partial": true, "pins": [
+        {"name": "VSS", "role": "ground", "side": "top"},
+        {"name": "VDD", "role": "power", "side": "top"},
+        {"name": "V0", "role": "analog", "side": "top"},
+        {"name": "RS", "role": "digital", "side": "top"},
+        {"name": "RW", "role": "digital", "side": "top"},
+        {"name": "E", "role": "digital", "side": "top"},
+        {"name": "D4", "role": "digital", "side": "top"},
+        {"name": "D5", "role": "digital", "side": "top"},
+        {"name": "D6", "role": "digital", "side": "top"},
+        {"name": "D7", "role": "digital", "side": "top"},
+        {"name": "A", "role": "anode", "side": "top"},
+        {"name": "K", "role": "cathode", "side": "top"}
+      ]}
+    },
+    {
+      "canonical_name": "7-Segment Display (1 digit)",
+      "aliases": ["seven segment", "7seg", "led digit display"],
+      "category": "display",
+      "package": "through-hole",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "A", "role": "digital", "side": "top"},
+        {"name": "B", "role": "digital", "side": "top"},
+        {"name": "C", "role": "digital", "side": "top"},
+        {"name": "D", "role": "digital", "side": "top"},
+        {"name": "E", "role": "digital", "side": "bottom"},
+        {"name": "F", "role": "digital", "side": "bottom"},
+        {"name": "G", "role": "digital", "side": "bottom"},
+        {"name": "DP", "role": "digital", "side": "bottom"},
+        {"name": "COM", "role": "ground", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "SG90 Servo",
+      "aliases": ["sg90", "micro servo", "9g servo"],
+      "category": "actuator",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "PWM", "role": "pwm", "side": "left"},
+        {"name": "VCC", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"}
+      ]}
+    },
+    {
+      "canonical_name": "L298N Motor Driver",
+      "aliases": ["l298n", "h-bridge module", "dual motor driver"],
+      "category": "driver",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"partial": true, "pins": [
+        {"name": "12V", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "5V", "role": "power", "side": "left"},
+        {"name": "IN1", "role": "digital", "side": "bottom"},
+        {"name": "IN2", "role": "digital", "side": "bottom"},
+        {"name": "IN3", "role": "digital", "side": "bottom"},
+        {"name": "IN4", "role": "digital", "side": "bottom"},
+        {"name": "OUT1", "role": "io", "side": "right"},
+        {"name": "OUT2", "role": "io", "side": "right"},
+        {"name": "OUT3", "role": "io", "side": "right"},
+        {"name": "OUT4", "role": "io", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "28BYJ-48 Stepper + ULN2003",
+      "aliases": ["28byj-48", "uln2003", "stepper motor module"],
+      "category": "actuator",
+      "package": "module",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "IN1", "role": "digital", "side": "left"},
+        {"name": "IN2", "role": "digital", "side": "left"},
+        {"name": "IN3", "role": "digital", "side": "left"},
+        {"name": "IN4", "role": "digital", "side": "left"},
+        {"name": "VCC", "role": "power", "side": "bottom"},
+        {"name": "GND", "role": "ground", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "1-Channel Relay Module",
+      "aliases": ["relay module", "5v relay", "songle relay"],
+      "category": "driver",
+      "package": "module",
+      "sim_model": {"kind": "switch"},
+      "pin_map": {"pins": [
+        {"name": "VCC", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "IN", "role": "digital", "side": "left"},
+        {"name": "COM", "role": "io", "side": "right"},
+        {"name": "NO", "role": "io", "side": "right"},
+        {"name": "NC", "role": "io", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Resistor",
+      "aliases": ["res", "fixed resistor", "carbon film resistor", "ohm resistor"],
+      "category": "passive",
+      "package": "axial",
+      "sim_model": {"kind": "resistor", "default_ohms": 220},
+      "pin_map": {"pins": [
+        {"name": "1", "role": "passive", "side": "left"},
+        {"name": "2", "role": "passive", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Ceramic Capacitor",
+      "aliases": ["capacitor", "cap", "disc capacitor", "104 capacitor"],
+      "category": "passive",
+      "package": "radial",
+      "sim_model": {"kind": "capacitor", "default_farads": 1e-7},
+      "pin_map": {"pins": [
+        {"name": "1", "role": "passive", "side": "left"},
+        {"name": "2", "role": "passive", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Electrolytic Capacitor",
+      "aliases": ["electrolytic", "polarized capacitor", "elco"],
+      "category": "passive",
+      "package": "radial",
+      "sim_model": {"kind": "capacitor", "default_farads": 1e-5, "polarized": true},
+      "pin_map": {"pins": [
+        {"name": "+", "role": "anode", "side": "left"},
+        {"name": "-", "role": "cathode", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Inductor",
+      "aliases": ["coil", "choke"],
+      "category": "passive",
+      "package": "axial",
+      "sim_model": {"kind": "inductor"},
+      "pin_map": {"pins": [
+        {"name": "1", "role": "passive", "side": "left"},
+        {"name": "2", "role": "passive", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "LED 5mm",
+      "aliases": ["led", "light emitting diode", "5mm led", "3mm led"],
+      "category": "semiconductor",
+      "package": "through-hole",
+      "sim_model": {"kind": "led", "vf": 2.0, "max_ma": 20},
+      "pin_map": {"pins": [
+        {"name": "A", "role": "anode", "side": "left"},
+        {"name": "K", "role": "cathode", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Diode 1N4007",
+      "aliases": ["1n4007", "rectifier diode", "1n4001", "diode"],
+      "category": "semiconductor",
+      "package": "axial",
+      "sim_model": {"kind": "diode", "vf": 0.7},
+      "pin_map": {"pins": [
+        {"name": "A", "role": "anode", "side": "left"},
+        {"name": "K", "role": "cathode", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Zener Diode",
+      "aliases": ["zener", "voltage reference diode"],
+      "category": "semiconductor",
+      "package": "axial",
+      "sim_model": {"kind": "diode", "vf": 0.7, "zener_v": 5.1},
+      "pin_map": {"pins": [
+        {"name": "A", "role": "anode", "side": "left"},
+        {"name": "K", "role": "cathode", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "NPN Transistor 2N2222",
+      "aliases": ["2n2222", "npn transistor", "bc547", "s8050"],
+      "category": "semiconductor",
+      "package": "TO-92",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "E", "role": "io", "side": "bottom"},
+        {"name": "B", "role": "io", "side": "bottom"},
+        {"name": "C", "role": "io", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "PNP Transistor BC557",
+      "aliases": ["bc557", "pnp transistor", "s8550"],
+      "category": "semiconductor",
+      "package": "TO-92",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "E", "role": "io", "side": "bottom"},
+        {"name": "B", "role": "io", "side": "bottom"},
+        {"name": "C", "role": "io", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "MOSFET IRF540N",
+      "aliases": ["irf540", "n-channel mosfet", "irfz44n"],
+      "category": "semiconductor",
+      "package": "TO-220",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "G", "role": "io", "side": "bottom"},
+        {"name": "D", "role": "io", "side": "bottom"},
+        {"name": "S", "role": "io", "side": "bottom"}
+      ]}
+    },
+    {
+      "canonical_name": "NE555 Timer IC",
+      "aliases": ["555", "ne555", "timer ic", "lm555"],
+      "category": "ic",
+      "package": "DIP-8",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": [
+        {"name": "GND", "role": "ground", "side": "left"},
+        {"name": "TRIG", "role": "io", "side": "left"},
+        {"name": "OUT", "role": "digital", "side": "left"},
+        {"name": "RESET", "role": "io", "side": "left"},
+        {"name": "CTRL", "role": "analog", "side": "right"},
+        {"name": "THRES", "role": "io", "side": "right"},
+        {"name": "DISCH", "role": "io", "side": "right"},
+        {"name": "VCC", "role": "power", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "74HC595 Shift Register",
+      "aliases": ["74hc595", "shift register", "595"],
+      "category": "ic",
+      "package": "DIP-16",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"partial": true, "pins": [
+        {"name": "DS", "role": "data", "side": "left"},
+        {"name": "SHCP", "role": "clock", "side": "left"},
+        {"name": "STCP", "role": "clock", "side": "left"},
+        {"name": "Q0-Q7", "role": "digital", "side": "right"},
+        {"name": "VCC", "role": "power", "side": "right"},
+        {"name": "GND", "role": "ground", "side": "left"}
+      ]}
+    },
+    {
+      "canonical_name": "L7805 Voltage Regulator",
+      "aliases": ["7805", "l7805", "5v regulator", "lm7805"],
+      "category": "power",
+      "package": "TO-220",
+      "sim_model": {"kind": "vsource", "volts": 5.0},
+      "pin_map": {"pins": [
+        {"name": "IN", "role": "power", "side": "left"},
+        {"name": "GND", "role": "ground", "side": "bottom"},
+        {"name": "OUT", "role": "power", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Push Button",
+      "aliases": ["tactile switch", "momentary button", "push switch"],
+      "category": "io",
+      "package": "through-hole",
+      "sim_model": {"kind": "button"},
+      "pin_map": {"pins": [
+        {"name": "1A", "role": "passive", "side": "left"},
+        {"name": "1B", "role": "passive", "side": "left"},
+        {"name": "2A", "role": "passive", "side": "right"},
+        {"name": "2B", "role": "passive", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Slide Switch",
+      "aliases": ["spdt switch", "toggle switch"],
+      "category": "io",
+      "package": "through-hole",
+      "sim_model": {"kind": "switch"},
+      "pin_map": {"pins": [
+        {"name": "1", "role": "passive", "side": "left"},
+        {"name": "COM", "role": "passive", "side": "bottom"},
+        {"name": "2", "role": "passive", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Potentiometer 10k",
+      "aliases": ["pot", "potentiometer", "trimpot", "variable resistor"],
+      "category": "passive",
+      "package": "through-hole",
+      "sim_model": {"kind": "potentiometer", "default_ohms": 10000},
+      "pin_map": {"pins": [
+        {"name": "1", "role": "passive", "side": "left"},
+        {"name": "W", "role": "passive", "side": "bottom"},
+        {"name": "2", "role": "passive", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "LDR Photoresistor",
+      "aliases": ["ldr", "photoresistor", "light sensor"],
+      "category": "sensor",
+      "package": "through-hole",
+      "sim_model": {"kind": "resistor", "default_ohms": 10000},
+      "pin_map": {"pins": [
+        {"name": "1", "role": "passive", "side": "left"},
+        {"name": "2", "role": "passive", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Active Buzzer",
+      "aliases": ["buzzer", "piezo buzzer", "beeper"],
+      "category": "actuator",
+      "package": "through-hole",
+      "sim_model": {"kind": "led", "vf": 0.0, "max_ma": 30},
+      "pin_map": {"pins": [
+        {"name": "+", "role": "anode", "side": "left"},
+        {"name": "-", "role": "cathode", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "Breadboard 830 points",
+      "aliases": ["breadboard", "solderless breadboard", "half breadboard 400"],
+      "category": "infrastructure",
+      "package": "board",
+      "sim_model": {"kind": "none"},
+      "pin_map": {"pins": []}
+    },
+    {
+      "canonical_name": "9V Battery + Clip",
+      "aliases": ["9v battery", "battery clip", "pp3 battery"],
+      "category": "power",
+      "package": "battery",
+      "sim_model": {"kind": "vsource", "volts": 9.0},
+      "pin_map": {"pins": [
+        {"name": "+", "role": "power", "side": "left"},
+        {"name": "-", "role": "ground", "side": "right"}
+      ]}
+    },
+    {
+      "canonical_name": "AA Battery Holder 4x",
+      "aliases": ["battery holder", "aa holder", "6v battery pack"],
+      "category": "power",
+      "package": "battery",
+      "sim_model": {"kind": "vsource", "volts": 6.0},
+      "pin_map": {"pins": [
+        {"name": "+", "role": "power", "side": "left"},
+        {"name": "-", "role": "ground", "side": "right"}
+      ]}
+    }
+  ]
+}

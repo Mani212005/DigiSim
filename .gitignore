@@ -49,4 +49,5 @@ node_modules/
 ml/dataset/
 ml/.venv/
 runs/
-backend/data/
+backend/data/*
+!backend/data/seed_components.json

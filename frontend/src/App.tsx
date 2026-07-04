@@ -54,6 +54,7 @@ import TerminalPanel from './components/TerminalPanel';
 import NetlistPanel from './components/NetlistPanel';
 import NetlistImportDialog from './components/NetlistImportDialog';
 import ProjectsModal from './components/ProjectsModal';
+import InventoryModal from './components/InventoryModal';
 import { exportNetlist } from './logic/netlistIO';
 import { useProjects } from './hooks/useProjects';
 import type {
@@ -139,6 +140,7 @@ function App(): React.ReactElement {
   const [netlistOpen, setNetlistOpen] = useState(true);
   const [netlistImportOpen, setNetlistImportOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const [activeProject, setActiveProject] = useState<ActiveProject | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -735,6 +737,15 @@ function App(): React.ReactElement {
           >
             🗀 Projects
           </button>
+          {activeProject && (
+            <button
+              className="stat-chip terminal-toggle"
+              onClick={() => setInventoryOpen(true)}
+              title="Project inventory — parts list and reference photos"
+            >
+              ⛭ Inventory
+            </button>
+          )}
           <button
             className={`stat-chip terminal-toggle${terminalOpen ? ' terminal-toggle--on' : ''}`}
             onClick={() => setTerminalOpen((open) => !open)}
@@ -760,6 +771,13 @@ function App(): React.ReactElement {
           onCapture={handleCameraCapture}
           onClose={() => setCameraOpen(false)}
           onFallback={handleCameraFallback}
+        />
+      )}
+      {inventoryOpen && activeProject && (
+        <InventoryModal
+          folderId={activeProject.id}
+          projectName={activeProject.name}
+          onClose={() => setInventoryOpen(false)}
         />
       )}
       {projectsOpen && (

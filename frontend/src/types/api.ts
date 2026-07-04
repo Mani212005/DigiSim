@@ -101,3 +101,90 @@ export interface ProjectFolder {
 export interface ProjectListResponse {
   projects: ProjectFolder[];
 }
+
+/** Pin role tokens used in library pin maps. */
+export type PinRole =
+  | 'power'
+  | 'ground'
+  | 'digital'
+  | 'analog'
+  | 'pwm'
+  | 'data'
+  | 'clock'
+  | 'io'
+  | 'anode'
+  | 'cathode'
+  | 'passive'
+  | 'nc';
+
+/** One physical pin of a library component. */
+export interface LibraryPin {
+  name: string;
+  role: PinRole;
+  side: 'left' | 'right' | 'top' | 'bottom';
+}
+
+/** Pin layout of a library component; partial=true when the seed omits pins. */
+export interface PinMap {
+  pins: LibraryPin[];
+  partial?: boolean;
+}
+
+/** One entry of the shared component library. */
+export interface LibraryComponent {
+  id: number;
+  canonical_name: string;
+  aliases: string[];
+  category: string;
+  package: string;
+  pin_map: PinMap;
+  sim_model: Record<string, unknown>;
+  source: 'seed' | 'community';
+  verified: boolean;
+  image_count?: number;
+}
+
+/** A search hit from GET /library/search. */
+export interface LibrarySearchResult extends LibraryComponent {
+  score: number;
+}
+
+/** Quality report attached to an enrolled reference image. */
+export interface ImageQuality {
+  width: number;
+  height: number;
+  blur_score: number;
+  brightness: number;
+  warnings: string[];
+}
+
+/** Metadata of one enrolled reference image. */
+export interface ComponentImageMeta {
+  id: number;
+  domain: 'photo' | 'symbol';
+  quality: ImageQuality;
+  consent_shared: boolean;
+  created_at?: string;
+}
+
+/** GET /library/components/<id> response: component plus its images. */
+export interface LibraryComponentDetail extends LibraryComponent {
+  images: ComponentImageMeta[];
+}
+
+/** Body of POST /library/components/<id>/images. */
+export interface EnrollResponse {
+  image: ComponentImageMeta;
+  warnings: string[];
+}
+
+/** One row of a project's parts inventory. */
+export interface InventoryItem {
+  id: number;
+  folder_id: number;
+  designator: string;
+  name_raw: string;
+  qty: number;
+  value: string;
+  library_component_id: number | null;
+}
