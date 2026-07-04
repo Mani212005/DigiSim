@@ -13,15 +13,26 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from inference_sdk import InferenceHTTPClient
 
+from auth import auth_bp, require_auth
+from library import library_bp
 from pipeline.circuit_exporter import CircuitExporter
 from pipeline.detector import GateDetector
 from pipeline.graph_builder import GraphBuilder
 from pipeline.wire_extractor import WireExtractor
+from projects import projects_bp
 
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+# Credentialed CORS so the httpOnly session cookie flows to the frontend origin.
+CORS(
+    app,
+    supports_credentials=True,
+    origins=os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").split(","),
+)
+app.register_blueprint(auth_bp)
+app.register_blueprint(projects_bp)
+app.register_blueprint(library_bp)
 
 _CLIENT = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",
@@ -64,6 +75,7 @@ def health() -> tuple:
 
 
 @app.route("/detect_gates", methods=["POST"])
+@require_auth
 def detect_gates() -> tuple:
     """
     Run gate detection on an uploaded circuit image via Roboflow cloud inference.
@@ -97,6 +109,8 @@ def detect_gates() -> tuple:
 
 
 @app.route("/detect_circuit", methods=["POST"])
+@app.route("/api/detect-circuit", methods=["POST"])
+@require_auth
 def detect_circuit() -> tuple:
     """
     Run the full local pipeline: detection → wire extraction → graph → JSON export.

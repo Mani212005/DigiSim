@@ -1,0 +1,321 @@
+/**
+ * @file InventoryModal.css
+ * @description Styling for the project inventory modal — add-row form with
+ * library search dropdown, parts table, and the reference-image enrollment
+ * strip. Reuses the review-card shell and circuit-lab tokens.
+ */
+
+.inventory-card {
+  width: min(760px, calc(100vw - 2rem));
+  max-height: 86vh;
+}
+
+.inventory-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.inventory-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.inventory-head__project {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Add-row form */
+.inventory-add {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+.inv-input {
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-canvas);
+  color: var(--text);
+  font-size: 0.8rem;
+  min-height: 38px;
+}
+
+.inv-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.inv-input--des {
+  width: 64px;
+}
+
+.inv-input--qty {
+  width: 64px;
+}
+
+.inv-input--value {
+  width: 90px;
+}
+
+.inv-name-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inv-input--name {
+  flex: 1;
+}
+
+.inv-add-btn {
+  min-height: 38px;
+}
+
+/* Library search dropdown */
+.inv-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.inv-search-results button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.inv-search-results button:hover {
+  background: var(--accent-dim);
+}
+
+.inv-hit-name {
+  font-weight: 600;
+}
+
+.inv-hit-verified {
+  color: var(--signal);
+}
+
+.inv-hit-meta {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.inv-bound-badge {
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+
+/* Parts table */
+.inventory-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.inv-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.inv-row--open {
+  border-color: var(--border-bright);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.inv-row__des {
+  width: 46px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.inv-row__name {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.inv-row__qty {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.inv-row__value {
+  min-width: 56px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.inv-row__actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.inv-row__actions button {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.inv-row__actions button:hover {
+  color: var(--accent);
+  border-color: var(--border-bright);
+}
+
+/* Enrollment strip */
+.inv-enroll {
+  margin-top: -0.4rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border-bright);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.inv-enroll__create {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  justify-content: space-between;
+}
+
+.inv-enroll__create p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.inv-enroll__gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.inv-enroll__hint {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.inv-thumb {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.inv-enroll__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.inv-consent {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.inv-consent input {
+  accent-color: var(--accent);
+}
+
+.inv-enroll__report {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.inv-chip {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+.inv-chip--ok {
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--signal);
+}
+
+.inv-chip--warn {
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.08);
+  color: #fbbf24;
+}
+
+@media (max-width: 640px) {
+  .inventory-add {
+    flex-wrap: wrap;
+  }
+
+  .inv-name-wrap {
+    order: -1;
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

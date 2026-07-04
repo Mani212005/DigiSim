@@ -1,0 +1,87 @@
+/**
+ * @file NetlistImportDialog.css
+ * @description Styling for the netlist import modal — file bar, paste textarea,
+ * validation error list, and success summary. Reuses the review-card shell.
+ */
+
+.netlist-import-card {
+  width: min(560px, calc(100vw - 2rem));
+}
+
+.netlist-import-filebar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.netlist-import-filebtn {
+  min-height: 38px;
+  padding: 0.35rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-bright);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.netlist-import-filebtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.netlist-import-filename {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.netlist-import-text {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-canvas);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.netlist-import-text:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.netlist-import-errors {
+  margin: 0.7rem 0 0;
+  padding: 0.6rem 0.8rem 0.6rem 1.6rem;
+  max-height: 130px;
+  overflow-y: auto;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 10px;
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
+.netlist-import-summary {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--signal);
+}
+
+.netlist-import-card .review-actions {
+  margin-top: 1rem;
+}

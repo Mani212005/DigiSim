@@ -1,0 +1,269 @@
+/**
+ * @file TerminalPanel.css
+ * @description Styling for the bottom terminal panel — tab bar, truth-table grid,
+ * JSON view, and config tab. Dark/monospace, reusing the global circuit-lab tokens.
+ */
+
+.terminal-panel {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #060a12;
+  border-top: 1px solid var(--border-bright);
+  font-family: var(--font-mono);
+  color: var(--text);
+  z-index: 15;
+}
+
+.terminal-resize {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.terminal-resize:hover {
+  background: rgba(34, 211, 238, 0.3);
+}
+
+/* Tab bar */
+.terminal-tabbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel-solid);
+  border-bottom: 1px solid var(--border);
+  padding-right: 0.5rem;
+}
+
+.terminal-tabs {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.terminal-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  border-right: 1px solid var(--border);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.terminal-tab:hover {
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.terminal-tab--active {
+  color: var(--accent);
+  background: #060a12;
+  border-bottom-color: var(--accent);
+}
+
+.terminal-tab__close,
+.terminal-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0;
+}
+
+.terminal-tab__close:hover,
+.terminal-close:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+.terminal-close {
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 0.3rem;
+}
+
+.terminal-tab-add {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  padding: 0 0.7rem;
+  cursor: pointer;
+}
+
+.terminal-tab-add:hover {
+  color: var(--accent);
+}
+
+/* Body */
+.terminal-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem 1rem;
+}
+
+.terminal-empty {
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 1rem 0.25rem;
+}
+
+/* Truth table */
+.truth-table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.truth-table th,
+.truth-table td {
+  padding: 0.3rem 0.8rem;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.truth-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-solid);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.truth-table th.tt-out,
+.truth-table td.tt-out {
+  border-left: 2px solid var(--border-bright);
+}
+
+.truth-table th.tt-out {
+  color: var(--accent);
+}
+
+.truth-table td.v1 {
+  color: var(--signal);
+  font-weight: 700;
+}
+
+.truth-table td.v0 {
+  color: var(--muted);
+}
+
+/* JSON view */
+.json-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.json-view__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.json-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.json-toggle__btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.json-toggle__btn--active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.terminal-copy {
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.terminal-copy:hover {
+  border-color: var(--border-bright);
+  color: var(--accent);
+}
+
+.json-pre {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+  white-space: pre;
+}
+
+/* Config tab */
+.terminal-config {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-width: 320px;
+}
+
+.terminal-config h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.terminal-config label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.terminal-config select {
+  background: var(--bg-canvas);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.terminal-config__go {
+  align-self: flex-start;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #04121a;
+  font-weight: 700;
+  font-size: 0.76rem;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+}
+
+.terminal-config__go:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,534 +1,611 @@
-/* General Styles */
-:root {
-  --navbar-height: 64px;
-  --sidebar-width-desktop: 280px;
-  --sidebar-width-tablet: 200px;
-  --sidebar-width-mobile: 100%;
-  --spacing-unit: 1rem; /* Base spacing unit */
+/**
+ * @file App.css
+ * @description Circuit-lab visual system: glass navbar + palette sidebar, dark
+ * schematic canvas, glowing gate/IO nodes, and signal-aware wire styling.
+ * Movement stays buttery: no transitions are ever applied to node transforms —
+ * only shadows, strokes and colors animate.
+ */
 
-  /* Light Mode Colors */
-  --background-color: #F9FAFB;
-  --text-color: #343a40;
-  --primary-color: #6366F1;
-  --secondary-color: #4F46E5;
-  --border-color: #e0e0e0;
-  --shadow-color: rgba(0, 0, 0, 0.05);
-
-  --navbar-bg: #FFFFFF;
-  --navbar-text: var(--text-color);
-
-  --sidebar-bg: #FFFFFF;
-  --sidebar-text: var(--text-color);
-  --sidebar-button-bg: #F0F2F5;
-  --sidebar-button-text: var(--text-color);
-  --sidebar-button-hover-bg: var(--primary-color);
-  --sidebar-button-hover-text: #FFFFFF;
-  --sidebar-hr-border: #e9ecef;
-
-  --node-bg: rgba(255, 255, 255, 0.8);
-  --node-border: rgba(200, 200, 200, 0.5);
-  --node-shadow: rgba(0, 0, 0, 0.1);
-  --node-selected-border: var(--primary-color);
-
-  --node-on-bg: #FFEB3B; /* Light yellow for ON */
-  --node-on-border: #FBC02D; /* Darker yellow border */
-  --node-off-bg: #FFCDD2; /* Light red for OFF */
-  --node-off-border: #EF9A9A; /* Darker red border */
-
-  --handle-bg: #6c757d;
-  --handle-border: #495057;
-  --handle-hover-bg: var(--primary-color);
-  --handle-hover-border: var(--primary-color);
-
-  --edge-color: #6c757d;
-  --edge-selected-color: var(--primary-color);
-
-  --controls-bg: #FFFFFF;
-  --controls-border: #e0e0e0;
-  --controls-shadow: rgba(0, 0, 0, 0.1);
-
-  --minimap-bg: #FFFFFF;
-  --minimap-border: #e0e0e0;
-  --minimap-shadow: rgba(0, 0, 0, 0.1);
-
-  --fab-bg: var(--primary-color);
-  --fab-text: #FFFFFF;
-  --fab-shadow: rgba(99, 102, 241, 0.4);
-}
-
-.dark-mode {
-  /* Dark Mode Colors */
-  --background-color: #1a1a2e;
-  --text-color: #e0e0e0;
-  --primary-color: #8b5cf6; /* A slightly different purple for dark mode */
-  --secondary-color: #7c3aed;
-  --border-color: #33334d;
-  --shadow-color: rgba(0, 0, 0, 0.3);
-
-  --navbar-bg: #161625;
-  --navbar-text: var(--text-color);
-
-  --sidebar-bg: #161625;
-  --sidebar-text: var(--text-color);
-  --sidebar-button-bg: #2a2a4a;
-  --sidebar-button-text: var(--text-color);
-  --sidebar-button-hover-bg: var(--primary-color);
-  --sidebar-button-hover-text: #FFFFFF;
-  --sidebar-hr-border: #33334d;
-
-  --node-bg: rgba(255, 255, 255, 0.8); /* White background for nodes in dark mode */
-  --node-border: rgba(200, 200, 200, 0.5); /* Light gray border for nodes in dark mode */
-  --node-shadow: rgba(0, 0, 0, 0.3);
-  --node-selected-border: var(--primary-color);
-
-  --node-on-bg: #32CD32; /* LimeGreen for ON in dark mode */
-  --node-on-border: #228B22; /* ForestGreen border */
-  --node-off-bg: #DC143C; /* Crimson for OFF in dark mode */
-  --node-off-border: #B22222; /* FireBrick border */
-
-  --handle-bg: #9ca3af;
-  --handle-border: #6b7280;
-  --handle-hover-bg: var(--primary-color);
-  --handle-hover-border: var(--primary-color);
-
-  --edge-color: #9ca3af;
-  --edge-selected-color: var(--primary-color);
-
-  --controls-bg: #161625;
-  --controls-border: #33334d;
-  --controls-shadow: rgba(0, 0, 0, 0.3);
-
-  --minimap-bg: #161625;
-  --minimap-border: #33334d;
-  --minimap-shadow: rgba(0, 0, 0, 0.3);
-
-  --fab-bg: var(--primary-color);
-  --fab-text: #FFFFFF;
-  --fab-shadow: rgba(139, 92, 246, 0.4);
-}
-
-body {
-  margin: 0;
-  font-family: 'Inter', 'Roboto', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--background-color);
-  color: var(--text-color);
-  font-size: 16px; /* Base font size */
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-code {
-  font-family: 'Fira Code', Menlo, Monaco, Consolas, 'Courier New', monospace;
-}
+/* ---------- Layout shell ---------- */
 
 .app-container {
   display: flex;
   flex-direction: column;
-  width: 100vw;
   height: 100vh;
+  background: var(--bg);
   overflow: hidden;
 }
 
-/* Top Navbar */
+.content-wrapper {
+  position: relative; /* anchors the desktop sidebar reveal button */
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Navbar ---------- */
+
 .navbar {
-  height: var(--navbar-height);
-  background-color: var(--navbar-bg);
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  padding: 0 calc(var(--spacing-unit) * 1.5);
-  box-shadow: 0 2px 5px var(--shadow-color);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  justify-content: space-between; /* To push toggle button to the right */
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 1.25rem;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  z-index: 30;
 }
 
 .navbar-brand {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary-color);
   display: flex;
   align-items: center;
+  gap: 0.6rem;
+  color: var(--accent);
 }
 
-.navbar-brand svg {
-  margin-right: 0.5rem;
-  fill: var(--primary-color);
+.brand-name {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
 }
 
-.theme-toggle-button {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--sidebar-button-bg);
-  color: var(--sidebar-button-text);
-  cursor: pointer;
-  font-size: 0.9rem;
+.brand-tag {
+  font-size: 0.72rem;
   font-weight: 500;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 2px 4px var(--shadow-color);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  border-left: 1px solid var(--border);
+  padding-left: 0.6rem;
 }
 
-.theme-toggle-button:hover {
-  background-color: var(--sidebar-button-hover-bg);
-  color: var(--sidebar-button-hover-text);
-  box-shadow: 0 4px 8px var(--fab-shadow);
-  transform: translateY(-1px);
-}
-
-.theme-toggle-button:active {
-  background-color: var(--secondary-color);
-  box-shadow: 0 1px 2px var(--fab-shadow);
-  transform: translateY(0);
-}
-
-/* Content Wrapper */
-.content-wrapper {
+.navbar-status {
   display: flex;
-  flex-grow: 1;
-  margin-top: var(--navbar-height);
-  overflow: hidden;
+  gap: 0.5rem;
 }
 
-/* Sample Images Dropdown */
-.sample-dropdown {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--sidebar-button-bg);
-  color: var(--sidebar-button-text);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  appearance: none; /* Remove default browser styling */
-  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%20viewBox%3D%220%200%20292.4%20292.4%22%3E%3Cpath%20fill%3D%22%236c757d%22%20d%3D%22M287%2C197.9L159.3%2C69.2c-3.7-3.7-9.7-3.7-13.4%2C0L5.3%2C197.9c-3.7%2C3.7-3.7%2C9.7%2C0%2C13.4l13.4%2C13.4c3.7%2C3.7%2C9.7%2C3.7%2C13.4%2C0l110.7-110.7l110.7%2C110.7c3.7%2C3.7%2C9.7%2C3.7%2C13.4%2C0l13.4-13.4C290.7%2C207.6%2C290.7%2C201.6%2C287%2C197.9z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
-  background-repeat: no-repeat;
-  background-position: right 0.7em top 50%, 0 0;
-  background-size: 0.65em auto, 100%;
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.07);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
 }
 
-.sample-dropdown:hover {
-  border-color: var(--primary-color);
+.stat-value {
+  color: var(--text);
+  font-weight: 700;
 }
 
-.sample-dropdown:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+.stat-chip--live {
+  color: var(--signal);
+  border-color: rgba(74, 222, 128, 0.25);
 }
 
-.sample-dropdown option {
-  background-color: var(--sidebar-bg);
-  color: var(--sidebar-text);
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal-glow);
+  animation: pulse 1.6s ease-in-out infinite;
 }
 
-/* Sidebar */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+
+/* ---------- Sidebar palette ---------- */
+
 .sidebar {
-  width: var(--sidebar-width-desktop);
-  background-color: var(--sidebar-bg);
-  padding: calc(var(--spacing-unit) * 1.5);
-  border-right: 1px solid var(--border-color);
+  position: relative;
+  width: var(--sidebar-w, 250px);
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  
-  box-shadow: 2px 0 10px var(--shadow-color);
+  gap: 1.1rem;
+  padding: 1rem 0.9rem;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid var(--border);
   overflow-y: auto;
-  padding-top: calc(var(--spacing-unit) * 1.5);
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  z-index: 20;
+  transition: transform 0.25s ease, padding 0.25s ease;
 }
 
-.sidebar h3 {
-  margin-top: 0;
-  margin-bottom: var(--spacing-unit);
-  color: var(--sidebar-text);
-  font-size: 1.1rem;
+/* Drag strip between panels and the canvas (desktop resize) */
+.panel-resizer {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: ew-resize;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.panel-resizer:hover {
+  background: rgba(34, 211, 238, 0.3);
+}
+
+@media (max-width: 768px) {
+  .panel-resizer {
+    display: none;
+  }
+}
+
+/* Sidebar header with the desktop collapse control (hidden on mobile) */
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -0.3rem;
+}
+
+.sidebar-head__title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(148, 163, 184, 0.07);
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-collapse-btn:hover {
+  color: var(--accent);
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+}
+
+/* Floating button that brings the sidebar back when collapsed (desktop) */
+.sidebar-reveal-btn {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 22;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel-solid);
+  color: var(--accent);
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-reveal-btn:hover {
+  background: #1e293b;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.24);
+}
+
+.palette-section h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: color 0.3s ease;
+  letter-spacing: 0.16em;
+  color: var(--muted);
 }
 
-.sidebar button {
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--sidebar-button-bg);
-  color: var(--sidebar-button-text);
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 2px 4px var(--shadow-color);
-  text-align: left;
-  width: 100%;
-  display: block; /* Ensure block-level behavior */
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
-  flex-shrink: 0; /* Prevent buttons from shrinking */
+.palette-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 
-.sidebar button + button {
-  margin-top: var(--spacing-unit);
-}
-
-.sidebar button:hover {
-  background-color: var(--sidebar-button-hover-bg);
-  color: var(--sidebar-button-hover-text);
-  box-shadow: 0 4px 8px var(--fab-shadow);
-  transform: translateY(-1px);
-}
-
-.sidebar button:active {
-  background-color: var(--secondary-color);
-  box-shadow: 0 1px 2px var(--fab-shadow);
-  transform: translateY(0);
-}
-
-.sidebar hr {
-  border: none;
-  border-top: 1px solid var(--sidebar-hr-border);
-  margin: calc(var(--spacing-unit) * 1.25) 0;
-  transition: border-color 0.3s ease;
-}
-
-.sidebar input[type="file"] {
-  padding: 0.625rem 0;
-  font-size: 0.875rem;
-  color: var(--sidebar-text);
-  width: 100%;
-  transition: color 0.3s ease;
-}
-
-/* Main Canvas Area */
-.reactflow-wrapper {
-  position: relative; /* anchors the detect overlay/error banner */
-  flex-grow: 1;
-  height: 100%;
-  background-color: var(--background-color);
-  transition: background-color 0.3s ease;
-}
-
-/* React Flow Node Overrides */
-.react-flow__node {
-  border-radius: 10px;
-  box-shadow: 0 4px 8px var(--node-shadow);
-  font-weight: 500;
-  background-color: var(--node-bg);
-  border: 1px solid var(--node-border);
-  backdrop-filter: blur(5px);
-  transition: all 0.2s ease-in-out, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.react-flow__node:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px var(--node-shadow);
-}
-
-.react-flow__node.selected {
-  border: 2px solid var(--node-selected-border);
-}
-
-/* Node colors for state */
-.react-flow__node.node-on {
-  background-color: var(--node-on-bg);
-  border-color: var(--node-on-border);
-}
-
-.react-flow__node.node-off {
-  background-color: var(--node-off-bg);
-  border-color: var(--node-off-border);
-}
-
-/* Handle styling */
-.react-flow__handle {
-  background-color: var(--handle-bg);
-  border: 1px solid var(--handle-border);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transition: all 0.2s ease-in-out, background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.react-flow__handle:hover {
-  background-color: var(--handle-hover-bg);
-  border-color: var(--handle-hover-border);
-}
-
-.react-flow__edge-path {
-  stroke-width: 2;
-  stroke: var(--edge-color);
-  transition: stroke 0.3s ease;
-}
-
-.react-flow__edge.selected .react-flow__edge-path {
-  stroke: var(--edge-selected-color);
-}
-
-/* React Flow Controls */
-.react-flow__controls-button {
-  background-color: var(--controls-bg);
-  border: 1px solid var(--controls-border);
-  box-shadow: 0 2px 5px var(--controls-shadow);
-  border-radius: 8px;
-  transition: all 0.2s ease-in-out, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.react-flow__controls-button:hover {
-  background-color: var(--sidebar-button-bg);
-  transform: translateY(-1px);
-}
-
-.react-flow__minimap {
-  background-color: var(--minimap-bg);
-  border: 1px solid var(--minimap-border);
-  box-shadow: 0 2px 5px var(--minimap-shadow);
-  border-radius: 8px;
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-/* Floating Action Button (FAB) */
-.fab-container {
-  position: fixed;
-  bottom: 1.875rem; /* 30px / 16px = 1.875rem */
-  right: 1.875rem;
-  z-index: 999;
-}
-
-.fab-button {
-  width: 3.5rem; /* 56px / 16px = 3.5rem */
-  height: 3.5rem;
-  border-radius: 50%;
-  background-color: var(--fab-bg);
-  color: var(--fab-text);
-  border: none;
+.palette-chip {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  font-size: 1.5rem;
+  gap: 0.3rem;
+  padding: 0.55rem 0.25rem 0.45rem;
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  cursor: grab;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.palette-chip:hover {
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.14);
+}
+
+.palette-chip:active {
+  cursor: grabbing;
+}
+
+.gate-glyph {
+  width: 52px;
+  height: 34px;
+  fill: none;
+  stroke: var(--stroke-idle);
+  stroke-width: 5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.palette-chip:hover .gate-glyph {
+  stroke: var(--accent);
+}
+
+.chip-name {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 34px;
+  font-size: 1.15rem;
+  color: var(--stroke-idle);
+}
+
+.palette-chip:hover .chip-icon {
+  color: var(--accent);
+}
+
+.chip-icon--led::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  box-shadow: inset 0 0 5px currentColor;
+}
+
+.palette-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.66rem;
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+}
+
+.upload-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px dashed var(--border-bright);
+  border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 6px 12px var(--fab-shadow);
-  transition: all 0.2s ease-in-out, background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.fab-button:hover {
-  background-color: var(--secondary-color);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px var(--fab-shadow);
+.upload-button:hover {
+  background: rgba(34, 211, 238, 0.2);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.18);
 }
 
-.fab-button:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 8px var(--fab-shadow);
-}
-
-/* Input file styling for FAB */
 .hidden-file-input {
   display: none;
 }
 
-/* Media Queries for Responsiveness */
-
-/* Tablets and small desktops */
-@media (max-width: 1024px) {
-  :root {
-    --sidebar-width-desktop: 250px;
-  }
-
-  .navbar {
-    padding: 0 calc(var(--spacing-unit) * 1);
-  }
-
-  .sidebar {
-    width: var(--sidebar-width-tablet);
-    padding: var(--spacing-unit);
-    gap: calc(var(--spacing-unit) * 0.75);
-  }
-
-  .sidebar h3 {
-    font-size: 1rem;
-  }
-
-  .sidebar button {
-    font-size: 0.9rem;
-    padding: 0.625rem 0.875rem;
-  }
-
-  .fab-container {
-    bottom: 1.25rem;
-    right: 1.25rem;
-  }
-
-  .fab-button {
-    width: 3rem;
-    height: 3rem;
-    font-size: 1.25rem;
-  }
+.sidebar-footer {
+  margin-top: auto;
 }
 
-/* Mobile devices */
-@media (max-width: 768px) {
-  .content-wrapper {
-    flex-direction: column; /* Stack sidebar and canvas */
-  }
-
-  .sidebar {
-    width: 100%;
-    max-width: 100%;
-    height: auto; /* Allow height to adjust */
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-    box-shadow: 0 2px 10px var(--shadow-color);
-    padding-bottom: calc(var(--spacing-unit) * 1.5);
-  }
-
-  .reactflow-wrapper {
-    height: calc(100vh - var(--navbar-height) - var(--sidebar-height-mobile)); /* Adjust height for mobile */
-  }
-
-  .fab-container {
-    bottom: 1rem;
-    right: 1rem;
-  }
-
-  .fab-button {
-    width: 2.75rem;
-    height: 2.75rem;
-    font-size: 1.1rem;
-  }
+.danger-button {
+  width: 100%;
+  padding: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-/* Small mobile devices */
-@media (max-width: 480px) {
-  .navbar-brand {
-    font-size: 1.2rem;
-  }
-
-  .sidebar h3 {
-    font-size: 0.9rem;
-  }
-
-  .sidebar button {
-    font-size: 0.85rem;
-    padding: 0.5rem 0.75rem;
-  }
+.danger-button:hover {
+  background: rgba(248, 113, 113, 0.18);
 }
-/* Circuit detection status overlay + error banner */
+
+/* ---------- Canvas ---------- */
+
+.reactflow-wrapper {
+  position: relative; /* anchors the detect overlay/error banner */
+  flex-grow: 1;
+  height: 100%;
+  background:
+    radial-gradient(1200px 700px at 70% 20%, rgba(34, 211, 238, 0.05), transparent 60%),
+    var(--bg-canvas);
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+/* ---------- Gate nodes ---------- */
+
+.gate-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 118px;
+  padding: 6px 4px 4px;
+}
+
+.gate-symbol {
+  width: 100px;
+  height: 64px;
+  fill: none;
+  stroke: var(--stroke-idle);
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: stroke 0.18s ease, filter 0.18s ease;
+}
+
+.gate-node__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  transition: color 0.18s ease;
+}
+
+.gate-node--on .gate-symbol {
+  stroke: var(--signal);
+  filter: drop-shadow(0 0 7px var(--signal-glow));
+}
+
+.gate-node--on .gate-node__label {
+  color: var(--signal);
+}
+
+.react-flow__node:hover .gate-symbol {
+  stroke: var(--accent);
+}
+
+.react-flow__node:hover .gate-node--on .gate-symbol {
+  stroke: var(--signal);
+}
+
+.react-flow__node.selected .gate-node,
+.react-flow__node.selected .io-node {
+  outline: 1px solid var(--border-bright);
+  outline-offset: 5px;
+  border-radius: 8px;
+}
+
+/* ---------- IO nodes ---------- */
+
+.io-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 86px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.io-node--on {
+  border-color: rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.18);
+}
+
+.input-node {
+  cursor: pointer;
+}
+
+.io-node__label {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.io-node__state {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.io-node--on .io-node__state {
+  color: var(--signal);
+}
+
+.toggle-track {
+  display: flex;
+  align-items: center;
+  width: 44px;
+  height: 22px;
+  padding: 2px;
+  background: rgba(71, 85, 105, 0.5);
+  border-radius: 999px;
+  transition: background 0.18s ease;
+}
+
+.io-node--on .toggle-track {
+  background: rgba(74, 222, 128, 0.35);
+}
+
+.toggle-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--stroke-idle);
+  color: #0b1120;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.io-node--on .toggle-thumb {
+  transform: translateX(22px);
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal-glow);
+}
+
+.led {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 2px solid rgba(148, 163, 184, 0.4);
+  transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.io-node--on .led {
+  background: var(--signal);
+  border-color: rgba(74, 222, 128, 0.8);
+  box-shadow: 0 0 14px var(--signal-glow), inset 0 0 6px rgba(255, 255, 255, 0.5);
+}
+
+/* ---------- Handles ---------- */
+
+.react-flow__handle {
+  width: 9px;
+  height: 9px;
+  background: var(--panel-solid);
+  border: 2px solid var(--accent);
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.react-flow__handle:hover {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.7);
+}
+
+/* ---------- Edges (wires) ---------- */
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.edge-off .react-flow__edge-path {
+  stroke: #475569;
+}
+
+.edge-on .react-flow__edge-path {
+  stroke: var(--signal);
+  filter: drop-shadow(0 0 4px var(--signal-glow));
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent);
+}
+
+.react-flow__connection-path {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+/* ---------- MiniMap + Controls ---------- */
+
+.react-flow__minimap {
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.react-flow__controls {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.react-flow__controls-button {
+  background: var(--panel-solid);
+  border-bottom: 1px solid var(--border);
+  fill: var(--text);
+}
+
+.react-flow__controls-button:hover {
+  background: #1e293b;
+}
+
+/* ---------- Detection overlay + error banner ---------- */
+
 .detect-overlay {
   position: absolute;
   top: 1rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
-  background: rgba(30, 30, 30, 0.85);
-  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-bright);
+  color: var(--accent);
   padding: 0.5rem 1.25rem;
   border-radius: 999px;
-  font-size: 0.95rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(34, 211, 238, 0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .detect-error {
@@ -540,19 +617,726 @@ code {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #b3261e;
-  color: #fff;
+  background: rgba(127, 29, 29, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #fecaca;
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
   max-width: 80%;
 }
 
 .detect-error-dismiss {
   background: transparent;
   border: none;
-  color: #fff;
+  color: #fecaca;
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
+}
+
+/* ---------- Selection toolbar (#multi-select) ---------- */
+
+.selection-toolbar {
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.45rem;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-bright);
+  border-radius: 999px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+}
+
+.selection-toolbar__count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.selection-toolbar__btn {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.selection-toolbar__btn:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.selection-toolbar__btn--danger {
+  color: var(--danger);
+}
+
+.selection-toolbar__btn--danger:hover {
+  background: rgba(248, 113, 113, 0.14);
+}
+
+.react-flow__selection {
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px dashed var(--border-bright);
+}
+
+.select-mode-chip {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  background: var(--accent-dim);
+  border: 1px solid var(--border-bright);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* ---------- Sidebar drawer toggle (mobile) ---------- */
+
+.sidebar-toggle {
+  display: none;
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 40;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Touch ergonomics: >=44px targets on coarse pointers ---------- */
+
+@media (pointer: coarse) {
+  .palette-chip,
+  .upload-button,
+  .danger-button,
+  .sample-thumb,
+  .selection-toolbar__btn,
+  .react-flow__controls-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .react-flow__handle {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* ---------- Desktop sidebar collapse + hover peek (>=769px only) ---------- */
+
+@media (min-width: 769px) {
+  .sidebar--collapsed {
+    width: 0;
+    min-width: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-right: none;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* Hover peek: the toolbox floats over the canvas instead of reflowing it */
+  .sidebar--peek {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 21;
+    border-right: 1px solid var(--border-bright);
+    box-shadow: 14px 0 36px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* ---------- Responsive breakpoints: 1024 / 768 / 480 ---------- */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: min(var(--sidebar-w, 250px), 42vw);
+  }
+
+  .navbar {
+    padding: 0 clamp(0.5rem, 2vw, 1.25rem);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Sidebar becomes a bottom sheet toggled by .sidebar-toggle */
+  .sidebar-toggle {
+    display: block;
+  }
+
+  /* Desktop collapse controls don't apply to the mobile bottom sheet */
+  .sidebar-head,
+  .sidebar-collapse-btn,
+  .sidebar-reveal-btn {
+    display: none;
+  }
+
+  .sidebar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-height: min(62vh, 480px);
+    z-index: 35;
+    border-right: none;
+    border-top: 1px solid var(--border-bright);
+    border-radius: 18px 18px 0 0;
+    transform: translateY(105%);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.55);
+  }
+
+  .sidebar--open {
+    transform: translateY(0);
+  }
+
+  .content-wrapper {
+    position: relative;
+  }
+
+  .palette-grid {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  }
+
+  .brand-tag,
+  .stat-chip:not(.stat-chip--live) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    height: 48px;
+  }
+
+  .brand-name {
+    font-size: 1rem;
+  }
+
+  .sample-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Neutralise ReactFlow's built-in white chrome on the 'input'/'output' node
+   types — our custom components own the entire visual. */
+.react-flow__node-input,
+.react-flow__node-output {
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  width: auto;
+  font-size: inherit;
+  text-align: inherit;
+  color: inherit;
+  box-shadow: none;
+}
+
+.react-flow__node-input.selectable:hover,
+.react-flow__node-output.selectable:hover,
+.react-flow__node-input.selectable.selected,
+.react-flow__node-output.selectable.selected {
+  box-shadow: none;
+}
+
+/* ---------- Auth splash + user chip ---------- */
+
+.auth-splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--bg);
+}
+
+.user-chip {
+  gap: 0.5rem;
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+}
+
+.logout-btn:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Camera capture modal ---------- */
+
+.camera-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+}
+
+.camera-video {
+  flex: 1;
+  width: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.camera-controls {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1.1rem;
+  background: rgba(7, 11, 20, 0.92);
+  border-top: 1px solid var(--border);
+}
+
+.camera-shutter {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 4px solid var(--accent);
+  background: rgba(34, 211, 238, 0.25);
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.camera-shutter:active {
+  background: var(--accent);
+  transform: scale(0.92);
+}
+
+.camera-cancel {
+  position: absolute;
+  left: 1.25rem;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.camera-hint {
+  position: absolute;
+  right: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.camera-error {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(127, 29, 29, 0.9);
+  color: #fecaca;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+/* ---------- Detection review dialog ---------- */
+
+.review-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 7, 14, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.review-card {
+  width: min(460px, calc(100vw - 2rem));
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.4rem;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.review-card h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.review-sub {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.review-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.review-row--dropped {
+  opacity: 0.45;
+}
+
+.review-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.review-row select {
+  flex: 1;
+  min-height: 36px;
+  background: var(--bg-canvas);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.review-conf {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--signal);
+}
+
+.review-conf--low {
+  color: #fbbf24;
+}
+
+.review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.review-cancel,
+.review-confirm {
+  min-height: 44px;
+  padding: 0.5rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.review-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.review-confirm {
+  background: var(--accent);
+  border: none;
+  color: #04121a;
+}
+
+.review-confirm:hover {
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.4);
+}
+
+.review-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---------- Canvas column (canvas + docked terminal) ---------- */
+
+.canvas-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas-column .reactflow-wrapper {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+/* Navbar terminal toggle (button styled as a stat chip) */
+.terminal-toggle {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.terminal-toggle:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+}
+
+.terminal-toggle--on {
+  color: var(--accent);
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+}
+
+/* ---------- Active project chip + save status ---------- */
+
+.project-chip {
+  gap: 0.4rem;
+  color: var(--text);
+}
+
+.save-status {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.save-status--saved {
+  color: var(--signal);
+}
+
+.save-status--saving {
+  color: var(--accent);
+}
+
+.save-status--error {
+  color: var(--danger);
+}
+
+/* On phones the netlist panel floats over the canvas instead of taking a column */
+@media (max-width: 768px) {
+  .netlist-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(85vw, 320px);
+    z-index: 36;
+  }
+}
+
+/* ---------- Library palette (shared component catalog) ---------- */
+
+.library-search {
+  width: 100%;
+  margin-bottom: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-canvas);
+  color: var(--text);
+  font-size: 0.76rem;
+}
+
+.library-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+  scrollbar-width: thin;
+}
+
+.library-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(30, 41, 59, 0.5);
+  color: var(--text);
+  cursor: grab;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.library-chip:hover {
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+}
+
+.library-chip__name {
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.library-chip__check {
+  color: var(--signal);
+}
+
+.library-chip__meta {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+/* ---------- Hardware node (library component on the canvas) ---------- */
+
+.hw-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.hw-node__thumb {
+  width: 62px;
+  height: 62px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+
+.hw-node__glyph {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.hw-node__name {
+  max-width: 190px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.hw-node__meta {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--muted);
+}
+
+/* Pin labels hug the card edges next to their handles */
+.hw-pin-label {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  color: var(--muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hw-pin-label--left {
+  left: 7px;
+  transform: translateY(-50%);
+}
+
+.hw-pin-label--right {
+  right: 7px;
+  transform: translateY(-50%);
+}
+
+.hw-pin-label--top {
+  top: 6px;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+}
+
+.hw-pin-label--bottom {
+  bottom: 6px;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+}
+
+/* Pin handles colored by electrical role */
+.react-flow__handle.hw-pin {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #0b1220;
+  background: var(--accent);
+}
+
+.react-flow__handle.hw-pin--power {
+  background: #f87171;
+}
+
+.react-flow__handle.hw-pin--ground {
+  background: #94a3b8;
+}
+
+.react-flow__handle.hw-pin--analog {
+  background: #fbbf24;
+}
+
+.react-flow__handle.hw-pin--pwm,
+.react-flow__handle.hw-pin--data,
+.react-flow__handle.hw-pin--clock {
+  background: #a78bfa;
+}
+
+.react-flow__handle.hw-pin--nc {
+  background: #334155;
 }
