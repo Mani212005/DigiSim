@@ -12,6 +12,9 @@ import type {
   CircuitComponent,
   CircuitExportJSON,
   CircuitNodeType,
+  DetectBox,
+  DetectProposal,
+  DetectV2PhotoResponse,
   EnrollResponse,
   InventoryItem,
   LibraryComponent,
@@ -444,6 +447,35 @@ export interface InventoryModalProps {
   folderId: number;
   projectName: string;
   onClose: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Photo recognition review (open-set recognition, R2)
+// ---------------------------------------------------------------------------
+
+/** One confirmed photo detection ready to be placed as a hardware node. */
+export interface PhotoPlacement {
+  componentId: number;
+  /** Photo-pixel box, used to lay nodes out in the photo's arrangement. */
+  box: DetectBox;
+}
+
+/** Editable review state for one photo proposal. */
+export interface PhotoReviewRow {
+  proposal: DetectProposal;
+  keep: boolean;
+  /** Library component chosen in the dropdown (null = unidentified). */
+  componentId: number | null;
+  /** Enroll the crop as a reference image for the chosen component. */
+  teach: boolean;
+}
+
+/** Props for the photo-detection review dialog. */
+export interface PhotoReviewProps {
+  result: DetectV2PhotoResponse;
+  libraryApi: LibraryApi;
+  onConfirm: (placements: PhotoPlacement[]) => void;
+  onCancel: () => void;
 }
 
 /** Login form mode. */

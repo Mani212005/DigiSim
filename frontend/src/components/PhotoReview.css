@@ -1,0 +1,113 @@
+/**
+ * @file PhotoReview.css
+ * @description Styles for the photo-detection review dialog: side-by-side
+ * crop-vs-reference thumbnails, identity dropdown, score/OCR/reason chips, and
+ * the teach-the-library toggle. Reuses the review-card shell from App.css.
+ */
+
+.photo-review-card {
+  max-width: 620px;
+  width: min(620px, 94vw);
+}
+
+.photo-review-list {
+  max-height: min(52vh, 460px);
+}
+
+.photo-review-missing {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #f0a868;
+}
+
+.photo-review-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.photo-review-row > input[type='checkbox'] {
+  margin-top: 22px;
+}
+
+.photo-review-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.photo-review-crop {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.photo-review-crop--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 1.1rem;
+}
+
+.photo-review-vs {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+}
+
+.photo-review-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.photo-review-info select {
+  max-width: 100%;
+}
+
+.photo-review-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.photo-review-ocr {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.photo-review-reason {
+  font-size: 0.68rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(240, 168, 104, 0.14);
+  color: #f0a868;
+  white-space: nowrap;
+}
+
+.photo-review-teach {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.photo-review-teach input {
+  margin: 0;
+}

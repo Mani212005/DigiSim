@@ -20,6 +20,7 @@ from rapidfuzz import fuzz
 from auth import require_auth, require_user
 from pipeline_v2.embedder import cosine_similarity, get_embedder
 from pipeline_v2.enrollment import enroll_image
+from pipeline_v2.matcher import MatchTarget
 
 library_bp = Blueprint("library", __name__)
 
@@ -488,6 +489,124 @@ def get_component_image(image_id: int) -> Response | tuple:
     if not path.is_relative_to(_UPLOADS_DIR.resolve()) or not path.exists():
         return jsonify({"error": "Image not found"}), 404
     return send_file(path, mimetype="image/jpeg", conditional=True)
+
+
+# ---------------------------------------------------------------------------
+# Match-target builders (consumed by the /detect_v2 recognition pipeline)
+# ---------------------------------------------------------------------------
+
+
+def _component_gallery(conn: sqlite3.Connection, component_id: int) -> list[np.ndarray]:
+    """
+    Load a component's active reference-image embeddings.
+
+    Args:
+        conn: Open database connection.
+        component_id: Library component to load.
+    Returns:
+        L2-normalised float32 vectors (possibly empty).
+    """
+    rows = conn.execute(
+        "SELECT embedding FROM component_images"
+        " WHERE library_component_id = ? AND status = 'active'"
+        " AND embedding IS NOT NULL",
+        (component_id,),
+    ).fetchall()
+    return [np.frombuffer(blob, dtype=np.float32) for (blob,) in rows]
+
+
+def load_inventory_targets(folder_id: int, user_id: int) -> list["MatchTarget"]:
+    """
+    Build match targets from a project's inventory, expanded by quantity.
+
+    Args:
+        folder_id: Project folder whose inventory to load.
+        user_id: Owner — folders belonging to other users yield no targets.
+    Returns:
+        One MatchTarget per inventory slot (a qty-3 row yields 3 slots); rows
+        bound to a library component carry its embedding gallery and aliases,
+        unbound rows are OCR-only targets.
+    """
+    from pipeline_v2.matcher import MatchTarget
+
+    conn = _get_db()
+    try:
+        owner = conn.execute(
+            "SELECT 1 FROM folders WHERE id = ? AND user_id = ?",
+            (folder_id, user_id),
+        ).fetchone()
+        if owner is None:
+            return []
+        rows = conn.execute(
+            "SELECT id, designator, name_raw, qty, library_component_id"
+            " FROM project_inventory WHERE folder_id = ? ORDER BY id",
+            (folder_id,),
+        ).fetchall()
+
+        targets: list[MatchTarget] = []
+        for item_id, designator, name_raw, qty, component_id in rows:
+            names = [name_raw]
+            embeddings: list[np.ndarray] = []
+            label = name_raw
+            if component_id is not None:
+                comp = conn.execute(
+                    "SELECT canonical_name, aliases FROM library_components"
+                    " WHERE id = ?",
+                    (component_id,),
+                ).fetchone()
+                if comp is not None:
+                    label = comp[0]
+                    names = [name_raw, comp[0], *json.loads(comp[1])]
+                embeddings = _component_gallery(conn, component_id)
+            display = f"{designator} · {label}" if designator else label
+            for slot in range(max(1, int(qty))):
+                targets.append(
+                    MatchTarget(
+                        target_id=f"inv{item_id}#{slot}",
+                        label=display,
+                        component_id=component_id,
+                        names=names,
+                        embeddings=embeddings,
+                        inventory_item_id=item_id,
+                    )
+                )
+        return targets
+    finally:
+        conn.close()
+
+
+def load_global_targets() -> list["MatchTarget"]:
+    """
+    Build match targets from the whole shared library (one slot per component).
+
+    Used when no project inventory is available (e.g. guests): quantities are
+    unknown, so each component can be matched at most once per image.
+
+    Returns:
+        One MatchTarget per library component.
+    """
+    from pipeline_v2.matcher import MatchTarget
+
+    conn = _get_db()
+    try:
+        rows = conn.execute(
+            "SELECT id, canonical_name, aliases FROM library_components"
+        ).fetchall()
+        targets: list[MatchTarget] = []
+        for component_id, name, aliases in rows:
+            targets.append(
+                MatchTarget(
+                    target_id=f"lib{component_id}",
+                    label=name,
+                    component_id=component_id,
+                    names=[name, *json.loads(aliases)],
+                    embeddings=_component_gallery(conn, component_id),
+                    inventory_item_id=None,
+                )
+            )
+        return targets
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------

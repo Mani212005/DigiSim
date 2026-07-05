@@ -20,6 +20,7 @@ from pipeline.detector import GateDetector
 from pipeline.graph_builder import GraphBuilder
 from pipeline.wire_extractor import WireExtractor
 from projects import projects_bp
+from recognition import recognition_bp
 
 load_dotenv()
 
@@ -33,6 +34,7 @@ CORS(
 app.register_blueprint(auth_bp)
 app.register_blueprint(projects_bp)
 app.register_blueprint(library_bp)
+app.register_blueprint(recognition_bp)
 
 _CLIENT = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",

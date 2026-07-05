@@ -15,6 +15,7 @@ dependencies = [
     "bcrypt>=5.0.0",
     "pyjwt>=2.13.0",
     "rapidfuzz>=3.14.5",
+    "rapidocr-onnxruntime>=1.4.4",
 ]
 
 [dependency-groups]

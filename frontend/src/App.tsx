@@ -52,6 +52,7 @@ import { useAuth } from './hooks/useAuth';
 import { useLibrary } from './hooks/useLibrary';
 import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
+import PhotoReview from './components/PhotoReview';
 import TerminalPanel from './components/TerminalPanel';
 import NetlistPanel from './components/NetlistPanel';
 import NetlistImportDialog from './components/NetlistImportDialog';
@@ -65,13 +66,17 @@ import type {
   CanvasDropPayload,
   CircuitExportJSON,
   DetectGatesResponse,
+  DetectV2PhotoResponse,
+  DetectV2Response,
   DigiEdge,
   DigiNode,
   GateDetection,
   LibraryComponent,
+  LibraryComponentDetail,
   NetlistImportPayload,
   NodeData,
   PaletteEntry,
+  PhotoPlacement,
   ProjectFolder,
   SaveStatus,
   UpdateNodeData,
@@ -135,6 +140,7 @@ function App(): React.ReactElement {
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [reviewPayload, setReviewPayload] = useState<CircuitExportJSON | null>(null);
+  const [photoReview, setPhotoReview] = useState<DetectV2PhotoResponse | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
   const { user, isGuest, logout } = useAuth();
   const [touchSelectMode, setTouchSelectMode] = useState(false);
@@ -375,6 +381,50 @@ function App(): React.ReactElement {
     [setNodes, setEdges, rfInstance]
   );
 
+  /**
+   * Place confirmed photo detections as hardware nodes, laid out in the
+   * photo's arrangement (box top-left corners in source-image pixels).
+   * @param placements - Identified detections confirmed in the review dialog
+   */
+  const placePhotoComponents = useCallback(
+    async (placements: PhotoPlacement[]) => {
+      setPhotoReview(null);
+      // One detail fetch per distinct component (pin map + thumbnail image).
+      const details = new Map<number, LibraryComponentDetail>();
+      await Promise.all(
+        Array.from(new Set(placements.map((p) => p.componentId))).map(async (id) => {
+          try {
+            details.set(id, await libraryApi.getComponent(id));
+          } catch {
+            /* component vanished — its placements are skipped below */
+          }
+        })
+      );
+      const newNodes: DigiNode[] = [];
+      placements.forEach((placement) => {
+        const detail = details.get(placement.componentId);
+        if (!detail) return;
+        newNodes.push({
+          id: getId(),
+          position: { x: placement.box.x1, y: placement.box.y1 },
+          type: 'hardware',
+          data: {
+            label: detail.canonical_name,
+            value: 0,
+            pins: detail.pin_map.pins,
+            libraryComponentId: detail.id,
+            category: detail.category,
+            imageId: detail.images[0]?.id ?? null,
+          },
+        });
+      });
+      setNodes((nds) => nds.concat(newNodes));
+      // Photo coordinates can be 4k wide — bring the placed parts into view.
+      setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+    },
+    [libraryApi, setNodes, rfInstance]
+  );
+
   /** Download the whole canvas as a canonical JSON netlist file. */
   const handleNetlistExport = useCallback(() => {
     const name =
@@ -587,10 +637,12 @@ function App(): React.ReactElement {
   );
 
   /**
-   * Run circuit detection on an image: tries the full local pipeline
-   * (/detect_circuit — gates AND wires) first, falling back to cloud gate
-   * detection while local model weights are unavailable. Low-confidence
-   * results are routed through the review step instead of the canvas.
+   * Run circuit detection on an image. /detect_v2 routes the image first:
+   * physical-build photos go to open-set recognition (proposals + retrieval,
+   * reviewed in PhotoReview before placement); drawn schematics fall through
+   * to the classic pipeline (/detect_circuit — gates AND wires), with cloud
+   * gate detection as a last resort while local weights are unavailable.
+   * Low-confidence results always route through a review step.
    * @param file - Circuit image to analyse
    */
   const runDetection = useCallback(
@@ -598,11 +650,31 @@ function App(): React.ReactElement {
       const formData = new FormData();
       const filename = file instanceof File ? file.name : 'capture.jpg';
       formData.append('image', file, filename);
+      // The open project's inventory constrains photo recognition.
+      if (activeProject) formData.append('folder_id', String(activeProject.id));
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
       setIsDetecting(true);
       setDetectError(null);
       try {
+        try {
+          const v2 = await fetch(`${apiUrl}/detect_v2`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+          if (v2.ok) {
+            const verdict = (await v2.json()) as DetectV2Response;
+            if (verdict.domain === 'photo') {
+              setPhotoReview(verdict);
+              return;
+            }
+            // domain === 'schematic': fall through to the gate pipeline.
+          }
+        } catch {
+          /* recognition service unavailable — the gate pipeline still works */
+        }
+
         const response = await fetch(`${apiUrl}/detect_circuit`, {
           method: 'POST',
           credentials: 'include',
@@ -635,7 +707,7 @@ function App(): React.ReactElement {
         setIsDetecting(false);
       }
     },
-    [importCircuit, detectGatesFallback]
+    [importCircuit, detectGatesFallback, activeProject]
   );
 
   /**
@@ -921,6 +993,14 @@ function App(): React.ReactElement {
             importCircuit(corrected);
           }}
           onCancel={() => setReviewPayload(null)}
+        />
+      )}
+      {photoReview && (
+        <PhotoReview
+          result={photoReview}
+          libraryApi={libraryApi}
+          onConfirm={placePhotoComponents}
+          onCancel={() => setPhotoReview(null)}
         />
       )}
       <div className="content-wrapper">
