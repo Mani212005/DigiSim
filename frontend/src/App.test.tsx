@@ -1,10 +1,10 @@
 /**
  * @file App.test.js
  * @description Smoke tests for the DigiSim root App component — verifies the navbar,
- * palette sidebar controls, and vision section render correctly.
+ * the toolbox menu navigation, palette sections, and vision section render correctly.
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 
 test('renders the DigiSim brand and Circuit Analyzer tag', () => {
@@ -13,14 +13,26 @@ test('renders the DigiSim brand and Circuit Analyzer tag', () => {
   expect(screen.getByText(/circuit analyzer/i)).toBeInTheDocument();
 });
 
-test('renders the I/O and Logic Gates palette sections', () => {
+test('toolbox menu lists the Logic Gates, Library and Vision sections', () => {
   render(<App />);
+  expect(screen.getByRole('button', { name: /logic gates/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /component library/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /vision/i })).toBeInTheDocument();
+});
+
+test('opening Logic Gates shows the I/O and gate sections with a back button', () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
   expect(screen.getByText(/^i\/o$/i)).toBeInTheDocument();
-  expect(screen.getByText(/logic gates/i)).toBeInTheDocument();
+  expect(screen.getByText(/^gates$/i)).toBeInTheDocument();
+  // Back returns to the menu.
+  fireEvent.click(screen.getByRole('button', { name: /back to toolbox menu/i }));
+  expect(screen.getByRole('button', { name: /component library/i })).toBeInTheDocument();
 });
 
 test('renders a palette chip for every gate type', () => {
   render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
   for (const gate of ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR']) {
     expect(
       screen.getByRole('button', { name: new RegExp(`add ${gate} gate`, 'i') })
@@ -30,12 +42,20 @@ test('renders a palette chip for every gate type', () => {
 
 test('renders Input and Output palette chips', () => {
   render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
   expect(screen.getByRole('button', { name: /add input/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /add output/i })).toBeInTheDocument();
 });
 
-test('renders the Image Upload control', () => {
+test('opening Library shows the part search', () => {
   render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /component library/i }));
+  expect(screen.getByLabelText(/search component library/i)).toBeInTheDocument();
+});
+
+test('opening Vision shows the Image Upload control', () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /^vision/i }));
   expect(screen.getByText(/image upload/i)).toBeInTheDocument();
 });
 

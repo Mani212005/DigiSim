@@ -79,6 +79,7 @@ import type {
   PhotoPlacement,
   ProjectFolder,
   SaveStatus,
+  SidebarView,
   UpdateNodeData,
 } from './types';
 
@@ -149,6 +150,7 @@ function App(): React.ReactElement {
   const [sidebarPinned, setSidebarPinned] = useState(true);
   const [sidebarPeek, setSidebarPeek] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(250);
+  const [sidebarView, setSidebarView] = useState<SidebarView>('menu');
   const sidebarPeekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [netlistOpen, setNetlistOpen] = useState(true);
@@ -801,9 +803,20 @@ function App(): React.ReactElement {
       event.preventDefault();
       const startX = event.clientX;
       const startWidth = sidebarWidth;
-      const onMove = (move: MouseEvent): void =>
-        setSidebarWidth(Math.min(430, Math.max(200, startWidth + (move.clientX - startX))));
+      // One width update per animation frame — per-mousemove updates make
+      // ReactFlow's ResizeObserver loop and trip the CRA dev-error overlay.
+      let frame = 0;
+      const onMove = (move: MouseEvent): void => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          setSidebarWidth(
+            Math.min(430, Math.max(200, startWidth + (move.clientX - startX)))
+          );
+        });
+      };
       const onUp = (): void => {
+        if (frame) cancelAnimationFrame(frame);
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
       };
@@ -1053,6 +1066,69 @@ function App(): React.ReactElement {
               {sidebarPinned ? '☰' : '⊙'}
             </button>
           </div>
+
+          {/* Hidden detection inputs stay mounted regardless of the view so
+              the camera fallback and E2E uploads always have a target. */}
+          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageUpload}
+            className="hidden-file-input"
+            id="camera-fallback-input"
+          />
+
+          {sidebarView === 'menu' ? (
+            <nav className="sidebar-menu" aria-label="Toolbox sections">
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('gates')}>
+                <GateGlyph type="and" />
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Logic Gates</span>
+                  <span className="sidebar-menu-btn__sub">inputs, outputs & 7 gate types</span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('library')}>
+                <span className="sidebar-menu-btn__icon" aria-hidden="true">▦</span>
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Component Library</span>
+                  <span className="sidebar-menu-btn__sub">
+                    {libraryComponents.length > 0
+                      ? `${libraryComponents.length} shared parts`
+                      : 'boards, sensors & parts'}
+                  </span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('vision')}>
+                <span className="sidebar-menu-btn__icon" aria-hidden="true">📷</span>
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Vision</span>
+                  <span className="sidebar-menu-btn__sub">detect circuits from photos</span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
+            </nav>
+          ) : (
+            <div className="sidebar-view-head">
+              <button
+                className="sidebar-back-btn"
+                aria-label="Back to toolbox menu"
+                onClick={() => setSidebarView('menu')}
+              >
+                ← Back
+              </button>
+              <span className="sidebar-view-title">
+                {sidebarView === 'gates' && 'Logic Gates'}
+                {sidebarView === 'library' && 'Component Library'}
+                {sidebarView === 'vision' && 'Vision'}
+              </span>
+            </div>
+          )}
+
+          {sidebarView === 'gates' && (
+          <>
           <section className="palette-section">
             <h3>I/O</h3>
             <div className="palette-grid palette-grid--io">
@@ -1080,7 +1156,7 @@ function App(): React.ReactElement {
           </section>
 
           <section className="palette-section">
-            <h3>Logic Gates</h3>
+            <h3>Gates</h3>
             <div className="palette-grid">
               {GATE_PALETTE.map((gate) => (
                 <button
@@ -1098,9 +1174,11 @@ function App(): React.ReactElement {
             </div>
             <p className="palette-hint">click or drag onto the canvas</p>
           </section>
+          </>
+          )}
 
-          <section className="palette-section">
-            <h3>Library</h3>
+          {sidebarView === 'library' && (
+          <section className="palette-section palette-section--fill">
             <input
               className="library-search"
               placeholder={`Search ${libraryComponents.length} parts…`}
@@ -1108,7 +1186,7 @@ function App(): React.ReactElement {
               aria-label="Search component library"
               onChange={(e) => setLibrarySearch(e.target.value)}
             />
-            <div className="library-list">
+            <div className="library-list library-list--full">
               {filteredLibrary.map((component) => (
                 <button
                   key={component.id}
@@ -1132,29 +1210,23 @@ function App(): React.ReactElement {
                 <p className="palette-hint">no matching parts</p>
               )}
             </div>
+            <p className="palette-hint">click or drag onto the canvas</p>
           </section>
+          )}
 
+          {sidebarView === 'vision' && (
           <section className="palette-section">
-            <h3>Vision</h3>
             <label htmlFor="image-upload-input" className="upload-button">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
               Image Upload
             </label>
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
             <button className="upload-button camera-button" onClick={() => setCameraOpen(true)}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
               Camera Capture
             </button>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleImageUpload}
-              className="hidden-file-input"
-              id="camera-fallback-input"
-            />
             <SampleImages images={sampleImages} onImageSelect={handleSampleImageSelect} />
           </section>
+          )}
 
           <div className="sidebar-footer">
             <button className="danger-button" onClick={clearCanvas}>Clear Canvas</button>

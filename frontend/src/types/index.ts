@@ -62,6 +62,9 @@ export type GlyphType =
   | 'xor'
   | 'xnor';
 
+/** Which page the toolbox sidebar is showing (menu = section picker). */
+export type SidebarView = 'menu' | 'gates' | 'library' | 'vision';
+
 /** One entry in the sidebar gate palette. */
 export interface PaletteEntry {
   type: string;

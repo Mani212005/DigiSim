@@ -326,6 +326,112 @@
   margin-top: auto;
 }
 
+/* Toolbox home menu: one button per section, content shows on navigation */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.75rem;
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-menu-btn:hover {
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+}
+
+.sidebar-menu-btn__icon {
+  width: 34px;
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.sidebar-menu-btn svg {
+  flex-shrink: 0;
+}
+
+.sidebar-menu-btn__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sidebar-menu-btn__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.sidebar-menu-btn__sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.sidebar-menu-btn__arrow {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* Section view header: back to the menu + current section title */
+.sidebar-view-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-back-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.07);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar-back-btn:hover {
+  color: var(--accent);
+  border-color: var(--border-bright);
+}
+
+.sidebar-view-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+/* Library view gets the whole sidebar height for its part list */
+.palette-section--fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.library-list.library-list--full {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .danger-button {
   width: 100%;
   padding: 0.55rem;

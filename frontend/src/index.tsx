@@ -12,6 +12,19 @@ import AuthGate from './AuthGate';
 import { AuthProvider } from './hooks/useAuth';
 import reportWebVitals from './reportWebVitals';
 
+// "ResizeObserver loop completed with undelivered notifications." is a benign
+// browser notice (layout kept changing while observers ran — common with
+// resizable panels + ReactFlow), but the CRA dev overlay presents it as a
+// crash. Delivering observer callbacks on the next animation frame makes the
+// synchronous loop impossible, at the cost of a one-frame layout delay.
+window.ResizeObserver = class extends window.ResizeObserver {
+  constructor(callback: ResizeObserverCallback) {
+    super((entries, observer) => {
+      window.requestAnimationFrame(() => callback(entries, observer));
+    });
+  }
+};
+
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
