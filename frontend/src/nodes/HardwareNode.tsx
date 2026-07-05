@@ -65,6 +65,16 @@ const modeValue = (config: PinConfig | undefined): string => {
   return config.mode;
 };
 
+/** Pin roles offered by the community-part pin editor. */
+const EDITOR_ROLES: { value: LibraryPin['role']; label: string }[] = [
+  { value: 'passive', label: 'junction' },
+  { value: 'digital', label: 'GPIO' },
+  { value: 'power', label: 'power (sources V)' },
+  { value: 'ground', label: 'ground' },
+  { value: 'analog', label: 'analog' },
+  { value: 'io', label: 'I/O' },
+];
+
 /**
  * Fractional offset (percent) of pin i among n pins along one side.
  * @param index - Pin index on its side
@@ -125,11 +135,21 @@ function PinPoint({
  *   id/updateNodeData for the pin behavior panel
  * @returns Rendered hardware card with pin handles
  */
-function HardwareNode({ data, id, updateNodeData }: HardwareNodeProps): React.ReactElement {
+function HardwareNode({
+  data,
+  id,
+  updateNodeData,
+  onPinsSaved,
+}: HardwareNodeProps): React.ReactElement {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [newPinName, setNewPinName] = useState('');
+  const [newPinRole, setNewPinRole] = useState<LibraryPin['role']>('passive');
+  const [newPinSide, setNewPinSide] = useState<LibraryPin['side']>('left');
   const pins = data.pins ?? [];
   const configurable = pins.filter((pin) => CONFIGURABLE_ROLES.has(pin.role));
-  const canConfigure = configurable.length > 0 && id !== undefined && !!updateNodeData;
+  const interactive = id !== undefined && !!updateNodeData;
+  const canEditPins = interactive && data.editablePins === true;
+  const canConfigure = interactive && (configurable.length > 0 || canEditPins);
 
   /**
    * Store one pin's chosen behavior on the node.
@@ -141,6 +161,25 @@ function HardwareNode({ data, id, updateNodeData }: HardwareNodeProps): React.Re
     updateNodeData?.(id as string, {
       pinConfig: { ...data.pinConfig, [pinName]: option.config },
     });
+  };
+
+  /**
+   * Apply an edited pin list to the node and share it back to the library.
+   * @param nextPins - Full replacement pin list
+   */
+  const savePins = (nextPins: LibraryPin[]): void => {
+    updateNodeData?.(id as string, { pins: nextPins });
+    if (data.libraryComponentId !== undefined) {
+      onPinsSaved?.(data.libraryComponentId, nextPins);
+    }
+  };
+
+  /** Add the pin from the editor row (ignores empty/duplicate names). */
+  const addPin = (): void => {
+    const name = newPinName.trim();
+    if (!name || pins.some((p) => p.name.toLowerCase() === name.toLowerCase())) return;
+    savePins([...pins, { name, role: newPinRole, side: newPinSide }]);
+    setNewPinName('');
   };
   const bySide = (side: LibraryPin['side']): LibraryPin[] =>
     pins.filter((pin) => pin.side === side);
@@ -194,6 +233,11 @@ function HardwareNode({ data, id, updateNodeData }: HardwareNodeProps): React.Re
         {(data.current ?? 0) > 0.0001 &&
           ` · ${((data.current ?? 0) * 1000).toFixed(1)} mA`}
       </span>
+      {pins.length === 0 && (
+        <span className="hw-node__hint">
+          {canEditPins ? 'no pins yet — add them via ⚙ pins' : 'no pins defined'}
+        </span>
+      )}
 
       {canConfigure && (
         <button
@@ -236,6 +280,64 @@ function HardwareNode({ data, id, updateNodeData }: HardwareNodeProps): React.Re
               </select>
             </label>
           ))}
+
+          {canEditPins && (
+            <>
+              <div className="hw-pin-panel__row hw-pin-panel__row--head">edit pins</div>
+              {pins.map((pin) => (
+                <div key={pin.name} className="hw-pin-panel__row">
+                  <span>
+                    {pin.name} · {pin.role} · {pin.side}
+                  </span>
+                  <button
+                    className="hw-pin-panel__remove"
+                    aria-label={`Remove pin ${pin.name}`}
+                    onClick={() => savePins(pins.filter((p) => p.name !== pin.name))}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <div className="hw-pin-panel__add">
+                <input
+                  value={newPinName}
+                  placeholder="pin name"
+                  aria-label={`New pin name for ${data.label}`}
+                  maxLength={24}
+                  onChange={(e) => setNewPinName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addPin()}
+                />
+                <select
+                  value={newPinRole}
+                  aria-label="New pin role"
+                  onChange={(e) => setNewPinRole(e.target.value as LibraryPin['role'])}
+                >
+                  {EDITOR_ROLES.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={newPinSide}
+                  aria-label="New pin side"
+                  onChange={(e) => setNewPinSide(e.target.value as LibraryPin['side'])}
+                >
+                  <option value="left">left</option>
+                  <option value="right">right</option>
+                  <option value="top">top</option>
+                  <option value="bottom">bottom</option>
+                </select>
+                <button
+                  className="hw-pin-panel__add-btn"
+                  aria-label={`Add pin to ${data.label}`}
+                  onClick={addPin}
+                >
+                  +
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

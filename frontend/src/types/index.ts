@@ -62,6 +62,8 @@ export interface NodeData {
   pinConfig?: Record<string, PinConfig>;
   /** Hardware nodes: GPIO HIGH voltage (3.3 or 5). */
   logicVoltage?: number;
+  /** Hardware nodes: community part — its pin map can be edited and saved. */
+  editablePins?: boolean;
 }
 
 /** Analog solver outputs for one component (subset of NodeData fields). */
@@ -157,6 +159,8 @@ export interface HardwareNodeProps {
   /** Present on interactive hardware nodes (pin config panel). */
   id?: string;
   updateNodeData?: UpdateNodeData;
+  /** Persist an edited pin map to the shared library (community parts). */
+  onPinsSaved?: (componentId: number, pins: LibraryPin[]) => void;
 }
 
 /** Where an analog terminal's handle sits on the node. */
@@ -499,6 +503,8 @@ export interface LibraryApi {
   search: (query: string) => Promise<LibrarySearchResult[]>;
   getComponent: (id: number) => Promise<LibraryComponentDetail>;
   createComponent: (canonicalName: string) => Promise<LibraryComponent>;
+  /** Replace a community component's pin map (canvas pin editor). */
+  updatePins: (componentId: number, pins: LibraryPin[]) => Promise<LibraryComponent>;
   enrollImage: (
     componentId: number,
     file: File,

@@ -79,6 +79,12 @@ export function useLibrary(): LibraryApi {
         jsonRequest<LibraryComponent>('/library/components', 'POST', {
           canonical_name: canonicalName,
         }),
+      updatePins: (componentId, pins) =>
+        jsonRequest<LibraryComponent>(
+          `/library/components/${componentId}/pins`,
+          'PUT',
+          { pins }
+        ),
       enrollImage: (componentId: number, file: File, consentShared: boolean) => {
         const form = new FormData();
         form.append('image', file, file.name);

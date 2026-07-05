@@ -542,6 +542,13 @@
   border-color: var(--border-bright);
 }
 
+/* The minimap is decorative (not pannable/zoomable here) — letting it eat
+   pointer events would block node popovers that open underneath it.
+   !important because the MiniMap component sets pointer-events inline. */
+.react-flow__minimap {
+  pointer-events: none !important;
+}
+
 /* Popover below the card — must NOT resize the card, or every
    percent-positioned pin handle would shift under existing wires. */
 .hw-pin-panel {
@@ -590,6 +597,71 @@
   background: rgba(148, 163, 184, 0.08);
   border: 1px solid var(--border);
   border-radius: 6px;
+}
+
+/* Belt-and-braces with color-scheme: dark — keep option lists readable. */
+.hw-pin-panel select option,
+.photo-review-info select option,
+.analog-node__param select option {
+  background: var(--panel-solid);
+  color: var(--text);
+}
+
+.hw-node__hint {
+  font-size: 0.6rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.hw-pin-panel__remove {
+  padding: 0 5px;
+  font-size: 0.6rem;
+  color: var(--danger);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.hw-pin-panel__add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hw-pin-panel__add input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 5px;
+  font-size: 0.62rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.hw-pin-panel__add select {
+  max-width: 72px;
+  padding: 2px 3px;
+  font-size: 0.6rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.hw-pin-panel__add-btn {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 /* Library view gets the whole sidebar height for its part list */

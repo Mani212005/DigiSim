@@ -6,6 +6,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
+  /* Dark native form controls — without this, <select> dropdown lists render
+     on the OS's white background and the light theme text becomes unreadable. */
+  color-scheme: dark;
   --bg: #070b14;
   --bg-canvas: #0a0f1c;
   --panel: rgba(15, 23, 42, 0.72);

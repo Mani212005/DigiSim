@@ -234,7 +234,15 @@ function App(): React.ReactElement {
     xnorGate: XnorGateNode,
     norGate: NorGateNode,
     hardware: (props: NodeProps<NodeData>) => (
-      <HardwareNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+      <HardwareNode
+        id={props.id}
+        data={props.data}
+        updateNodeData={updateNodeData}
+        onPinsSaved={(componentId, pins) => {
+          // Best-effort share-back: the canvas node already has the pins.
+          libraryApi.updatePins(componentId, pins).catch(() => {});
+        }}
+      />
     ),
     vsource: (props: NodeProps<NodeData>) => (
       <VSourceNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
@@ -250,7 +258,7 @@ function App(): React.ReactElement {
     potentiometer: (props: NodeProps<NodeData>) => (
       <PotentiometerNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
     ),
-  }), [updateNodeData]);
+  }), [updateNodeData, libraryApi]);
 
   // Sim clock: ticks only while some board pin blinks (time-dependent
   // behavior); static circuits re-solve on edits alone.
@@ -342,6 +350,7 @@ function App(): React.ReactElement {
           libraryComponentId: component.id,
           category: component.category,
           imageId: null,
+          editablePins: component.source === 'community',
         },
       };
       setNodes((nds) => nds.concat(newNode));
@@ -487,6 +496,7 @@ function App(): React.ReactElement {
             libraryComponentId: detail.id,
             category: detail.category,
             imageId: detail.images[0]?.id ?? null,
+            editablePins: detail.source === 'community',
           },
         });
       });
