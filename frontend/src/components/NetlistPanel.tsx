@@ -54,9 +54,18 @@ function NetlistPanel({
     event.preventDefault();
     const startX = event.clientX;
     const startWidth = width;
-    const onMove = (move: MouseEvent): void =>
-      setWidth(Math.min(520, Math.max(220, startWidth - (move.clientX - startX))));
+    // One width update per animation frame — per-mousemove updates make
+    // ReactFlow's ResizeObserver loop and trip the CRA dev-error overlay.
+    let frame = 0;
+    const onMove = (move: MouseEvent): void => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setWidth(Math.min(520, Math.max(220, startWidth - (move.clientX - startX))));
+      });
+    };
     const onUp = (): void => {
+      if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };

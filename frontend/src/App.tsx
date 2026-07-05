@@ -15,6 +15,7 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   ConnectionLineType,
+  ConnectionMode,
   ReactFlowProvider,
   SelectionMode,
   addEdge,
@@ -46,12 +47,21 @@ import NandGateNode from './nodes/NandGateNode';
 import XnorGateNode from './nodes/XnorGateNode';
 import NorGateNode from './nodes/NorGateNode';
 import { GateGlyph } from './nodes/GateShell';
+import {
+  AnalogSwitchNode,
+  GroundNode,
+  LedNode,
+  PotentiometerNode,
+  ResistorNode,
+  VSourceNode,
+} from './nodes/AnalogNodes';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
 import { useAuth } from './hooks/useAuth';
 import { useLibrary } from './hooks/useLibrary';
 import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
+import PhotoReview from './components/PhotoReview';
 import TerminalPanel from './components/TerminalPanel';
 import NetlistPanel from './components/NetlistPanel';
 import NetlistImportDialog from './components/NetlistImportDialog';
@@ -65,15 +75,20 @@ import type {
   CanvasDropPayload,
   CircuitExportJSON,
   DetectGatesResponse,
+  DetectV2PhotoResponse,
+  DetectV2Response,
   DigiEdge,
   DigiNode,
   GateDetection,
   LibraryComponent,
+  LibraryComponentDetail,
   NetlistImportPayload,
   NodeData,
   PaletteEntry,
+  PhotoPlacement,
   ProjectFolder,
   SaveStatus,
+  SidebarView,
   UpdateNodeData,
 } from './types';
 
@@ -117,6 +132,24 @@ const sampleImages = [
 ];
 
 /** Sidebar palette definition: gate chips rendered with their schematic glyphs. */
+/** Analog parts palette: chip metadata + fresh-node parameter defaults. */
+const ANALOG_PALETTE: { type: string; label: string; name: string; hint: string }[] = [
+  { type: 'vsource', label: 'Voltage Source', name: 'Source', hint: '5V DC' },
+  { type: 'ground', label: 'Ground', name: 'GND', hint: '0V reference' },
+  { type: 'resistor', label: 'Resistor', name: 'Resistor', hint: '220Ω' },
+  { type: 'led', label: 'LED', name: 'LED', hint: 'glows by current' },
+  { type: 'analogSwitch', label: 'Switch', name: 'Switch', hint: 'click to toggle' },
+  { type: 'potentiometer', label: 'Potentiometer', name: 'Pot', hint: '10kΩ' },
+];
+
+/** Initial data.param/percent/closed values per analog node type. */
+const ANALOG_DEFAULT_DATA: Record<string, Partial<NodeData>> = {
+  vsource: { param: 5 },
+  resistor: { param: 220 },
+  potentiometer: { param: 10000, percent: 50 },
+  analogSwitch: { closed: false },
+};
+
 const GATE_PALETTE: PaletteEntry[] = [
   { type: 'andGate', label: 'AND Gate', glyph: 'and', name: 'AND' },
   { type: 'orGate', label: 'OR Gate', glyph: 'or', name: 'OR' },
@@ -135,6 +168,7 @@ function App(): React.ReactElement {
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [reviewPayload, setReviewPayload] = useState<CircuitExportJSON | null>(null);
+  const [photoReview, setPhotoReview] = useState<DetectV2PhotoResponse | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
   const { user, isGuest, logout } = useAuth();
   const [touchSelectMode, setTouchSelectMode] = useState(false);
@@ -143,6 +177,7 @@ function App(): React.ReactElement {
   const [sidebarPinned, setSidebarPinned] = useState(true);
   const [sidebarPeek, setSidebarPeek] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(250);
+  const [sidebarView, setSidebarView] = useState<SidebarView>('menu');
   const sidebarPeekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [netlistOpen, setNetlistOpen] = useState(true);
@@ -198,21 +233,72 @@ function App(): React.ReactElement {
     nandGate: NandGateNode,
     xnorGate: XnorGateNode,
     norGate: NorGateNode,
-    hardware: HardwareNode,
-  }), [updateNodeData]);
+    hardware: (props: NodeProps<NodeData>) => (
+      <HardwareNode
+        id={props.id}
+        data={props.data}
+        updateNodeData={updateNodeData}
+        onPinsSaved={(componentId, pins) => {
+          // Best-effort share-back: the canvas node already has the pins.
+          libraryApi.updatePins(componentId, pins).catch(() => {});
+        }}
+      />
+    ),
+    vsource: (props: NodeProps<NodeData>) => (
+      <VSourceNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    ground: GroundNode,
+    resistor: (props: NodeProps<NodeData>) => (
+      <ResistorNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    led: LedNode,
+    analogSwitch: (props: NodeProps<NodeData>) => (
+      <AnalogSwitchNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    potentiometer: (props: NodeProps<NodeData>) => (
+      <PotentiometerNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+  }), [updateNodeData, libraryApi]);
+
+  // Sim clock: ticks only while some board pin blinks (time-dependent
+  // behavior); static circuits re-solve on edits alone.
+  const needsClock = useMemo(
+    () =>
+      nodes.some(
+        (n) =>
+          n.type === 'hardware' &&
+          Object.values(n.data.pinConfig ?? {}).some((c) => c.mode === 'blink')
+      ),
+    [nodes]
+  );
+  const [simTime, setSimTime] = useState(0);
+  useEffect(() => {
+    if (!needsClock) return undefined;
+    const timer = setInterval(() => setSimTime((Date.now() % 86400000) / 1000), 200);
+    return () => clearInterval(timer);
+  }, [needsClock]);
 
   useEffect(() => {
-    const simulatedNodes = simulateCircuit(nodes, edges);
+    const simulatedNodes = simulateCircuit(nodes, edges, simTime);
 
+    // Re-render when any simulation output changed (digital value or analog
+    // solve results). simulate() is deterministic, so this settles in one pass.
     const hasChanges = simulatedNodes.some((simNode, index) => {
-      const originalNode = nodes[index];
-      return originalNode && simNode.data.value !== originalNode.data.value;
+      const original = nodes[index];
+      return (
+        original &&
+        (simNode.data.value !== original.data.value ||
+          simNode.data.current !== original.data.current ||
+          simNode.data.voltageDrop !== original.data.voltageDrop ||
+          simNode.data.brightness !== original.data.brightness ||
+          simNode.data.simWarning !== original.data.simWarning)
+      );
     });
 
     if (hasChanges) {
       setNodes(simulatedNodes);
     }
-  }, [nodes, edges, simulateCircuit, setNodes]);
+  }, [nodes, edges, simulateCircuit, setNodes, simTime]);
 
   // Ctrl/Cmd+J toggles the bottom terminal (like a code editor).
   useEffect(() => {
@@ -236,7 +322,7 @@ function App(): React.ReactElement {
       const newNode: DigiNode = {
         id: getId(),
         position: position || { x: 120 + Math.random() * 200, y: 80 + Math.random() * 220 },
-        data: { label, value: 0 },
+        data: { label, value: 0, ...ANALOG_DEFAULT_DATA[type] },
         type,
       };
       setNodes((nds) => nds.concat(newNode));
@@ -264,6 +350,7 @@ function App(): React.ReactElement {
           libraryComponentId: component.id,
           category: component.category,
           imageId: null,
+          editablePins: component.source === 'community',
         },
       };
       setNodes((nds) => nds.concat(newNode));
@@ -373,6 +460,51 @@ function App(): React.ReactElement {
       setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
     },
     [setNodes, setEdges, rfInstance]
+  );
+
+  /**
+   * Place confirmed photo detections as hardware nodes, laid out in the
+   * photo's arrangement (box top-left corners in source-image pixels).
+   * @param placements - Identified detections confirmed in the review dialog
+   */
+  const placePhotoComponents = useCallback(
+    async (placements: PhotoPlacement[]) => {
+      setPhotoReview(null);
+      // One detail fetch per distinct component (pin map + thumbnail image).
+      const details = new Map<number, LibraryComponentDetail>();
+      await Promise.all(
+        Array.from(new Set(placements.map((p) => p.componentId))).map(async (id) => {
+          try {
+            details.set(id, await libraryApi.getComponent(id));
+          } catch {
+            /* component vanished — its placements are skipped below */
+          }
+        })
+      );
+      const newNodes: DigiNode[] = [];
+      placements.forEach((placement) => {
+        const detail = details.get(placement.componentId);
+        if (!detail) return;
+        newNodes.push({
+          id: getId(),
+          position: { x: placement.box.x1, y: placement.box.y1 },
+          type: 'hardware',
+          data: {
+            label: detail.canonical_name,
+            value: 0,
+            pins: detail.pin_map.pins,
+            libraryComponentId: detail.id,
+            category: detail.category,
+            imageId: detail.images[0]?.id ?? null,
+            editablePins: detail.source === 'community',
+          },
+        });
+      });
+      setNodes((nds) => nds.concat(newNodes));
+      // Photo coordinates can be 4k wide — bring the placed parts into view.
+      setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+    },
+    [libraryApi, setNodes, rfInstance]
   );
 
   /** Download the whole canvas as a canonical JSON netlist file. */
@@ -587,10 +719,12 @@ function App(): React.ReactElement {
   );
 
   /**
-   * Run circuit detection on an image: tries the full local pipeline
-   * (/detect_circuit — gates AND wires) first, falling back to cloud gate
-   * detection while local model weights are unavailable. Low-confidence
-   * results are routed through the review step instead of the canvas.
+   * Run circuit detection on an image. /detect_v2 routes the image first:
+   * physical-build photos go to open-set recognition (proposals + retrieval,
+   * reviewed in PhotoReview before placement); drawn schematics fall through
+   * to the classic pipeline (/detect_circuit — gates AND wires), with cloud
+   * gate detection as a last resort while local weights are unavailable.
+   * Low-confidence results always route through a review step.
    * @param file - Circuit image to analyse
    */
   const runDetection = useCallback(
@@ -598,11 +732,31 @@ function App(): React.ReactElement {
       const formData = new FormData();
       const filename = file instanceof File ? file.name : 'capture.jpg';
       formData.append('image', file, filename);
+      // The open project's inventory constrains photo recognition.
+      if (activeProject) formData.append('folder_id', String(activeProject.id));
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
       setIsDetecting(true);
       setDetectError(null);
       try {
+        try {
+          const v2 = await fetch(`${apiUrl}/detect_v2`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+          if (v2.ok) {
+            const verdict = (await v2.json()) as DetectV2Response;
+            if (verdict.domain === 'photo') {
+              setPhotoReview(verdict);
+              return;
+            }
+            // domain === 'schematic': fall through to the gate pipeline.
+          }
+        } catch {
+          /* recognition service unavailable — the gate pipeline still works */
+        }
+
         const response = await fetch(`${apiUrl}/detect_circuit`, {
           method: 'POST',
           credentials: 'include',
@@ -635,7 +789,7 @@ function App(): React.ReactElement {
         setIsDetecting(false);
       }
     },
-    [importCircuit, detectGatesFallback]
+    [importCircuit, detectGatesFallback, activeProject]
   );
 
   /**
@@ -729,9 +883,20 @@ function App(): React.ReactElement {
       event.preventDefault();
       const startX = event.clientX;
       const startWidth = sidebarWidth;
-      const onMove = (move: MouseEvent): void =>
-        setSidebarWidth(Math.min(430, Math.max(200, startWidth + (move.clientX - startX))));
+      // One width update per animation frame — per-mousemove updates make
+      // ReactFlow's ResizeObserver loop and trip the CRA dev-error overlay.
+      let frame = 0;
+      const onMove = (move: MouseEvent): void => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          setSidebarWidth(
+            Math.min(430, Math.max(200, startWidth + (move.clientX - startX)))
+          );
+        });
+      };
       const onUp = (): void => {
+        if (frame) cancelAnimationFrame(frame);
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
       };
@@ -923,6 +1088,14 @@ function App(): React.ReactElement {
           onCancel={() => setReviewPayload(null)}
         />
       )}
+      {photoReview && (
+        <PhotoReview
+          result={photoReview}
+          libraryApi={libraryApi}
+          onConfirm={placePhotoComponents}
+          onCancel={() => setPhotoReview(null)}
+        />
+      )}
       <div className="content-wrapper">
         <button
           className="sidebar-toggle"
@@ -973,6 +1146,78 @@ function App(): React.ReactElement {
               {sidebarPinned ? '☰' : '⊙'}
             </button>
           </div>
+
+          {/* Hidden detection inputs stay mounted regardless of the view so
+              the camera fallback and E2E uploads always have a target. */}
+          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageUpload}
+            className="hidden-file-input"
+            id="camera-fallback-input"
+          />
+
+          {sidebarView === 'menu' ? (
+            <nav className="sidebar-menu" aria-label="Toolbox sections">
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('gates')}>
+                <GateGlyph type="and" />
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Logic Gates</span>
+                  <span className="sidebar-menu-btn__sub">inputs, outputs & 7 gate types</span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('analog')}>
+                <span className="sidebar-menu-btn__icon" aria-hidden="true">⚡</span>
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Analog Parts</span>
+                  <span className="sidebar-menu-btn__sub">sources, resistors, LEDs & more</span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('library')}>
+                <span className="sidebar-menu-btn__icon" aria-hidden="true">▦</span>
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Component Library</span>
+                  <span className="sidebar-menu-btn__sub">
+                    {libraryComponents.length > 0
+                      ? `${libraryComponents.length} shared parts`
+                      : 'boards, sensors & parts'}
+                  </span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('vision')}>
+                <span className="sidebar-menu-btn__icon" aria-hidden="true">📷</span>
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Vision</span>
+                  <span className="sidebar-menu-btn__sub">detect circuits from photos</span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
+            </nav>
+          ) : (
+            <div className="sidebar-view-head">
+              <button
+                className="sidebar-back-btn"
+                aria-label="Back to toolbox menu"
+                onClick={() => setSidebarView('menu')}
+              >
+                ← Back
+              </button>
+              <span className="sidebar-view-title">
+                {sidebarView === 'gates' && 'Logic Gates'}
+                {sidebarView === 'analog' && 'Analog Parts'}
+                {sidebarView === 'library' && 'Component Library'}
+                {sidebarView === 'vision' && 'Vision'}
+              </span>
+            </div>
+          )}
+
+          {sidebarView === 'gates' && (
+          <>
           <section className="palette-section">
             <h3>I/O</h3>
             <div className="palette-grid palette-grid--io">
@@ -1000,7 +1245,7 @@ function App(): React.ReactElement {
           </section>
 
           <section className="palette-section">
-            <h3>Logic Gates</h3>
+            <h3>Gates</h3>
             <div className="palette-grid">
               {GATE_PALETTE.map((gate) => (
                 <button
@@ -1018,9 +1263,42 @@ function App(): React.ReactElement {
             </div>
             <p className="palette-hint">click or drag onto the canvas</p>
           </section>
+          </>
+          )}
 
+          {sidebarView === 'analog' && (
           <section className="palette-section">
-            <h3>Library</h3>
+            <div className="palette-grid">
+              {ANALOG_PALETTE.map((part) => (
+                <button
+                  key={part.type}
+                  className="palette-chip"
+                  aria-label={`Add ${part.label}`}
+                  title={`${part.label} — ${part.hint}`}
+                  draggable
+                  onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
+                  onClick={() => addNode(part.type, part.label)}
+                >
+                  <span className="chip-icon analog-chip-icon" aria-hidden="true">
+                    {part.type === 'vsource' && '⎓'}
+                    {part.type === 'ground' && '⏚'}
+                    {part.type === 'resistor' && 'Ω'}
+                    {part.type === 'led' && '◗'}
+                    {part.type === 'analogSwitch' && '⌇'}
+                    {part.type === 'potentiometer' && '◲'}
+                  </span>
+                  <span className="chip-name">{part.name}</span>
+                </button>
+              ))}
+            </div>
+            <p className="palette-hint">
+              wire source → part → back to source; add a ground
+            </p>
+          </section>
+          )}
+
+          {sidebarView === 'library' && (
+          <section className="palette-section palette-section--fill">
             <input
               className="library-search"
               placeholder={`Search ${libraryComponents.length} parts…`}
@@ -1028,7 +1306,7 @@ function App(): React.ReactElement {
               aria-label="Search component library"
               onChange={(e) => setLibrarySearch(e.target.value)}
             />
-            <div className="library-list">
+            <div className="library-list library-list--full">
               {filteredLibrary.map((component) => (
                 <button
                   key={component.id}
@@ -1052,29 +1330,23 @@ function App(): React.ReactElement {
                 <p className="palette-hint">no matching parts</p>
               )}
             </div>
+            <p className="palette-hint">click or drag onto the canvas</p>
           </section>
+          )}
 
+          {sidebarView === 'vision' && (
           <section className="palette-section">
-            <h3>Vision</h3>
             <label htmlFor="image-upload-input" className="upload-button">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
               Image Upload
             </label>
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
             <button className="upload-button camera-button" onClick={() => setCameraOpen(true)}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
               Camera Capture
             </button>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleImageUpload}
-              className="hidden-file-input"
-              id="camera-fallback-input"
-            />
             <SampleImages images={sampleImages} onImageSelect={handleSampleImageSelect} />
           </section>
+          )}
 
           <div className="sidebar-footer">
             <button className="danger-button" onClick={clearCanvas}>Clear Canvas</button>
@@ -1132,6 +1404,9 @@ function App(): React.ReactElement {
             onInit={setRfInstance}
             onMove={(_, vp) => setViewport(vp)}
             nodeTypes={nodeTypes}
+            // Loose mode lets wires land on the stacked target+source handle
+            // pairs used by analog terminals and hardware pins (bidirectional).
+            connectionMode={ConnectionMode.Loose}
             fitView
             minZoom={0.2}
             maxZoom={2.5}

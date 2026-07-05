@@ -3,7 +3,7 @@
  * @description Shared visual shell for all logic-gate nodes — renders the ANSI
  * schematic symbol as SVG, the gate label, and the input/output handles. The
  * output state (data.value) drives a neon glow via the `gate-node--on` class.
- * No gate logic lives here — evaluation stays in useLogicSimulation.
+ * No gate logic lives here — evaluation stays in src/logic/simulation/.
  */
 
 import React from 'react';

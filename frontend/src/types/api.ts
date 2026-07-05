@@ -178,6 +178,77 @@ export interface EnrollResponse {
   warnings: string[];
 }
 
+/** Pixel-space bounding box of a photo proposal (source-image coordinates). */
+export interface DetectBox {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+/** One scored library/inventory candidate for a photo proposal. */
+export interface DetectCandidate {
+  /** Matcher slot id, e.g. 'inv-12-0' or 'lib-4'. */
+  target_id: string;
+  /** Display label, e.g. 'U1 · ESP32 DevKit V1'. */
+  label: string;
+  component_id: number | null;
+  inventory_item_id: number | null;
+  /** Fused identity score in [0, 1]. */
+  score: number;
+  visual: number;
+  ocr: number;
+}
+
+/** One detected component region in a photo, with its identity verdict. */
+export interface DetectProposal {
+  box: DetectBox;
+  confidence: number;
+  /** Open-vocab class guess ('circuit board', …) or 'region' for contours. */
+  hint: string;
+  source: 'yoloe' | 'contour';
+  /** JPEG data URI of the crop (≤160px) for the review UI. */
+  crop: string;
+  /** Lowercased OCR fragments read from the crop. */
+  ocr: string[];
+  assigned: DetectCandidate | null;
+  candidates: DetectCandidate[];
+  needs_review: boolean;
+  /** Review reasons: 'no_confident_match' | 'low_score' | 'small_margin' |
+   *  'ocr_only' | 'no_embedding'. */
+  reasons: string[];
+}
+
+/** Domain-router evidence returned with every /detect_v2 response. */
+export interface DetectV2Signals {
+  saturated_fraction: number;
+  bright_fraction: number;
+}
+
+/** /detect_v2 verdict for a drawn schematic — caller should use /detect_circuit. */
+export interface DetectV2SchematicResponse {
+  domain: 'schematic';
+  signals: DetectV2Signals;
+}
+
+/** /detect_v2 result for a physical-build photo. */
+export interface DetectV2PhotoResponse {
+  domain: 'photo';
+  /** True when the project inventory constrained the assignment. */
+  used_inventory: boolean;
+  proposals: DetectProposal[];
+  inventory_report: {
+    matched: number;
+    unknown: number;
+    /** Inventory labels never found in the photo, e.g. 'R1 · Resistor ×4'. */
+    missing: string[];
+  };
+  signals: DetectV2Signals;
+}
+
+/** Success payload of POST /detect_v2 (discriminated on `domain`). */
+export type DetectV2Response = DetectV2SchematicResponse | DetectV2PhotoResponse;
+
 /** One row of a project's parts inventory. */
 export interface InventoryItem {
   id: number;

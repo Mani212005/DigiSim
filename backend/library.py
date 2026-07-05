@@ -20,6 +20,7 @@ from rapidfuzz import fuzz
 from auth import require_auth, require_user
 from pipeline_v2.embedder import cosine_similarity, get_embedder
 from pipeline_v2.enrollment import enroll_image
+from pipeline_v2.matcher import MatchTarget
 
 library_bp = Blueprint("library", __name__)
 
@@ -97,6 +98,7 @@ def _get_db() -> sqlite3.Connection:
         ")"
     )
     _seed_catalog(conn)
+    _sync_seed_pins(conn)
     return conn
 
 
@@ -131,6 +133,47 @@ def _seed_catalog(conn: sqlite3.Connection) -> None:
             ),
         )
     conn.commit()
+
+
+def _sync_seed_pins(conn: sqlite3.Connection) -> None:
+    """
+    Backfill pin maps for seed components that gained pins after first
+    seeding (the seed only inserts into an empty table, so enriched pin maps
+    in seed_components.json would otherwise never reach existing databases).
+
+    Args:
+        conn: Open database connection (commits when a backfill happens).
+    """
+    if not _SEED_PATH.exists():
+        return
+    try:
+        seed = json.loads(_SEED_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return
+    changed = False
+    for entry in seed.get("components", []):
+        pins = entry.get("pin_map", {}).get("pins", [])
+        if not pins:
+            continue
+        row = conn.execute(
+            "SELECT id, pin_map FROM library_components"
+            " WHERE canonical_name = ? AND source = 'seed'",
+            (entry["canonical_name"],),
+        ).fetchone()
+        if row is None:
+            continue
+        try:
+            current = json.loads(row[1])
+        except json.JSONDecodeError:
+            current = {"pins": []}
+        if not current.get("pins"):
+            conn.execute(
+                "UPDATE library_components SET pin_map = ? WHERE id = ?",
+                (json.dumps(entry["pin_map"]), row[0]),
+            )
+            changed = True
+    if changed:
+        conn.commit()
 
 
 def _component_json(row: tuple, image_count: int | None = None) -> dict:
@@ -363,6 +406,89 @@ def create_component() -> tuple:
     return jsonify(_component_json(row, 0)), 201
 
 
+_PIN_ROLES = {
+    "power",
+    "ground",
+    "digital",
+    "analog",
+    "pwm",
+    "data",
+    "clock",
+    "io",
+    "anode",
+    "cathode",
+    "passive",
+    "nc",
+}
+_PIN_SIDES = {"left", "right", "top", "bottom"}
+_MAX_PINS = 48
+_MAX_PIN_NAME = 24
+
+
+@library_bp.route("/library/components/<int:component_id>/pins", methods=["PUT"])
+@require_user
+def update_component_pins(component_id: int) -> tuple:
+    """
+    Replace a community component's pin map (canvas pin editor).
+
+    Seed components have curated pin maps and are locked; community entries
+    are shared, so any signed-in user can improve them.
+
+    Body: {"pins": [{"name": str, "role": str, "side": str}, ...]}
+
+    Returns:
+        200 with the updated component; 400 on invalid pins; 403 for seed
+        components; 404 when the component doesn't exist.
+    """
+    payload = request.get_json(silent=True) or {}
+    pins = payload.get("pins")
+    if not isinstance(pins, list) or len(pins) > _MAX_PINS:
+        return (
+            jsonify({"error": f"pins must be an array of ≤ {_MAX_PINS} entries"}),
+            400,
+        )
+    cleaned: list[dict] = []
+    seen: set[str] = set()
+    for pin in pins:
+        if not isinstance(pin, dict):
+            return jsonify({"error": "each pin must be an object"}), 400
+        name = str(pin.get("name", "")).strip()
+        role = str(pin.get("role", "passive"))
+        side = str(pin.get("side", "left"))
+        if not name or len(name) > _MAX_PIN_NAME:
+            return jsonify({"error": f"pin names must be 1–{_MAX_PIN_NAME} chars"}), 400
+        if name.lower() in seen:
+            return jsonify({"error": f"duplicate pin name: {name}"}), 400
+        if role not in _PIN_ROLES:
+            return jsonify({"error": f"invalid pin role: {role}"}), 400
+        if side not in _PIN_SIDES:
+            return jsonify({"error": f"invalid pin side: {side}"}), 400
+        seen.add(name.lower())
+        cleaned.append({"name": name, "role": role, "side": side})
+
+    conn = _get_db()
+    try:
+        row = conn.execute(
+            "SELECT source FROM library_components WHERE id = ?", (component_id,)
+        ).fetchone()
+        if row is None:
+            return jsonify({"error": "Component not found"}), 404
+        if row[0] == "seed":
+            return jsonify({"error": "Seed components have curated pin maps"}), 403
+        conn.execute(
+            "UPDATE library_components SET pin_map = ? WHERE id = ?",
+            (json.dumps({"pins": cleaned}), component_id),
+        )
+        conn.commit()
+        updated = conn.execute(
+            f"SELECT {_COMPONENT_COLS} FROM library_components WHERE id = ?",
+            (component_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    return jsonify(_component_json(updated)), 200
+
+
 # ---------------------------------------------------------------------------
 # Library: reference images (enrollment)
 # ---------------------------------------------------------------------------
@@ -488,6 +614,124 @@ def get_component_image(image_id: int) -> Response | tuple:
     if not path.is_relative_to(_UPLOADS_DIR.resolve()) or not path.exists():
         return jsonify({"error": "Image not found"}), 404
     return send_file(path, mimetype="image/jpeg", conditional=True)
+
+
+# ---------------------------------------------------------------------------
+# Match-target builders (consumed by the /detect_v2 recognition pipeline)
+# ---------------------------------------------------------------------------
+
+
+def _component_gallery(conn: sqlite3.Connection, component_id: int) -> list[np.ndarray]:
+    """
+    Load a component's active reference-image embeddings.
+
+    Args:
+        conn: Open database connection.
+        component_id: Library component to load.
+    Returns:
+        L2-normalised float32 vectors (possibly empty).
+    """
+    rows = conn.execute(
+        "SELECT embedding FROM component_images"
+        " WHERE library_component_id = ? AND status = 'active'"
+        " AND embedding IS NOT NULL",
+        (component_id,),
+    ).fetchall()
+    return [np.frombuffer(blob, dtype=np.float32) for (blob,) in rows]
+
+
+def load_inventory_targets(folder_id: int, user_id: int) -> list["MatchTarget"]:
+    """
+    Build match targets from a project's inventory, expanded by quantity.
+
+    Args:
+        folder_id: Project folder whose inventory to load.
+        user_id: Owner — folders belonging to other users yield no targets.
+    Returns:
+        One MatchTarget per inventory slot (a qty-3 row yields 3 slots); rows
+        bound to a library component carry its embedding gallery and aliases,
+        unbound rows are OCR-only targets.
+    """
+    from pipeline_v2.matcher import MatchTarget
+
+    conn = _get_db()
+    try:
+        owner = conn.execute(
+            "SELECT 1 FROM folders WHERE id = ? AND user_id = ?",
+            (folder_id, user_id),
+        ).fetchone()
+        if owner is None:
+            return []
+        rows = conn.execute(
+            "SELECT id, designator, name_raw, qty, library_component_id"
+            " FROM project_inventory WHERE folder_id = ? ORDER BY id",
+            (folder_id,),
+        ).fetchall()
+
+        targets: list[MatchTarget] = []
+        for item_id, designator, name_raw, qty, component_id in rows:
+            names = [name_raw]
+            embeddings: list[np.ndarray] = []
+            label = name_raw
+            if component_id is not None:
+                comp = conn.execute(
+                    "SELECT canonical_name, aliases FROM library_components"
+                    " WHERE id = ?",
+                    (component_id,),
+                ).fetchone()
+                if comp is not None:
+                    label = comp[0]
+                    names = [name_raw, comp[0], *json.loads(comp[1])]
+                embeddings = _component_gallery(conn, component_id)
+            display = f"{designator} · {label}" if designator else label
+            for slot in range(max(1, int(qty))):
+                targets.append(
+                    MatchTarget(
+                        target_id=f"inv{item_id}#{slot}",
+                        label=display,
+                        component_id=component_id,
+                        names=names,
+                        embeddings=embeddings,
+                        inventory_item_id=item_id,
+                    )
+                )
+        return targets
+    finally:
+        conn.close()
+
+
+def load_global_targets() -> list["MatchTarget"]:
+    """
+    Build match targets from the whole shared library (one slot per component).
+
+    Used when no project inventory is available (e.g. guests): quantities are
+    unknown, so each component can be matched at most once per image.
+
+    Returns:
+        One MatchTarget per library component.
+    """
+    from pipeline_v2.matcher import MatchTarget
+
+    conn = _get_db()
+    try:
+        rows = conn.execute(
+            "SELECT id, canonical_name, aliases FROM library_components"
+        ).fetchall()
+        targets: list[MatchTarget] = []
+        for component_id, name, aliases in rows:
+            targets.append(
+                MatchTarget(
+                    target_id=f"lib{component_id}",
+                    label=name,
+                    component_id=component_id,
+                    names=[name, *json.loads(aliases)],
+                    embeddings=_component_gallery(conn, component_id),
+                    inventory_item_id=None,
+                )
+            )
+        return targets
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------

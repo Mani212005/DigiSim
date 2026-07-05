@@ -326,6 +326,358 @@
   margin-top: auto;
 }
 
+/* Toolbox home menu: one button per section, content shows on navigation */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.75rem;
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-menu-btn:hover {
+  border-color: var(--border-bright);
+  background: var(--accent-dim);
+}
+
+.sidebar-menu-btn__icon {
+  width: 34px;
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.sidebar-menu-btn svg {
+  flex-shrink: 0;
+}
+
+.sidebar-menu-btn__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sidebar-menu-btn__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.sidebar-menu-btn__sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.sidebar-menu-btn__arrow {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* Section view header: back to the menu + current section title */
+.sidebar-view-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-back-btn {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.07);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar-back-btn:hover {
+  color: var(--accent);
+  border-color: var(--border-bright);
+}
+
+.sidebar-view-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+/* Analog part nodes (vsource, resistor, LED, switch, pot, ground) */
+.analog-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 96px;
+  padding: 10px 12px 8px;
+  background: var(--panel-solid, #0f172a);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+}
+
+.analog-node--warn {
+  border-color: rgba(248, 113, 113, 0.55);
+  box-shadow: 0 0 14px rgba(248, 113, 113, 0.22);
+}
+
+.analog-node__glyph svg {
+  stroke: var(--text);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  overflow: visible;
+}
+
+.analog-node__glyph--click {
+  cursor: pointer;
+}
+
+.analog-node__glyph--click:hover svg {
+  stroke: var(--accent);
+}
+
+.analog-glyph-sign {
+  font-size: 10px;
+  fill: var(--muted);
+  stroke: none;
+}
+
+.analog-led-glow {
+  fill: #f87171;
+  stroke: none;
+  filter: blur(4px);
+  transition: opacity 0.15s ease;
+}
+
+.analog-node__label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.analog-node__param {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.analog-node__param input[type='number'] {
+  width: 52px;
+  padding: 2px 4px;
+  font-size: 0.66rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.analog-node__param input[type='range'] {
+  width: 64px;
+}
+
+.analog-node__readout {
+  font-size: 0.62rem;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: var(--accent);
+}
+
+.analog-node__warning {
+  max-width: 150px;
+  margin-top: 2px;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  color: #f87171;
+  text-align: center;
+}
+
+.analog-pin {
+  width: 9px;
+  height: 9px;
+  background: #64748b;
+  border: 1.5px solid #0f172a;
+}
+
+.analog-chip-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* Hardware node pin-behavior panel (S3 board pin stubs) */
+.hw-node__pins-btn {
+  margin-top: 4px;
+  padding: 2px 9px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.hw-node__pins-btn:hover {
+  color: var(--accent);
+  border-color: var(--border-bright);
+}
+
+/* The minimap is decorative (not pannable/zoomable here) — letting it eat
+   pointer events would block node popovers that open underneath it.
+   !important because the MiniMap component sets pointer-events inline. */
+.react-flow__minimap {
+  pointer-events: none !important;
+}
+
+/* Popover below the card — must NOT resize the card, or every
+   percent-positioned pin handle would shift under existing wires. */
+.hw-pin-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 210px;
+  max-height: 190px;
+  padding: 7px 8px;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  scrollbar-width: thin;
+}
+
+.hw-pin-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.6rem;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: var(--muted);
+}
+
+.hw-pin-panel__row--head {
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hw-pin-panel__row select {
+  max-width: 110px;
+  padding: 2px 4px;
+  font-size: 0.62rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* Belt-and-braces with color-scheme: dark — keep option lists readable. */
+.hw-pin-panel select option,
+.photo-review-info select option,
+.analog-node__param select option {
+  background: var(--panel-solid);
+  color: var(--text);
+}
+
+.hw-node__hint {
+  font-size: 0.6rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.hw-pin-panel__remove {
+  padding: 0 5px;
+  font-size: 0.6rem;
+  color: var(--danger);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.hw-pin-panel__add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hw-pin-panel__add input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 5px;
+  font-size: 0.62rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.hw-pin-panel__add select {
+  max-width: 72px;
+  padding: 2px 3px;
+  font-size: 0.6rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.hw-pin-panel__add-btn {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Library view gets the whole sidebar height for its part list */
+.palette-section--fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.library-list.library-list--full {
+  max-height: none;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .danger-button {
   width: 100%;
   padding: 0.55rem;
