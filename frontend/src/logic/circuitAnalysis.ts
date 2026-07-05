@@ -3,10 +3,10 @@
  * @description Pure circuit-analysis helpers that turn the canvas nodes/edges into
  * inspectable artifacts: independent circuits (connected components), truth tables,
  * netlists, and clean/raw JSON. Gate evaluation is delegated to runSimulation
- * (useLogicSimulation.ts) so gate logic is never duplicated (CLAUDE.md).
+ * (src/logic/simulation/) so gate logic is never duplicated (CLAUDE.md).
  */
 
-import { runSimulation } from '../hooks/useLogicSimulation';
+import { runSimulation } from './simulation';
 import type {
   Circuit,
   CircuitGraphExport,

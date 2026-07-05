@@ -15,6 +15,7 @@ import ReactFlow, {
   Background,
   BackgroundVariant,
   ConnectionLineType,
+  ConnectionMode,
   ReactFlowProvider,
   SelectionMode,
   addEdge,
@@ -46,6 +47,14 @@ import NandGateNode from './nodes/NandGateNode';
 import XnorGateNode from './nodes/XnorGateNode';
 import NorGateNode from './nodes/NorGateNode';
 import { GateGlyph } from './nodes/GateShell';
+import {
+  AnalogSwitchNode,
+  GroundNode,
+  LedNode,
+  PotentiometerNode,
+  ResistorNode,
+  VSourceNode,
+} from './nodes/AnalogNodes';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
 import { useAuth } from './hooks/useAuth';
@@ -123,6 +132,24 @@ const sampleImages = [
 ];
 
 /** Sidebar palette definition: gate chips rendered with their schematic glyphs. */
+/** Analog parts palette: chip metadata + fresh-node parameter defaults. */
+const ANALOG_PALETTE: { type: string; label: string; name: string; hint: string }[] = [
+  { type: 'vsource', label: 'Voltage Source', name: 'Source', hint: '5V DC' },
+  { type: 'ground', label: 'Ground', name: 'GND', hint: '0V reference' },
+  { type: 'resistor', label: 'Resistor', name: 'Resistor', hint: '220Ω' },
+  { type: 'led', label: 'LED', name: 'LED', hint: 'glows by current' },
+  { type: 'analogSwitch', label: 'Switch', name: 'Switch', hint: 'click to toggle' },
+  { type: 'potentiometer', label: 'Potentiometer', name: 'Pot', hint: '10kΩ' },
+];
+
+/** Initial data.param/percent/closed values per analog node type. */
+const ANALOG_DEFAULT_DATA: Record<string, Partial<NodeData>> = {
+  vsource: { param: 5 },
+  resistor: { param: 220 },
+  potentiometer: { param: 10000, percent: 50 },
+  analogSwitch: { closed: false },
+};
+
 const GATE_PALETTE: PaletteEntry[] = [
   { type: 'andGate', label: 'AND Gate', glyph: 'and', name: 'AND' },
   { type: 'orGate', label: 'OR Gate', glyph: 'or', name: 'OR' },
@@ -207,14 +234,37 @@ function App(): React.ReactElement {
     xnorGate: XnorGateNode,
     norGate: NorGateNode,
     hardware: HardwareNode,
+    vsource: (props: NodeProps<NodeData>) => (
+      <VSourceNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    ground: GroundNode,
+    resistor: (props: NodeProps<NodeData>) => (
+      <ResistorNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    led: LedNode,
+    analogSwitch: (props: NodeProps<NodeData>) => (
+      <AnalogSwitchNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    potentiometer: (props: NodeProps<NodeData>) => (
+      <PotentiometerNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
   }), [updateNodeData]);
 
   useEffect(() => {
     const simulatedNodes = simulateCircuit(nodes, edges);
 
+    // Re-render when any simulation output changed (digital value or analog
+    // solve results). simulate() is deterministic, so this settles in one pass.
     const hasChanges = simulatedNodes.some((simNode, index) => {
-      const originalNode = nodes[index];
-      return originalNode && simNode.data.value !== originalNode.data.value;
+      const original = nodes[index];
+      return (
+        original &&
+        (simNode.data.value !== original.data.value ||
+          simNode.data.current !== original.data.current ||
+          simNode.data.voltageDrop !== original.data.voltageDrop ||
+          simNode.data.brightness !== original.data.brightness ||
+          simNode.data.simWarning !== original.data.simWarning)
+      );
     });
 
     if (hasChanges) {
@@ -244,7 +294,7 @@ function App(): React.ReactElement {
       const newNode: DigiNode = {
         id: getId(),
         position: position || { x: 120 + Math.random() * 200, y: 80 + Math.random() * 220 },
-        data: { label, value: 0 },
+        data: { label, value: 0, ...ANALOG_DEFAULT_DATA[type] },
         type,
       };
       setNodes((nds) => nds.concat(newNode));
@@ -1089,6 +1139,14 @@ function App(): React.ReactElement {
                 </span>
                 <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
               </button>
+              <button className="sidebar-menu-btn" onClick={() => setSidebarView('analog')}>
+                <span className="sidebar-menu-btn__icon" aria-hidden="true">⚡</span>
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Analog Parts</span>
+                  <span className="sidebar-menu-btn__sub">sources, resistors, LEDs & more</span>
+                </span>
+                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
+              </button>
               <button className="sidebar-menu-btn" onClick={() => setSidebarView('library')}>
                 <span className="sidebar-menu-btn__icon" aria-hidden="true">▦</span>
                 <span className="sidebar-menu-btn__text">
@@ -1121,6 +1179,7 @@ function App(): React.ReactElement {
               </button>
               <span className="sidebar-view-title">
                 {sidebarView === 'gates' && 'Logic Gates'}
+                {sidebarView === 'analog' && 'Analog Parts'}
                 {sidebarView === 'library' && 'Component Library'}
                 {sidebarView === 'vision' && 'Vision'}
               </span>
@@ -1175,6 +1234,37 @@ function App(): React.ReactElement {
             <p className="palette-hint">click or drag onto the canvas</p>
           </section>
           </>
+          )}
+
+          {sidebarView === 'analog' && (
+          <section className="palette-section">
+            <div className="palette-grid">
+              {ANALOG_PALETTE.map((part) => (
+                <button
+                  key={part.type}
+                  className="palette-chip"
+                  aria-label={`Add ${part.label}`}
+                  title={`${part.label} — ${part.hint}`}
+                  draggable
+                  onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
+                  onClick={() => addNode(part.type, part.label)}
+                >
+                  <span className="chip-icon analog-chip-icon" aria-hidden="true">
+                    {part.type === 'vsource' && '⎓'}
+                    {part.type === 'ground' && '⏚'}
+                    {part.type === 'resistor' && 'Ω'}
+                    {part.type === 'led' && '◗'}
+                    {part.type === 'analogSwitch' && '⌇'}
+                    {part.type === 'potentiometer' && '◲'}
+                  </span>
+                  <span className="chip-name">{part.name}</span>
+                </button>
+              ))}
+            </div>
+            <p className="palette-hint">
+              wire source → part → back to source; add a ground
+            </p>
+          </section>
           )}
 
           {sidebarView === 'library' && (
@@ -1284,6 +1374,9 @@ function App(): React.ReactElement {
             onInit={setRfInstance}
             onMove={(_, vp) => setViewport(vp)}
             nodeTypes={nodeTypes}
+            // Loose mode lets wires land on the stacked target+source handle
+            // pairs used by analog terminals and hardware pins (bidirectional).
+            connectionMode={ConnectionMode.Loose}
             fitView
             minZoom={0.2}
             maxZoom={2.5}

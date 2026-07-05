@@ -418,6 +418,111 @@
   color: var(--muted);
 }
 
+/* Analog part nodes (vsource, resistor, LED, switch, pot, ground) */
+.analog-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 96px;
+  padding: 10px 12px 8px;
+  background: var(--panel-solid, #0f172a);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+}
+
+.analog-node--warn {
+  border-color: rgba(248, 113, 113, 0.55);
+  box-shadow: 0 0 14px rgba(248, 113, 113, 0.22);
+}
+
+.analog-node__glyph svg {
+  stroke: var(--text);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  overflow: visible;
+}
+
+.analog-node__glyph--click {
+  cursor: pointer;
+}
+
+.analog-node__glyph--click:hover svg {
+  stroke: var(--accent);
+}
+
+.analog-glyph-sign {
+  font-size: 10px;
+  fill: var(--muted);
+  stroke: none;
+}
+
+.analog-led-glow {
+  fill: #f87171;
+  stroke: none;
+  filter: blur(4px);
+  transition: opacity 0.15s ease;
+}
+
+.analog-node__label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.analog-node__param {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.analog-node__param input[type='number'] {
+  width: 52px;
+  padding: 2px 4px;
+  font-size: 0.66rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.analog-node__param input[type='range'] {
+  width: 64px;
+}
+
+.analog-node__readout {
+  font-size: 0.62rem;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: var(--accent);
+}
+
+.analog-node__warning {
+  max-width: 150px;
+  margin-top: 2px;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  color: #f87171;
+  text-align: center;
+}
+
+.analog-pin {
+  width: 9px;
+  height: 9px;
+  background: #64748b;
+  border: 1.5px solid #0f172a;
+}
+
+.analog-chip-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
 /* Library view gets the whole sidebar height for its part list */
 .palette-section--fill {
   display: flex;

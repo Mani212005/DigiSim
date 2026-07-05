@@ -5,7 +5,7 @@
  * backend API contracts are re-exported from ./api so callers have one import site.
  */
 
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 import type { Edge, Node, NodeProps, Viewport } from 'reactflow';
 import type {
   AuthUser,
@@ -44,6 +44,28 @@ export interface NodeData {
   category?: string;
   /** Hardware nodes only: reference image used as the node thumbnail. */
   imageId?: number | null;
+  /** Analog parts: primary parameter — volts (vsource) or ohms (resistor/pot max). */
+  param?: number;
+  /** Potentiometer wiper position, 0–100 (% of max ohms). */
+  percent?: number;
+  /** Switch state: true = conducting. */
+  closed?: boolean;
+  /** Analog solver output: branch current through the part (amps). */
+  current?: number;
+  /** Analog solver output: voltage across the part (volts). */
+  voltageDrop?: number;
+  /** Analog solver output: LED brightness, 0–1 (full at nominal current). */
+  brightness?: number;
+  /** Analog solver output: human-readable problem, e.g. LED overcurrent. */
+  simWarning?: string;
+}
+
+/** Analog solver outputs for one component (subset of NodeData fields). */
+export interface AnalogOutputs {
+  current: number;
+  voltageDrop: number;
+  brightness?: number;
+  simWarning?: string;
 }
 
 /** A ReactFlow node carrying DigiSim node data. */
@@ -63,7 +85,7 @@ export type GlyphType =
   | 'xnor';
 
 /** Which page the toolbox sidebar is showing (menu = section picker). */
-export type SidebarView = 'menu' | 'gates' | 'library' | 'vision';
+export type SidebarView = 'menu' | 'gates' | 'analog' | 'library' | 'vision';
 
 /** One entry in the sidebar gate palette. */
 export interface PaletteEntry {
@@ -116,6 +138,36 @@ export type OutputNodeProps = Pick<NodeProps<NodeData>, 'data'>;
 /** Props for the hardware (library component) node. */
 export interface HardwareNodeProps {
   data: NodeData;
+}
+
+/** Where an analog terminal's handle sits on the node. */
+export type TerminalSide = 'left' | 'right' | 'top';
+
+/** One electrical terminal of an analog part. */
+export interface AnalogTerminal {
+  /** Electrical terminal name matched by the MNA solver ('anode', 'pos', …). */
+  terminal: string;
+  side: TerminalSide;
+}
+
+/** Props for the shared analog part shell (glyph + terminals + readout). */
+export interface AnalogShellProps {
+  data: NodeData;
+  glyph: ReactNode;
+  terminals: AnalogTerminal[];
+  /** Live measurement line under the label, e.g. '13.6 mA'. */
+  readout?: string;
+  /** Fires on glyph click (switch toggle). */
+  onGlyphClick?: () => void;
+  /** Parameter editor row (value inputs / sliders). */
+  children?: ReactNode;
+}
+
+/** Props for interactive analog part nodes (can edit their own params). */
+export interface AnalogNodeProps {
+  id: string;
+  data: NodeData;
+  updateNodeData: UpdateNodeData;
 }
 
 /** Props for the sidebar sample-image gallery. */

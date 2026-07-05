@@ -72,7 +72,7 @@ def fn(x: int) -> bool:
 
 **Architecture**
 - `App.tsx` owns ALL node/edge state — nowhere else
-- Gate logic lives ONLY in `useLogicSimulation.ts:evaluateGate`
+- Simulation logic (digital gate evaluation AND the analog MNA solver) lives ONLY in `src/logic/simulation/` — `useLogicSimulation.ts` is a thin hook over it, nothing more
 - All TS types/interfaces live in `src/types/` — never inline in components
 - Pipeline stages are strictly sequential: Detection → Wire Extraction → Graph → Export
 - Model weights are never committed to git
