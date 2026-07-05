@@ -23,9 +23,10 @@ export const ANALOG_TYPES: ReadonlySet<string> = new Set([
 export interface SimulationIsland {
   nodes: DigiNode[];
   edges: DigiEdge[];
-  /** 'analog' when every node is an analog type; 'digital' otherwise. */
+  /** 'analog' when every node is an analog part or a hardware board (the MNA
+   *  solver handles both since S3 pin stubs); 'digital' otherwise. */
   kind: 'digital' | 'analog';
-  /** True when the island mixes analog parts with gates/IO (S3 territory). */
+  /** True when the island mixes analog parts with gates/IO (unsupported). */
   mixed: boolean;
 }
 
@@ -73,10 +74,18 @@ export function partitionIslands(
 
   return Array.from(groups.values()).map((group) => {
     const analogCount = group.nodes.filter((n) => ANALOG_TYPES.has(n.type ?? '')).length;
+    const solvableCount = group.nodes.filter(
+      (n) => ANALOG_TYPES.has(n.type ?? '') || n.type === 'hardware'
+    ).length;
     return {
       ...group,
-      kind: analogCount === group.nodes.length ? ('analog' as const) : ('digital' as const),
-      mixed: analogCount > 0 && analogCount < group.nodes.length,
+      // Boards bridge into the analog domain via pin stubs (S3); only islands
+      // that also contain gates/IO fall back to digital semantics.
+      kind:
+        solvableCount === group.nodes.length && analogCount > 0
+          ? ('analog' as const)
+          : ('digital' as const),
+      mixed: analogCount > 0 && solvableCount < group.nodes.length,
     };
   });
 }

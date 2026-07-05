@@ -24,13 +24,18 @@ const MIXED_ISLAND_WARNING =
 
 /**
  * Simulate the whole canvas: digital islands via topological gate evaluation,
- * fully-analog islands via the MNA DC solver.
+ * analog islands (parts + boards) via the MNA DC solver.
  *
  * @param nodes - ReactFlow node array (read-only — returns a new array)
  * @param edges - ReactFlow edge array
+ * @param timeSeconds - Sim clock; drives blink pins (defaults to 0)
  * @returns New node array with updated simulation outputs in data
  */
-export function simulate(nodes: DigiNode[], edges: DigiEdge[]): DigiNode[] {
+export function simulate(
+  nodes: DigiNode[],
+  edges: DigiEdge[],
+  timeSeconds = 0
+): DigiNode[] {
   // Digital pass first — identical semantics to the pre-S1 engine, so pure
   // gate circuits behave exactly as before (analog types evaluate to 0 there).
   const result = runSimulation(nodes, edges);
@@ -38,7 +43,7 @@ export function simulate(nodes: DigiNode[], edges: DigiEdge[]): DigiNode[] {
 
   // Reset analog outputs so parts unplugged from a source read zero again.
   for (const node of result) {
-    if (ANALOG_TYPES.has(node.type ?? '')) {
+    if (ANALOG_TYPES.has(node.type ?? '') || node.type === 'hardware') {
       node.data.current = 0;
       node.data.voltageDrop = 0;
       if (node.type === 'led') node.data.brightness = 0;
@@ -48,7 +53,7 @@ export function simulate(nodes: DigiNode[], edges: DigiEdge[]): DigiNode[] {
 
   for (const island of partitionIslands(nodes, edges)) {
     if (island.kind === 'analog') {
-      const solved = solveAnalogIsland(island.nodes, island.edges);
+      const solved = solveAnalogIsland(island.nodes, island.edges, timeSeconds);
       solved.forEach((outputs, nodeId) => {
         const node = byId.get(nodeId);
         if (!node) return;

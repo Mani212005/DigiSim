@@ -233,7 +233,9 @@ function App(): React.ReactElement {
     nandGate: NandGateNode,
     xnorGate: XnorGateNode,
     norGate: NorGateNode,
-    hardware: HardwareNode,
+    hardware: (props: NodeProps<NodeData>) => (
+      <HardwareNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
     vsource: (props: NodeProps<NodeData>) => (
       <VSourceNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
     ),
@@ -250,8 +252,26 @@ function App(): React.ReactElement {
     ),
   }), [updateNodeData]);
 
+  // Sim clock: ticks only while some board pin blinks (time-dependent
+  // behavior); static circuits re-solve on edits alone.
+  const needsClock = useMemo(
+    () =>
+      nodes.some(
+        (n) =>
+          n.type === 'hardware' &&
+          Object.values(n.data.pinConfig ?? {}).some((c) => c.mode === 'blink')
+      ),
+    [nodes]
+  );
+  const [simTime, setSimTime] = useState(0);
   useEffect(() => {
-    const simulatedNodes = simulateCircuit(nodes, edges);
+    if (!needsClock) return undefined;
+    const timer = setInterval(() => setSimTime((Date.now() % 86400000) / 1000), 200);
+    return () => clearInterval(timer);
+  }, [needsClock]);
+
+  useEffect(() => {
+    const simulatedNodes = simulateCircuit(nodes, edges, simTime);
 
     // Re-render when any simulation output changed (digital value or analog
     // solve results). simulate() is deterministic, so this settles in one pass.
@@ -270,7 +290,7 @@ function App(): React.ReactElement {
     if (hasChanges) {
       setNodes(simulatedNodes);
     }
-  }, [nodes, edges, simulateCircuit, setNodes]);
+  }, [nodes, edges, simulateCircuit, setNodes, simTime]);
 
   // Ctrl/Cmd+J toggles the bottom terminal (like a code editor).
   useEffect(() => {

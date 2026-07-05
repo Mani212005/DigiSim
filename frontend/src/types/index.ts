@@ -58,6 +58,10 @@ export interface NodeData {
   brightness?: number;
   /** Analog solver output: human-readable problem, e.g. LED overcurrent. */
   simWarning?: string;
+  /** Hardware nodes: per-pin behavior config, keyed by pin name (S3). */
+  pinConfig?: Record<string, PinConfig>;
+  /** Hardware nodes: GPIO HIGH voltage (3.3 or 5). */
+  logicVoltage?: number;
 }
 
 /** Analog solver outputs for one component (subset of NodeData fields). */
@@ -66,6 +70,18 @@ export interface AnalogOutputs {
   voltageDrop: number;
   brightness?: number;
   simWarning?: string;
+}
+
+/** Electrical behavior of one configurable board pin (S3 pin stubs). */
+export type PinMode = 'hiz' | 'high' | 'low' | 'blink' | 'pwm';
+
+/** Per-pin configuration stored on hardware nodes. */
+export interface PinConfig {
+  mode: PinMode;
+  /** Blink frequency in Hz (blink mode). */
+  hz?: number;
+  /** PWM duty cycle, 0–100 (pwm mode). */
+  duty?: number;
 }
 
 /** A ReactFlow node carrying DigiSim node data. */
@@ -138,6 +154,9 @@ export type OutputNodeProps = Pick<NodeProps<NodeData>, 'data'>;
 /** Props for the hardware (library component) node. */
 export interface HardwareNodeProps {
   data: NodeData;
+  /** Present on interactive hardware nodes (pin config panel). */
+  id?: string;
+  updateNodeData?: UpdateNodeData;
 }
 
 /** Where an analog terminal's handle sits on the node. */

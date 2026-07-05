@@ -523,6 +523,75 @@
   line-height: 1;
 }
 
+/* Hardware node pin-behavior panel (S3 board pin stubs) */
+.hw-node__pins-btn {
+  margin-top: 4px;
+  padding: 2px 9px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.hw-node__pins-btn:hover {
+  color: var(--accent);
+  border-color: var(--border-bright);
+}
+
+/* Popover below the card — must NOT resize the card, or every
+   percent-positioned pin handle would shift under existing wires. */
+.hw-pin-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 210px;
+  max-height: 190px;
+  padding: 7px 8px;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  scrollbar-width: thin;
+}
+
+.hw-pin-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.6rem;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: var(--muted);
+}
+
+.hw-pin-panel__row--head {
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hw-pin-panel__row select {
+  max-width: 110px;
+  padding: 2px 4px;
+  font-size: 0.62rem;
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
 /* Library view gets the whole sidebar height for its part list */
 .palette-section--fill {
   display: flex;

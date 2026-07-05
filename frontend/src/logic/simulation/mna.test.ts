@@ -202,6 +202,103 @@ describe('solveAnalogIsland', () => {
   });
 });
 
+describe('board pin stubs (S3)', () => {
+  /** Minimal dev board: 3V3 rail, one GPIO, one GND pin. */
+  const board = (pinConfig: NodeData['pinConfig'], logicVoltage?: number): DigiNode =>
+    node('U1', 'hardware', {
+      pins: [
+        { name: '3V3', role: 'power', side: 'left' },
+        { name: 'GPIO4', role: 'digital', side: 'right' },
+        { name: 'GND', role: 'ground', side: 'left' },
+      ],
+      pinConfig,
+      logicVoltage,
+    });
+
+  /** GPIO4 → 220Ω → LED → GND loop around the board. */
+  const ledLoop = (): DigiEdge[] => [
+    wire('U1', 'GPIO4', 'R1', 'a'),
+    wire('R1', 'b', 'D1', 'anode'),
+    wire('D1', 'cathode', 'U1', 'GND'),
+  ];
+
+  test('GPIO driven HIGH lights an LED through a resistor', () => {
+    const nodes = [
+      board({ GPIO4: { mode: 'high' } }),
+      node('R1', 'resistor', { param: 220 }),
+      node('D1', 'led'),
+    ];
+    const out = solveAnalogIsland(nodes, ledLoop());
+    // I = (3.3 − 1.9) / (40 + 220 + 8) ≈ 5.2 mA.
+    expect(out.get('D1')!.current).toBeCloseTo(0.0052, 3);
+    expect(out.get('D1')!.brightness!).toBeGreaterThan(0.3);
+    expect(out.get('U1')!.current).toBeCloseTo(0.0052, 3);
+  });
+
+  test('5V logic level raises the current', () => {
+    const nodes = [
+      board({ GPIO4: { mode: 'high' } }, 5),
+      node('R1', 'resistor', { param: 220 }),
+      node('D1', 'led'),
+    ];
+    const out = solveAnalogIsland(nodes, ledLoop());
+    // I = (5 − 1.9) / 268 ≈ 11.6 mA.
+    expect(out.get('D1')!.current).toBeCloseTo(0.0116, 3);
+  });
+
+  test('GPIO LOW and Hi-Z keep the LED dark', () => {
+    for (const pinConfig of [{ GPIO4: { mode: 'low' as const } }, undefined]) {
+      const nodes = [
+        board(pinConfig),
+        node('R1', 'resistor', { param: 220 }),
+        node('D1', 'led'),
+      ];
+      const out = solveAnalogIsland(nodes, ledLoop());
+      expect(out.get('D1')!.current).toBeCloseTo(0, 4);
+    }
+  });
+
+  test('power rail pin drives like a supply', () => {
+    const nodes = [
+      board(undefined),
+      node('R1', 'resistor', { param: 330 }),
+    ];
+    const edges = [
+      wire('U1', '3V3', 'R1', 'a'),
+      wire('R1', 'b', 'U1', 'GND'),
+    ];
+    const out = solveAnalogIsland(nodes, edges);
+    expect(out.get('R1')!.current).toBeCloseTo(3.3 / 331, 4);
+  });
+
+  test('blink pin follows the sim clock', () => {
+    const nodes = [
+      board({ GPIO4: { mode: 'blink', hz: 1 } }),
+      node('R1', 'resistor', { param: 220 }),
+      node('D1', 'led'),
+    ];
+    // 1 Hz: ON during [0, 0.5)s, OFF during [0.5, 1)s.
+    const lit = solveAnalogIsland(nodes, ledLoop(), 0.1);
+    const dark = solveAnalogIsland(nodes, ledLoop(), 0.6);
+    expect(lit.get('D1')!.current).toBeGreaterThan(0.004);
+    expect(dark.get('D1')!.current).toBeCloseTo(0, 4);
+  });
+
+  test('PWM duty scales LED brightness by time-averaging', () => {
+    const run = (duty: number): number => {
+      const nodes = [
+        board({ GPIO4: { mode: 'pwm', duty } }),
+        node('R1', 'resistor', { param: 220 }),
+        node('D1', 'led'),
+      ];
+      return solveAnalogIsland(nodes, ledLoop()).get('D1')!.brightness!;
+    };
+    const full = run(100);
+    expect(run(50)).toBeCloseTo(full / 2, 3);
+    expect(run(25)).toBeCloseTo(full / 4, 3);
+  });
+});
+
 describe('simulate() island routing', () => {
   test('analog island is solved while a digital island keeps gate semantics', () => {
     const nodes = [

@@ -20,7 +20,8 @@ export type { SimulateCircuit } from '../logic/simulation';
  */
 export const useLogicSimulation = (): { simulateCircuit: SimulateCircuit } => {
   const simulateCircuit = useCallback<SimulateCircuit>(
-    (currentNodes, currentEdges) => simulate(currentNodes, currentEdges),
+    (currentNodes, currentEdges, timeSeconds) =>
+      simulate(currentNodes, currentEdges, timeSeconds),
     []
   );
 

@@ -9,10 +9,13 @@
 import type { DigiEdge, DigiNode } from '../../types';
 import { evaluateGate } from './evaluateGate';
 
-/** Signature of the circuit simulation function. */
+/** Signature of the circuit simulation function. The optional sim-clock time
+ *  drives time-dependent analog behavior (blink pins); digital evaluation
+ *  ignores it. */
 export type SimulateCircuit = (
   currentNodes: DigiNode[],
-  currentEdges: DigiEdge[]
+  currentEdges: DigiEdge[],
+  timeSeconds?: number
 ) => DigiNode[];
 
 /**
