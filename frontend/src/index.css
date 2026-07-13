@@ -1,29 +1,36 @@
 /**
  * @file index.css
- * @description Global theme tokens and base styles for the DigiSim circuit-lab UI.
+ * @description Global theme tokens and overrides for the DigiSim circuit-lab UI.
+ * Applies the user-approved forest green and moss green color scheme and custom typography.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playwrite+ID:wght@100..400&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
-  /* Dark native form controls — without this, <select> dropdown lists render
-     on the OS's white background and the light theme text becomes unreadable. */
+  /* Color Scheme variables from approved redesign */
+  --main-bg: #396D62;
+  --sub-bg: #9BA571;
+  --highlight: #FCDD7F;
+  --font-regular: 'STIX Two Text', Georgia, serif;
+  --font-cursive: 'Playwrite ID', cursive;
+
   color-scheme: dark;
-  --bg: #070b14;
-  --bg-canvas: #0a0f1c;
-  --panel: rgba(15, 23, 42, 0.72);
-  --panel-solid: #0f172a;
-  --border: rgba(148, 163, 184, 0.14);
-  --border-bright: rgba(34, 211, 238, 0.45);
-  --accent: #22d3ee;
-  --accent-dim: rgba(34, 211, 238, 0.12);
-  --signal: #4ade80;
-  --signal-glow: rgba(74, 222, 128, 0.55);
-  --danger: #f87171;
-  --text: #e2e8f0;
-  --muted: #64748b;
-  --stroke-idle: #94a3b8;
-  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bg: var(--main-bg);
+  --bg-canvas: var(--main-bg);
+  --panel: var(--sub-bg);
+  --panel-solid: var(--sub-bg);
+  --border: rgba(0, 0, 0, 0.15);
+  --border-bright: var(--highlight);
+  --accent: var(--highlight);
+  --accent-dim: rgba(252, 221, 127, 0.15);
+  --signal: #10b981;
+  --signal-glow: rgba(16, 185, 129, 0.35);
+  --danger: #ef4444;
+  --text: #f8fafc;
+  --muted: rgba(15, 23, 42, 0.6);
+  --stroke-idle: #475569;
+  
+  --font-ui: var(--font-regular);
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
@@ -54,10 +61,135 @@ code {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* ==========================================================================
+   DigiSim Redesign Overrides
+   ========================================================================== */
+
+/* Navbar, Sidebar, and Terminal Panels use Contrast Subcolor (#9BA571) */
+.navbar, 
+.sidebar, 
+.sidebar-head, 
+.sidebar-footer,
+.panel-resizer, 
+.terminal-panel,
+.projects-modal,
+.projects-modal__content,
+.inventory-modal,
+.inventory-modal__content,
+.camera-capture,
+.detection-review,
+.netlist-panel,
+.netlist-panel__content {
+  background-color: var(--panel) !important;
+  color: #1e293b !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Text elements inside contrast panels default to slate-900 for high readability */
+.navbar *, 
+.sidebar *, 
+.terminal-panel *,
+.netlist-panel *,
+.projects-modal *,
+.inventory-modal * {
+  color: #1e293b !important;
+}
+
+/* Headers and Special Highlights use Playwrite Indonesia (Cursive) & Golden Color */
+.highlight-text, 
+.brand-name, 
+.sidebar-view-title, 
+.sidebar-head__title, 
+.modal-title,
+.terminal-tab.active,
+.netlist-panel__title,
+h1, 
+h2, 
+h3 {
+  font-family: var(--font-cursive), cursive !important;
+  color: var(--accent) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  line-height: 2.0 !important;
+  overflow: visible !important;
+}
+
+/* Input Fields and Select lists styling inside contrast panels */
+input, 
+select, 
+textarea {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  border-radius: 4px;
+}
+
+input::placeholder, 
+textarea::placeholder {
+  color: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* Sub-headings, muted descriptions in sidebars */
+.brand-tag, .sidebar-menu-btn__sub, .palette-entry__hint {
+  color: rgba(15, 23, 42, 0.55) !important;
+}
+
+/* Specific button styles inside contrast sidebars */
+.sidebar-menu-btn, .sidebar-back-btn, .sidebar-collapse-btn {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+.sidebar-menu-btn:hover, .sidebar-back-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Terminal Console logs should retain dark green background (#396D62) & light code text */
+.terminal-panel .terminal-output, 
+.terminal-panel pre, 
+.terminal-panel table {
+  background-color: var(--bg) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.terminal-panel .terminal-output *, 
+.terminal-panel pre *, 
+.terminal-panel table * {
+  color: inherit !important;
+}
+
+.terminal-tab {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+.terminal-tab.active {
+  background: var(--bg) !important;
+  border-bottom-color: transparent !important;
+}
+
+/* Preserve monospace for code layout elements */
+code, 
+pre, 
+.font-mono,
+.reactflow-wrapper *,
+.reactflow-wrapper span,
+.reactflow-wrapper div {
+  font-family: var(--font-mono) !important;
+}
+
+/* Standardize ReactFlow control buttons background */
+.reactflow__controls-button {
+  background-color: var(--panel) !important;
+  fill: #1e293b !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+.reactflow__controls-button:hover {
+  background-color: rgba(0, 0, 0, 0.08) !important;
 }
