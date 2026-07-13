@@ -1367,7 +1367,143 @@ function App(): React.ReactElement {
           onTouchStart={isTouch ? onWrapperTouchStart : undefined}
           onTouchMove={isTouch ? cancelLongPress : undefined}
           onTouchEnd={isTouch ? cancelLongPress : undefined}
+          style={{ position: 'relative' }}
         >
+          {/* Subtle PCB Trace Background matching the user's reference image */}
+          <div className="pcb-trace-bg" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.18, overflow: 'hidden', zIndex: 0 }}>
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              {/* Top Left IC Outline */}
+              <rect x="80" y="60" width="70" height="70" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <g key={`pins-tl-${i}`}>
+                  <line x1="72" y1={72 + i*11} x2="80" y2={72 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1="150" y1={72 + i*11} x2="158" y2={72 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1={92 + i*11} y1="52" x2={92 + i*11} y2="60" stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1={92 + i*11} y1="130" x2={92 + i*11} y2="138" stroke="var(--border-bright)" strokeWidth="1.5" />
+                </g>
+              ))}
+
+              {/* Top Right IC Outline */}
+              <rect x="220" y="50" width="80" height="80" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <g key={`pins-tr-${i}`}>
+                  <line x1="212" y1={62 + i*12} x2="220" y2={62 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1="300" y1={62 + i*12} x2="308" y2={62 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1={232 + i*12} y1="42" x2={232 + i*12} y2="50" stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1={232 + i*12} y1="130" x2={232 + i*12} y2="138" stroke="var(--border-bright)" strokeWidth="1.5" />
+                </g>
+              ))}
+
+              {/* Center IC Outline */}
+              <rect x="380" y="200" width="90" height="90" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <g key={`pins-c-${i}`}>
+                  <line x1="372" y1={212 + i*12} x2="380" y2={212 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1="470" y1={212 + i*12} x2="478" y2={212 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1={392 + i*12} y1="192" x2={392 + i*12} y2="200" stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1={392 + i*12} y1="290" x2={392 + i*12} y2="298" stroke="var(--border-bright)" strokeWidth="1.5" />
+                </g>
+              ))}
+
+              {/* Bottom Left IC Outline */}
+              <rect x="100" y="280" width="100" height="65" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <g key={`pins-bl-${i}`}>
+                  <line x1="92" y1={290 + i*11} x2="100" y2={290 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1="200" y1={290 + i*11} x2="208" y2={290 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
+                </g>
+              ))}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <g key={`pins-bl-tb-${i}`}>
+                  <line x1={112 + i*11} y1="272" x2={112 + i*11} y2="280" stroke="var(--border-bright)" strokeWidth="1.5" />
+                  <line x1={112 + i*11} y1="345" x2={112 + i*11} y2="353" stroke="var(--border-bright)" strokeWidth="1.5" />
+                </g>
+              ))}
+
+              {/* Smaller connector blocks */}
+              <rect x="520" y="210" width="50" height="70" rx="3" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.2" />
+              <rect x="320" y="5" width="25" height="25" rx="3" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.2" />
+              <rect x="760" y="70" width="25" height="30" rx="3" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.2" />
+
+              {/* Copper PCB routing lines connecting chips exactly like the user's uploaded image */}
+              {/* Traces from Top Left to Top Right */}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <path
+                  key={`trace-tl-tr-${i}`}
+                  d={`M 150,${72 + i*11} L 170,${72 + i*11} L 190,${62 + i*12} L 220,${62 + i*12}`}
+                  stroke="var(--accent)"
+                  strokeWidth="1.2"
+                  fill="none"
+                  opacity="0.6"
+                />
+              ))}
+
+              {/* Traces from Top Right to Center Chip */}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <path
+                  key={`trace-tr-c-${i}`}
+                  d={`M 300,${86 + i*12} L 340,${86 + i*12} L 392,${212 + i*12}`}
+                  stroke="var(--accent)"
+                  strokeWidth="1.2"
+                  fill="none"
+                  opacity="0.6"
+                />
+              ))}
+
+              {/* Traces from Bottom Left to Center Chip */}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <path
+                  key={`trace-bl-c-${i}`}
+                  d={`M 200,${301 + i*11} L 260,${301 + i*11} L 330,${248 + i*12} L 380,${248 + i*12}`}
+                  stroke="var(--accent)"
+                  strokeWidth="1.2"
+                  fill="none"
+                  opacity="0.6"
+                />
+              ))}
+
+              {/* Traces from Top Left to Bottom Left */}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <path
+                  key={`trace-tl-bl-${i}`}
+                  d={`M 92,${72 + i*11} L 50,${72 + i*11} L 50,${301 + i*11} L 100,${301 + i*11}`}
+                  stroke="var(--accent)"
+                  strokeWidth="1.2"
+                  fill="none"
+                  opacity="0.6"
+                />
+              ))}
+
+              {/* Traces from Center to Connector block */}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <path
+                  key={`trace-c-conn-${i}`}
+                  d={`M 470,${224 + i*12} L 495,${224 + i*12} L 505,${220 + i*11} L 520,${220 + i*11}`}
+                  stroke="var(--accent)"
+                  strokeWidth="1.2"
+                  fill="none"
+                  opacity="0.6"
+                />
+              ))}
+
+              {/* Traces from Connector block to right bus */}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <path
+                  key={`trace-conn-bus-${i}`}
+                  d={`M 570,${220 + i*11} L 610,${220 + i*11} L 670,${82 + i*13} L 760,${82 + i*13}`}
+                  stroke="var(--accent)"
+                  strokeWidth="1.2"
+                  fill="none"
+                  opacity="0.6"
+                />
+              ))}
+
+              {/* Vertical grounding traces */}
+              <line x1="280" y1="130" x2="280" y2="230" stroke="var(--accent)" strokeWidth="1.2" opacity="0.4" />
+              <line x1="140" y1="130" x2="140" y2="230" stroke="var(--accent)" strokeWidth="1.2" opacity="0.4" />
+
+            </svg>
+          </div>
           {isTouch && touchSelectMode && (
             <button
               className="select-mode-chip"
