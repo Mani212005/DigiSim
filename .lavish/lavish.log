@@ -1,0 +1,4 @@
+[lavish-axi] Long-polling for user feedback or layout_warnings on /Users/manijoshi/.treehouse/DigiSim-2784d8/3/DigiSim/.lavish/digisim-design-system.html. This stays silent until the user sends feedback, ends the session, or the browser reports fresh layout_warnings - leave it running. If it gets killed or times out, re-run `lavish-axi poll /Users/manijoshi/.treehouse/DigiSim-2784d8/3/DigiSim/.lavish/digisim-design-system.html` - queued feedback is never lost.
+error: No active Lavish Editor session for this file
+code: NOT_FOUND
+help[1]: Run `lavish-axi /Users/manijoshi/.treehouse/DigiSim-2784d8/3/DigiSim/.lavish/digisim-design-system.html` first

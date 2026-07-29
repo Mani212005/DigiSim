@@ -1,37 +1,42 @@
 /**
  * @file index.css
  * @description Global theme tokens and overrides for the DigiSim circuit-lab UI.
- * Applies the user-approved forest green and moss green color scheme and custom typography.
+ * Ultra-modern glassmorphic dark-theme canvas with clean toolbars.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Playwrite+ID:wght@100..400&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
-  /* Color Scheme variables from approved redesign */
-  --main-bg: #396D62;
-  --sub-bg: #9BA571;
-  --highlight: #FCDD7F;
-  --font-regular: 'STIX Two Text', Georgia, serif;
-  --font-cursive: 'Playwrite ID', cursive;
-
   color-scheme: dark;
-  --bg: var(--main-bg);
-  --bg-canvas: var(--main-bg);
-  --panel: var(--sub-bg);
-  --panel-solid: var(--sub-bg);
-  --border: rgba(0, 0, 0, 0.15);
-  --border-bright: var(--highlight);
-  --accent: var(--highlight);
-  --accent-dim: rgba(252, 221, 127, 0.15);
-  --signal: #10b981;
-  --signal-glow: rgba(16, 185, 129, 0.35);
-  --danger: #ef4444;
-  --text: #f8fafc;
-  --muted: rgba(15, 23, 42, 0.6);
-  --stroke-idle: #475569;
   
-  --font-ui: var(--font-regular);
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --bg-dark: #0f1115;
+  --bg-canvas: #15181e;
+  --glass-bg: rgba(30, 34, 42, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
+  --bg: var(--bg-dark);
+  --panel: var(--glass-bg);
+  --panel-solid: #1e222a;
+  
+  --border: var(--glass-border);
+  --border-bright: rgba(255, 255, 255, 0.2);
+  
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-dim: rgba(99, 102, 241, 0.15);
+  
+  --signal: #22c55e;
+  --signal-glow: rgba(34, 197, 94, 0.35);
+  --danger: #ef4444;
+  
+  --text: #f3f4f6;
+  --muted: #9ca3af;
+  --stroke-idle: #4b5563;
+  
+  --font-ui: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-cursive: var(--font-ui); /* Removing old cursive font overrides */
 }
 
 * {
@@ -47,8 +52,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: var(--font-mono);
+code, pre, .font-mono {
+  font-family: var(--font-mono) !important;
 }
 
 ::-webkit-scrollbar {
@@ -61,19 +66,32 @@ code {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.45);
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
-/* ==========================================================================
-   DigiSim Redesign Overrides
-   ========================================================================== */
+/* Base resets from previous aggressive styles */
+h1, h2, h3 { 
+  font-family: var(--font-ui) !important;
+  color: var(--text) !important;
+  text-shadow: none !important;
+  line-height: 1.5 !important;
+}
 
-/* Navbar, Sidebar, and Terminal Panels use Contrast Subcolor (#9BA571) */
+.brand-name, .sidebar-view-title, .sidebar-head__title, .modal-title, .netlist-panel__title {
+  font-family: var(--font-ui) !important;
+  color: var(--text) !important;
+  text-shadow: none !important;
+  line-height: inherit !important;
+}
+
+/* Clear all the old forced bright green backgrounds */
 .navbar, 
 .sidebar, 
 .sidebar-head, 
@@ -89,107 +107,275 @@ code {
 .netlist-panel,
 .netlist-panel__content {
   background-color: var(--panel) !important;
-  color: #1e293b !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
-/* Text elements inside contrast panels default to slate-900 for high readability */
+/* Undo slate-900 override */
 .navbar *, 
 .sidebar *, 
 .terminal-panel *,
 .netlist-panel *,
 .projects-modal *,
 .inventory-modal * {
-  color: #1e293b !important;
-}
-
-/* Headers and Special Highlights use Playwrite Indonesia (Cursive) & Golden Color */
-.highlight-text, 
-.brand-name, 
-.sidebar-view-title, 
-.sidebar-head__title, 
-.modal-title,
-.terminal-tab.active,
-.netlist-panel__title,
-h1, 
-h2, 
-h3 {
-  font-family: var(--font-cursive), cursive !important;
-  color: var(--accent) !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-  line-height: 2.0 !important;
-  overflow: visible !important;
+  color: inherit !important;
 }
 
 /* Input Fields and Select lists styling inside contrast panels */
 input, 
 select, 
 textarea {
-  background-color: rgba(255, 255, 255, 0.25) !important;
-  color: #0f172a !important;
-  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 4px;
 }
 
 input::placeholder, 
 textarea::placeholder {
-  color: rgba(15, 23, 42, 0.5) !important;
+  color: var(--muted) !important;
 }
 
-/* Sub-headings, muted descriptions in sidebars */
 .brand-tag, .sidebar-menu-btn__sub, .palette-entry__hint {
-  color: rgba(15, 23, 42, 0.55) !important;
+  color: var(--muted) !important;
 }
 
-/* Specific button styles inside contrast sidebars */
 .sidebar-menu-btn, .sidebar-back-btn, .sidebar-collapse-btn {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-  border-color: rgba(0, 0, 0, 0.1) !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
 }
 .sidebar-menu-btn:hover, .sidebar-back-btn:hover {
-  background-color: rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Terminal Console logs should retain dark green background (#396D62) & light code text */
-.terminal-panel .terminal-output, 
-.terminal-panel pre, 
-.terminal-panel table {
-  background-color: var(--bg) !important;
-  color: #f8fafc !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+.reactflow__controls-button {
+  background-color: var(--glass-bg) !important;
+  backdrop-filter: blur(8px);
+  fill: var(--text) !important;
+  border-color: var(--border) !important;
+}
+.reactflow__controls-button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.terminal-panel .terminal-output *, 
-.terminal-panel pre *, 
-.terminal-panel table * {
-  color: inherit !important;
-}
-
-.terminal-tab {
-  background: rgba(0, 0, 0, 0.05) !important;
-  border-color: rgba(0, 0, 0, 0.1) !important;
-}
-.terminal-tab.active {
-  background: var(--bg) !important;
-  border-bottom-color: transparent !important;
-}
-
-/* Preserve monospace for code layout elements */
-code, 
-pre, 
-.font-mono,
 .reactflow-wrapper *,
 .reactflow-wrapper span,
 .reactflow-wrapper div {
-  font-family: var(--font-mono) !important;
+  font-family: inherit !important;
 }
 
-/* Standardize ReactFlow control buttons background */
-.reactflow__controls-button {
-  background-color: var(--panel) !important;
-  fill: #1e293b !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
+/* Glass Classes */
+.glass {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
-.reactflow__controls-button:hover {
-  background-color: rgba(0, 0, 0, 0.08) !important;
+
+/* Button enhancements */
+.btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 12px var(--accent-dim);
+}
+
+/* Inspector */
+.inspector {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  width: 260px;
+  border-radius: 12px;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.form-group input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Floating Toolbar */
+.selection-toolbar {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  border-radius: 9999px !important;
+  padding: 0.5rem !important;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.selection-toolbar__btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text) !important;
+  cursor: pointer;
+}
+.selection-toolbar__btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Palette chip matching the design system */
+.palette-chip {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 0.75rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  cursor: grab !important;
+  transition: all 0.2s !important;
+}
+
+.palette-chip:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Node Cards (Overriding old App.css node styles) */
+.gate-node, .io-node, .analog-node, .hardware-node {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  border-radius: 8px !important;
+  min-width: 120px;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: relative !important;
+  outline: none !important;
+}
+
+.react-flow__node.selected .gate-node,
+.react-flow__node.selected .io-node,
+.react-flow__node.selected .analog-node,
+.react-flow__node.selected .hardware-node {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 16px var(--accent-dim) !important;
+}
+
+.gate-node__label, .io-node__label, .analog-node__label {
+  background: rgba(0, 0, 0, 0.3) !important;
+  padding: 0.5rem !important;
+  font-size: 0.75rem !important;
+  text-align: center !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  width: 100% !important;
+  color: var(--text) !important;
+  margin: 0 !important;
+}
+
+.gate-symbol {
+  margin: 1rem auto !important;
+  display: block !important;
+}
+
+/* Handles */
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  background: var(--text) !important;
+  border: 2px solid var(--bg-dark) !important;
+  border-radius: 50% !important;
+  z-index: 10 !important;
+}
+
+.react-flow__handle:hover {
+  background: var(--accent) !important;
+  transform: scale(1.2);
+}
+
+/* IO Node internal layout override */
+.io-node__body {
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.toggle {
+  width: 40px;
+  height: 20px;
+  background: var(--stroke-idle);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+.toggle-track { display: none; }
+.toggle-thumb {
+  width: 16px !important;
+  height: 16px !important;
+  background: white !important;
+  border-radius: 50% !important;
+  position: absolute !important;
+  top: 2px !important;
+  left: 2px !important;
+  transition: all 0.2s !important;
+}
+.io-node--on .toggle { background: var(--signal) !important; }
+.io-node--on .toggle-thumb { left: 22px !important; transform: none !important; }
+
+/* Output LED */
+.led {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  background: var(--stroke-idle) !important;
+  border: 2px solid rgba(0,0,0,0.5) !important;
+  margin: 1rem auto;
+}
+.io-node--on .led {
+  background: var(--danger) !important;
+  box-shadow: 0 0 15px var(--danger) !important;
+  border-color: rgba(255,255,255,0.2) !important;
 }

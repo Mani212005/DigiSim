@@ -13,18 +13,17 @@ test('renders the DigiSim brand and Circuit Analyzer tag', () => {
   expect(screen.getByText(/circuit analyzer/i)).toBeInTheDocument();
 });
 
-test('toolbox menu lists the Logic Gates, Library and Vision sections', () => {
+test('toolbox menu lists the Component Library and Vision sections', () => {
   render(<App />);
-  expect(screen.getByRole('button', { name: /logic gates/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /component library/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /vision/i })).toBeInTheDocument();
 });
 
-test('opening Logic Gates shows the I/O and gate sections with a back button', () => {
+test('opening Component Library shows the I/O, analog, gate, and library sections with a back button', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
-  expect(screen.getByText(/^i\/o$/i)).toBeInTheDocument();
-  expect(screen.getByText(/^gates$/i)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /component library/i }));
+  expect(screen.getByText(/^i\/o & analog$/i)).toBeInTheDocument();
+  expect(screen.getByText(/^logic gates$/i)).toBeInTheDocument();
   // Back returns to the menu.
   fireEvent.click(screen.getByRole('button', { name: /back to toolbox menu/i }));
   expect(screen.getByRole('button', { name: /component library/i })).toBeInTheDocument();
@@ -32,7 +31,7 @@ test('opening Logic Gates shows the I/O and gate sections with a back button', (
 
 test('renders a palette chip for every gate type', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
+  fireEvent.click(screen.getByRole('button', { name: /component library/i }));
   for (const gate of ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR']) {
     expect(
       screen.getByRole('button', { name: new RegExp(`add ${gate} gate`, 'i') })
@@ -42,7 +41,7 @@ test('renders a palette chip for every gate type', () => {
 
 test('renders Input and Output palette chips', () => {
   render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
+  fireEvent.click(screen.getByRole('button', { name: /component library/i }));
   expect(screen.getByRole('button', { name: /add input/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /add output/i })).toBeInTheDocument();
 });
