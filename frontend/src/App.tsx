@@ -34,6 +34,7 @@ import 'reactflow/dist/style.css';
 import './App.css';
 
 import SelectionToolbar from './components/SelectionToolbar';
+import InspectorPanel from './components/InspectorPanel';
 import { useIsTouch } from './hooks/useIsTouch';
 
 import InputNode from './nodes/InputNode';
@@ -1161,30 +1162,12 @@ function App(): React.ReactElement {
 
           {sidebarView === 'menu' ? (
             <nav className="sidebar-menu" aria-label="Toolbox sections">
-              <button className="sidebar-menu-btn" onClick={() => setSidebarView('gates')}>
-                <GateGlyph type="and" />
-                <span className="sidebar-menu-btn__text">
-                  <span className="sidebar-menu-btn__name">Logic Gates</span>
-                  <span className="sidebar-menu-btn__sub">inputs, outputs & 7 gate types</span>
-                </span>
-                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
-              </button>
-              <button className="sidebar-menu-btn" onClick={() => setSidebarView('analog')}>
-                <span className="sidebar-menu-btn__icon" aria-hidden="true">⚡</span>
-                <span className="sidebar-menu-btn__text">
-                  <span className="sidebar-menu-btn__name">Analog Parts</span>
-                  <span className="sidebar-menu-btn__sub">sources, resistors, LEDs & more</span>
-                </span>
-                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
-              </button>
               <button className="sidebar-menu-btn" onClick={() => setSidebarView('library')}>
                 <span className="sidebar-menu-btn__icon" aria-hidden="true">▦</span>
                 <span className="sidebar-menu-btn__text">
                   <span className="sidebar-menu-btn__name">Component Library</span>
                   <span className="sidebar-menu-btn__sub">
-                    {libraryComponents.length > 0
-                      ? `${libraryComponents.length} shared parts`
-                      : 'boards, sensors & parts'}
+                    gates, I/O, analog, and hardware parts
                   </span>
                 </span>
                 <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
@@ -1208,127 +1191,113 @@ function App(): React.ReactElement {
                 ← Back
               </button>
               <span className="sidebar-view-title">
-                {sidebarView === 'gates' && 'Logic Gates'}
-                {sidebarView === 'analog' && 'Analog Parts'}
                 {sidebarView === 'library' && 'Component Library'}
                 {sidebarView === 'vision' && 'Vision'}
               </span>
             </div>
           )}
 
-          {sidebarView === 'gates' && (
-          <>
-          <section className="palette-section">
-            <h3>I/O</h3>
-            <div className="palette-grid palette-grid--io">
-              <button
-                className="palette-chip"
-                aria-label="Add Input"
-                draggable
-                onDragStart={(e) => onPaletteDragStart(e, 'input', 'Input')}
-                onClick={() => addNode('input', 'Input')}
-              >
-                <span className="chip-icon chip-icon--switch" aria-hidden="true">⏻</span>
-                <span className="chip-name">Input</span>
-              </button>
-              <button
-                className="palette-chip"
-                aria-label="Add Output"
-                draggable
-                onDragStart={(e) => onPaletteDragStart(e, 'output', 'Output')}
-                onClick={() => addNode('output', 'Output')}
-              >
-                <span className="chip-icon chip-icon--led" aria-hidden="true" />
-                <span className="chip-name">Output</span>
-              </button>
-            </div>
-          </section>
-
-          <section className="palette-section">
-            <h3>Gates</h3>
-            <div className="palette-grid">
-              {GATE_PALETTE.map((gate) => (
-                <button
-                  key={gate.type}
-                  className="palette-chip"
-                  aria-label={`Add ${gate.label}`}
-                  draggable
-                  onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
-                  onClick={() => addNode(gate.type, gate.label)}
-                >
-                  <GateGlyph type={gate.glyph} />
-                  <span className="chip-name">{gate.name}</span>
-                </button>
-              ))}
-            </div>
-            <p className="palette-hint">click or drag onto the canvas</p>
-          </section>
-          </>
-          )}
-
-          {sidebarView === 'analog' && (
-          <section className="palette-section">
-            <div className="palette-grid">
-              {ANALOG_PALETTE.map((part) => (
-                <button
-                  key={part.type}
-                  className="palette-chip"
-                  aria-label={`Add ${part.label}`}
-                  title={`${part.label} — ${part.hint}`}
-                  draggable
-                  onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
-                  onClick={() => addNode(part.type, part.label)}
-                >
-                  <span className="chip-icon analog-chip-icon" aria-hidden="true">
-                    {part.type === 'vsource' && '⎓'}
-                    {part.type === 'ground' && '⏚'}
-                    {part.type === 'resistor' && 'Ω'}
-                    {part.type === 'led' && '◗'}
-                    {part.type === 'analogSwitch' && '⌇'}
-                    {part.type === 'potentiometer' && '◲'}
-                  </span>
-                  <span className="chip-name">{part.name}</span>
-                </button>
-              ))}
-            </div>
-            <p className="palette-hint">
-              wire source → part → back to source; add a ground
-            </p>
-          </section>
-          )}
-
           {sidebarView === 'library' && (
-          <section className="palette-section palette-section--fill">
-            <input
-              className="library-search"
-              placeholder={`Search ${libraryComponents.length} parts…`}
-              value={librarySearch}
-              aria-label="Search component library"
-              onChange={(e) => setLibrarySearch(e.target.value)}
-            />
-            <div className="library-list library-list--full">
-              {filteredLibrary.map((component) => (
+          <section className="palette-section palette-section--fill" style={{ overflowY: 'auto' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.75rem' }}>I/O & Analog</h3>
+              <div className="palette-grid">
                 <button
-                  key={component.id}
-                  className="library-chip"
-                  aria-label={`Add ${component.canonical_name}`}
-                  title={`${component.canonical_name} — click or drag onto the canvas`}
+                  className="palette-chip"
+                  aria-label="Add Input"
                   draggable
-                  onDragStart={(e) => onLibraryDragStart(e, component)}
-                  onClick={() => addHardwareNode(component)}
+                  onDragStart={(e) => onPaletteDragStart(e, 'input', 'Input')}
+                  onClick={() => addNode('input', 'Input')}
                 >
-                  <span className="library-chip__name">
-                    {component.canonical_name}
-                    {component.verified && <span className="library-chip__check"> ✓</span>}
-                  </span>
-                  <span className="library-chip__meta">
-                    {component.category} · {component.pin_map.pins.length} pins
-                  </span>
+                  <span className="chip-icon chip-icon--switch" aria-hidden="true">⏻</span>
+                  <span className="chip-name">Input</span>
                 </button>
-              ))}
-              {libraryComponents.length > 0 && filteredLibrary.length === 0 && (
-                <p className="palette-hint">no matching parts</p>
-              )}
+                <button
+                  className="palette-chip"
+                  aria-label="Add Output"
+                  draggable
+                  onDragStart={(e) => onPaletteDragStart(e, 'output', 'Output')}
+                  onClick={() => addNode('output', 'Output')}
+                >
+                  <span className="chip-icon chip-icon--led" aria-hidden="true" />
+                  <span className="chip-name">Output</span>
+                </button>
+                {ANALOG_PALETTE.map((part) => (
+                  <button
+                    key={part.type}
+                    className="palette-chip"
+                    aria-label={`Add ${part.label}`}
+                    title={`${part.label} — ${part.hint}`}
+                    draggable
+                    onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
+                    onClick={() => addNode(part.type, part.label)}
+                  >
+                    <span className="chip-icon analog-chip-icon" aria-hidden="true">
+                      {part.type === 'vsource' && '⎓'}
+                      {part.type === 'ground' && '⏚'}
+                      {part.type === 'resistor' && 'Ω'}
+                      {part.type === 'led' && '◗'}
+                      {part.type === 'analogSwitch' && '⌇'}
+                      {part.type === 'potentiometer' && '◲'}
+                    </span>
+                    <span className="chip-name">{part.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.75rem' }}>Logic Gates</h3>
+              <div className="palette-grid">
+                {GATE_PALETTE.map((gate) => (
+                  <button
+                    key={gate.type}
+                    className="palette-chip"
+                    aria-label={`Add ${gate.label}`}
+                    draggable
+                    onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
+                    onClick={() => addNode(gate.type, gate.label)}
+                  >
+                    <GateGlyph type={gate.glyph} />
+                    <span className="chip-name">{gate.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.75rem' }}>Hardware Library</h3>
+              <input
+                className="library-search"
+                placeholder={`Search ${libraryComponents.length} parts…`}
+                value={librarySearch}
+                aria-label="Search component library"
+                onChange={(e) => setLibrarySearch(e.target.value)}
+              />
+              <div className="library-list library-list--full">
+                {filteredLibrary.map((component) => (
+                  <button
+                    key={component.id}
+                    className="library-chip"
+                    aria-label={`Add ${component.canonical_name}`}
+                    title={`${component.canonical_name} — click or drag onto the canvas`}
+                    draggable
+                    onDragStart={(e) => onLibraryDragStart(e, component)}
+                    onClick={() => addHardwareNode(component)}
+                  >
+                    <span className="library-chip__name">
+                      {component.canonical_name}
+                      {component.verified && <span className="library-chip__check"> ✓</span>}
+                    </span>
+                    <span className="library-chip__meta">
+                      {component.category} · {component.pin_map.pins.length} pins
+                    </span>
+                  </button>
+                ))}
+                {libraryComponents.length > 0 && filteredLibrary.length === 0 && (
+                  <p className="palette-hint">no matching parts</p>
+                )}
+              </div>
             </div>
             <p className="palette-hint">click or drag onto the canvas</p>
           </section>
@@ -1518,6 +1487,13 @@ function App(): React.ReactElement {
             onDelete={deleteSelection}
             onDuplicate={duplicateSelection}
           />
+          {selectedNodes.length === 1 && (
+            <InspectorPanel
+              node={selectedNodes[0]}
+              updateNodeData={updateNodeData}
+              onDelete={deleteSelection}
+            />
+          )}
           {isDetecting && (
             <div className="detect-overlay" role="status">
               <span className="spinner" /> Detecting circuit…
