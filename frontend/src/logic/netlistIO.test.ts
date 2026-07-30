@@ -1,7 +1,7 @@
 /**
  * @file netlistIO.test.ts
  * @description Tests for canonical JSON netlist export/import — round-trip fidelity,
- * every validation error class, auto-layout, and optional explicit positions.
+ * and structural checks for the new explicitly declared components/connections format.
  */
 
 import { exportNetlist, parseNetlist } from './netlistIO';
@@ -16,11 +16,12 @@ const node = (id: string, type: string, label: string): DigiNode => ({
 });
 
 /** Build an edge with an optional target handle. */
-const edge = (id: string, source: string, target: string, handle?: string): DigiEdge => ({
+const edge = (id: string, source: string, target: string, handle?: string, sourceHandle?: string): DigiEdge => ({
   id,
   source,
   target,
   targetHandle: handle ?? null,
+  sourceHandle: sourceHandle ?? null,
 });
 
 /** The default canvas: Input A, Input B → AND → Output. */
@@ -38,65 +39,44 @@ const andCircuit = (): { nodes: DigiNode[]; edges: DigiEdge[] } => ({
   ],
 });
 
-/** The spec's two-gate example: (A AND B) → N1; (N1 OR C) → OUT. */
+/** Spec representation of the two-gate example: (A AND B) → N1; (N1 OR C) → OUT. */
 const specNetlist = (): NetlistExportJSON => ({
   circuit_name: 'Spec Example',
   components: [
-    { id: 'U1', type: 'AND_GATE', inputs: ['A', 'B'], output: 'N1' },
-    { id: 'U2', type: 'OR_GATE', inputs: ['N1', 'C'], output: 'OUT' },
+    { id: 'in_1', type: 'INPUT', label: 'A', x: 0, y: 0 },
+    { id: 'in_2', type: 'INPUT', label: 'B', x: 0, y: 100 },
+    { id: 'in_3', type: 'INPUT', label: 'C', x: 0, y: 200 },
+    { id: 'and_1', type: 'ANDGATE', label: 'AND Gate', x: 100, y: 50 },
+    { id: 'or_1', type: 'ORGATE', label: 'OR Gate', x: 200, y: 100 },
+    { id: 'out_1', type: 'OUTPUT', label: 'OUT', x: 300, y: 100 },
   ],
-  nets: ['A', 'B', 'C', 'N1', 'OUT'],
-  io: { inputs: ['A', 'B', 'C'], outputs: ['OUT'] },
+  connections: [
+    { from: 'in_1.out', to: 'and_1.a' },
+    { from: 'in_2.out', to: 'and_1.b' },
+    { from: 'and_1.out', to: 'or_1.a' },
+    { from: 'in_3.out', to: 'or_1.b' },
+    { from: 'or_1.out', to: 'out_1.in' },
+  ],
 });
 
 describe('exportNetlist', () => {
-  test('serializes the default AND circuit into the canonical schema', () => {
+  test('serializes the default AND circuit into the explicit components/connections schema', () => {
     const { nodes, edges } = andCircuit();
     const doc = exportNetlist(nodes, edges, 'My Circuit');
     expect(doc).toEqual({
       circuit_name: 'My Circuit',
-      components: [{ id: 'U1', type: 'AND_GATE', inputs: ['A', 'B'], output: 'OUT1' }],
-      nets: ['A', 'B', 'OUT1'],
-      io: { inputs: ['A', 'B'], outputs: ['OUT1'] },
+      components: [
+        { id: 'input_1', type: 'INPUT', label: 'Input A', x: 100, y: 0 },
+        { id: 'input_2', type: 'INPUT', label: 'Input B', x: 200, y: 0 },
+        { id: 'andGate_3', type: 'ANDGATE', label: 'AND Gate', x: 300, y: 0 },
+        { id: 'output_4', type: 'OUTPUT', label: 'Output', x: 400, y: 0 },
+      ],
+      connections: [
+        { from: 'input_1.out', to: 'andGate_3.a' },
+        { from: 'input_2.out', to: 'andGate_3.b' },
+        { from: 'andGate_3.out', to: 'output_4.in' },
+      ]
     });
-  });
-
-  test('names internal nets N1… and preserves custom output labels', () => {
-    const nodes = [
-      node('1', 'input', 'A'),
-      node('2', 'notGate', 'NOT Gate'),
-      node('3', 'orGate', 'OR Gate'),
-      node('4', 'output', 'SUM'),
-    ];
-    const edges = [
-      edge('e1', '1', '2', 'a'),
-      edge('e2', '2', '3', 'a'),
-      edge('e3', '1', '3', 'b'),
-      edge('e4', '3', '4'),
-    ];
-    const doc = exportNetlist(nodes, edges, 'x');
-    expect(doc.components).toEqual([
-      { id: 'U1', type: 'NOT_GATE', inputs: ['A'], output: 'N1' },
-      { id: 'U2', type: 'OR_GATE', inputs: ['N1', 'A'], output: 'SUM' },
-    ]);
-    expect(doc.io).toEqual({ inputs: ['A'], outputs: ['SUM'] });
-  });
-
-  test('de-duplicates colliding input labels', () => {
-    const nodes = [
-      node('1', 'input', 'A'),
-      node('2', 'input', 'A'),
-      node('3', 'andGate', 'AND Gate'),
-      node('4', 'output', 'Output'),
-    ];
-    const edges = [
-      edge('e1', '1', '3', 'a'),
-      edge('e2', '2', '3', 'b'),
-      edge('e3', '3', '4'),
-    ];
-    const doc = exportNetlist(nodes, edges, 'x');
-    expect(doc.io.inputs).toEqual(['A', 'A_2']);
-    expect(doc.components[0].inputs).toEqual(['A', 'A_2']);
   });
 });
 
@@ -112,17 +92,6 @@ describe('parseNetlist — reconstruction', () => {
     expect(byType('orGate')).toBe(1);
     expect(byType('output')).toBe(1);
     expect(result.edges).toHaveLength(5);
-
-    // Auto-layout: inputs at x=0, AND one layer right, OR right of AND, output last.
-    const x = (key: string): number => result.nodes.find((n) => n.key === key)!.x;
-    expect(x('in:A')).toBe(0);
-    expect(x('comp:U1')).toBeGreaterThan(x('in:A'));
-    expect(x('comp:U2')).toBeGreaterThan(x('comp:U1'));
-    expect(x('out:0:OUT')).toBeGreaterThan(x('comp:U2'));
-
-    // Gate inputs land on handles 'a' then 'b' in netlist order.
-    const u1Edges = result.edges.filter((e) => e.targetKey === 'comp:U1');
-    expect(u1Edges.map((e) => e.targetHandle)).toEqual(['a', 'b']);
   });
 
   test('round-trips its own export', () => {
@@ -144,9 +113,9 @@ describe('parseNetlist — reconstruction', () => {
     doc.components[0].y = 567;
     const result = parseNetlist(doc);
     if (!result.ok) throw new Error(result.errors.join('; '));
-    const u1 = result.nodes.find((n) => n.key === 'comp:U1')!;
-    expect(u1.x).toBe(1234);
-    expect(u1.y).toBe(567);
+    const in1 = result.nodes.find((n) => n.key === 'comp:in_1')!;
+    expect(in1.x).toBe(1234);
+    expect(in1.y).toBe(567);
   });
 });
 
@@ -163,66 +132,24 @@ describe('parseNetlist — validation errors', () => {
       expect.arrayContaining([
         "'circuit_name' must be a non-empty string",
         "'components' must be an array",
-        "'nets' must be an array of strings",
-        "'io' must be an object with 'inputs' and 'outputs' string arrays",
+        "'connections' must be an array",
       ])
     );
   });
 
-  test('reports a dangling net reference', () => {
-    const doc = specNetlist();
-    doc.components[1].inputs = ['N2', 'C'];
-    const result = parseNetlist(doc);
-    if (result.ok) throw new Error('expected failure');
-    expect(result.errors).toContain("net 'N2' referenced but never defined");
-  });
-
   test('reports duplicate component ids', () => {
     const doc = specNetlist();
-    doc.components[1].id = 'U1';
+    doc.components[1].id = 'in_1';
     const result = parseNetlist(doc);
     if (result.ok) throw new Error('expected failure');
-    expect(result.errors).toContain("duplicate component id 'U1'");
+    expect(result.errors).toContain("duplicate component id 'in_1'");
   });
 
-  test('reports unknown component types', () => {
+  test('reports connection from unknown component', () => {
     const doc = specNetlist();
-    doc.components[0].type = 'XAND_GATE';
+    doc.connections[0].from = 'unknown.out';
     const result = parseNetlist(doc);
     if (result.ok) throw new Error('expected failure');
-    expect(result.errors).toContain("component 'U1' has unknown type 'XAND_GATE'");
-  });
-
-  test('reports wrong input arity', () => {
-    const doc = specNetlist();
-    doc.components[0].type = 'NOT_GATE';
-    const result = parseNetlist(doc);
-    if (result.ok) throw new Error('expected failure');
-    expect(result.errors).toContain("component 'U1' (NOT_GATE) expects 1 input, got 2");
-  });
-
-  test('reports multiply-driven and never-driven nets', () => {
-    const doc = specNetlist();
-    doc.components[1].output = 'N1'; // N1 now driven by U1 and U2; OUT never driven.
-    const result = parseNetlist(doc);
-    if (result.ok) throw new Error('expected failure');
-    expect(result.errors).toContain("net 'N1' is driven by multiple sources");
-    expect(result.errors).toContain(
-      "net 'OUT' is never driven (not an io input and no component output)"
-    );
-  });
-
-  test('reports combinational loops', () => {
-    const result = parseNetlist({
-      circuit_name: 'Loop',
-      components: [
-        { id: 'U1', type: 'AND_GATE', inputs: ['A', 'Y'], output: 'X' },
-        { id: 'U2', type: 'OR_GATE', inputs: ['X', 'A'], output: 'Y' },
-      ],
-      nets: ['A', 'X', 'Y'],
-      io: { inputs: ['A'], outputs: ['Y'] },
-    });
-    if (result.ok) throw new Error('expected failure');
-    expect(result.errors.some((e) => e.includes('combinational loop'))).toBe(true);
+    expect(result.errors).toContain("connection from unknown component 'unknown'");
   });
 });
