@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DigiSim - Sidebar Redesign</title>
+<style>
+  :root {
+    --bg-dark: #0d0f12;
+    --bg-canvas: #121418;
+    --sidebar-bg: #16191f;
+    --sidebar-border: #262a33;
+    --accent: #5e6ad2;
+    --accent-hover: #727ee6;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --surface-hover: rgba(255, 255, 255, 0.04);
+    --surface-active: rgba(255, 255, 255, 0.08);
+    --tooltip-bg: #2a2e37;
+    --font-main: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  body {
+    margin: 0;
+    font-family: var(--font-main);
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Navbar */
+  header.navbar {
+    height: 48px;
+    background: var(--bg-dark);
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sleek Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--sidebar-border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+
+  /* Redesigned Sidebar */
+  .sidebar {
+    width: 280px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+
+  /* 1. Header & Segmented Tabs */
+  .sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+  .segment-control {
+    display: flex;
+    background: var(--bg-dark);
+    border-radius: 6px;
+    padding: 2px;
+    margin-bottom: 12px;
+  }
+  .segment-tab {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 0;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .segment-tab.active {
+    background: var(--sidebar-bg);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .segment-tab:hover:not(.active) {
+    color: var(--text-primary);
+  }
+
+  /* 2. Search Bar with Shortcut */
+  .search-container {
+    position: relative;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--bg-dark);
+    border: 1px solid var(--sidebar-border);
+    color: var(--text-primary);
+    border-radius: 6px;
+    padding: 8px 10px 8px 32px;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus {
+    border-color: var(--accent);
+  }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+  }
+  .search-shortcut {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--sidebar-border);
+    color: var(--text-secondary);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+
+  /* CSS-Only Tabs & Accordions */
+  input[type="radio"].tab-toggle,
+  input[type="checkbox"].accordion-toggle {
+    display: none;
+  }
+  
+  /* Tabs UI */
+  .segment-tab {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 0;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: block; /* for label */
+  }
+  
+  /* Active Tab styling */
+  #tab-digital:checked ~ .sidebar-header .segment-control label[for="tab-digital"],
+  #tab-analog:checked ~ .sidebar-header .segment-control label[for="tab-analog"],
+  #tab-hardware:checked ~ .sidebar-header .segment-control label[for="tab-hardware"] {
+    background: var(--sidebar-bg);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .segment-tab:hover {
+    color: var(--text-primary);
+  }
+
+  /* Show/Hide content based on checked radio */
+  .sidebar-content {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  
+  #tab-digital:checked ~ #sidebar-digital,
+  #tab-analog:checked ~ #sidebar-analog,
+  #tab-hardware:checked ~ #sidebar-hardware {
+    display: block;
+  }
+
+  /* 4. Collapsible Accordions (CSS Only) */
+  .accordion {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    padding: 4px 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+  .accordion-header:hover {
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+  }
+  .accordion-icon {
+    transition: transform 0.2s;
+  }
+  
+  /* Collapsed state when checkbox is checked */
+  .accordion-toggle:checked ~ .accordion-body {
+    display: none;
+  }
+  .accordion-toggle:checked ~ .accordion-header .accordion-icon {
+    transform: rotate(-90deg);
+  }
+
+  .accordion-body {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  /* List view for hardware */
+  .accordion-body.list-view {
+    grid-template-columns: 1fr;
+  }
+
+  /* 5. Clean SVG Gate Icons */
+  .component-chip {
+    background: var(--bg-dark);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 8px;
+    cursor: grab;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  .component-chip:hover {
+    background: var(--surface-active);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(94, 106, 210, 0.15);
+  }
+  .chip-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+  .chip-label {
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* 6. Hover Tooltips */
+  .component-chip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: var(--tooltip-bg);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    z-index: 100;
+  }
+  .component-chip:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  /* 7. Favorite / Pin Indicator */
+  .pin-icon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 10px;
+    height: 10px;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .component-chip:hover .pin-icon {
+    opacity: 1;
+  }
+  .component-chip.pinned .pin-icon {
+    opacity: 1;
+    color: #fbbf24;
+  }
+
+  /* List item style */
+  .list-chip {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-dark);
+    border: 1px solid var(--sidebar-border);
+    border-radius: 6px;
+    cursor: grab;
+    transition: all 0.2s;
+  }
+  .list-chip:hover {
+    border-color: var(--accent);
+    background: var(--surface-active);
+  }
+  .list-chip .chip-icon {
+    margin-bottom: 0;
+    margin-right: 12px;
+    width: 16px;
+    height: 16px;
+  }
+  .list-chip .chip-label {
+    flex: 1;
+    font-size: 12px;
+  }
+  .list-chip .chip-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* Canvas Placeholder */
+  .canvas-area {
+    flex: 1;
+    background-color: var(--bg-canvas);
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+  <header class="navbar">
+    DigiSim Pro
+  </header>
+
+  <div class="main-content">
+    
+    <!-- Redesigned Sidebar -->
+    <aside class="sidebar">
+      <input type="radio" id="tab-digital" name="tabs" class="tab-toggle" checked>
+      <input type="radio" id="tab-analog" name="tabs" class="tab-toggle">
+      <input type="radio" id="tab-hardware" name="tabs" class="tab-toggle">
+
+      <div class="sidebar-header">
+        <div class="segment-control">
+          <label class="segment-tab" for="tab-digital">Digital</label>
+          <label class="segment-tab" for="tab-analog">Analog</label>
+          <label class="segment-tab" for="tab-hardware">Hardware</label>
+        </div>
+        <div class="search-container">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="search-input" placeholder="Search components...">
+          <span class="search-shortcut">⌘K</span>
+        </div>
+      </div>
+
+      <div class="sidebar-content" id="sidebar-digital">
+        
+        <!-- I/O Accordion -->
+        <div class="accordion">
+          <input type="checkbox" id="acc-io" class="accordion-toggle">
+          <label class="accordion-header" for="acc-io">
+            <span>Input / Output</span>
+            <svg class="accordion-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </label>
+          <div class="accordion-body">
+            
+            <div class="component-chip pinned" data-tooltip="Input Toggle Switch">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="8" width="16" height="8" rx="4"/><circle cx="8" cy="12" r="2" fill="currentColor"/></svg>
+              <span class="chip-label">Input</span>
+            </div>
+            
+            <div class="component-chip pinned" data-tooltip="Output LED Indicator">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+              <span class="chip-label">Output</span>
+            </div>
+            
+          </div>
+        </div>
+
+        <!-- Basic Gates Accordion -->
+        <div class="accordion">
+          <input type="checkbox" id="acc-basic" class="accordion-toggle">
+          <label class="accordion-header" for="acc-basic">
+            <span>Basic Gates</span>
+            <svg class="accordion-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </label>
+          <div class="accordion-body">
+            
+            <div class="component-chip" data-tooltip="AND Gate">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 40 40" stroke="currentColor" fill="none" stroke-width="2"><path d="M10 10 L20 10 C 30 10, 30 30, 20 30 L10 30 Z" /></svg>
+              <span class="chip-label">AND</span>
+            </div>
+
+            <div class="component-chip" data-tooltip="OR Gate">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 40 40" stroke="currentColor" fill="none" stroke-width="2"><path d="M10 10 C 20 10, 30 20, 30 20 C 30 20, 20 30, 10 30 C 15 20, 15 20, 10 10" /></svg>
+              <span class="chip-label">OR</span>
+            </div>
+
+            <div class="component-chip" data-tooltip="NOT Gate">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 40 40" stroke="currentColor" fill="none" stroke-width="2"><path d="M10 10 L20 20 L10 30 Z" /><circle cx="23" cy="20" r="3" /></svg>
+              <span class="chip-label">NOT</span>
+            </div>
+
+            <div class="component-chip" data-tooltip="NAND Gate">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 40 40" stroke="currentColor" fill="none" stroke-width="2"><path d="M10 10 L20 10 C 30 10, 30 30, 20 30 L10 30 Z" /><circle cx="33" cy="20" r="3" /></svg>
+              <span class="chip-label">NAND</span>
+            </div>
+
+            <div class="component-chip" data-tooltip="NOR Gate">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 40 40" stroke="currentColor" fill="none" stroke-width="2"><path d="M10 10 C 20 10, 30 20, 30 20 C 30 20, 20 30, 10 30 C 15 20, 15 20, 10 10" /><circle cx="33" cy="20" r="3" /></svg>
+              <span class="chip-label">NOR</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Advanced Gates Accordion -->
+        <div class="accordion">
+          <input type="checkbox" id="acc-adv" class="accordion-toggle" checked>
+          <label class="accordion-header" for="acc-adv">
+            <span>Advanced Gates</span>
+            <svg class="accordion-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </label>
+          <div class="accordion-body">
+            
+            <div class="component-chip" data-tooltip="XOR Gate">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 40 40" stroke="currentColor" fill="none" stroke-width="2"><path d="M5 10 C 10 20, 10 20, 5 30" /><path d="M10 10 C 20 10, 30 20, 30 20 C 30 20, 20 30, 10 30 C 15 20, 15 20, 10 10" /></svg>
+              <span class="chip-label">XOR</span>
+            </div>
+
+            <div class="component-chip" data-tooltip="XNOR Gate">
+              <svg class="pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
+              <svg class="chip-icon" viewBox="0 0 40 40" stroke="currentColor" fill="none" stroke-width="2"><path d="M5 10 C 10 20, 10 20, 5 30" /><path d="M10 10 C 20 10, 30 20, 30 20 C 30 20, 20 30, 10 30 C 15 20, 15 20, 10 10" /><circle cx="33" cy="20" r="3" /></svg>
+              <span class="chip-label">XNOR</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Analog Tab Content -->
+      <div class="sidebar-content" id="sidebar-analog">
+        <div class="accordion">
+          <input type="checkbox" id="acc-power" class="accordion-toggle">
+          <label class="accordion-header" for="acc-power">
+            <span>Power & Reference</span>
+            <svg class="accordion-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </label>
+          <div class="accordion-body">
+            <div class="component-chip" data-tooltip="Voltage Source (5V DC)">
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              <span class="chip-label">Source</span>
+            </div>
+            <div class="component-chip" data-tooltip="Ground (0V)">
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="4" x2="12" y2="12"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></svg>
+              <span class="chip-label">Ground</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion">
+          <input type="checkbox" id="acc-passives" class="accordion-toggle">
+          <label class="accordion-header" for="acc-passives">
+            <span>Passives</span>
+            <svg class="accordion-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </label>
+          <div class="accordion-body">
+            <div class="component-chip" data-tooltip="Resistor (220Ω)">
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 12 6 12 8 8 12 16 16 8 18 12 22 12"/></svg>
+              <span class="chip-label">Resistor</span>
+            </div>
+            <div class="component-chip" data-tooltip="Potentiometer (10kΩ)">
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 12 6 12 8 8 12 16 16 8 18 12 22 12"/><line x1="12" y1="2" x2="12" y2="6"/><polygon points="10 6 14 6 12 10"/></svg>
+              <span class="chip-label">Pot</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hardware Tab Content -->
+      <div class="sidebar-content" id="sidebar-hardware">
+        <div class="accordion">
+          <input type="checkbox" id="acc-logic-ics" class="accordion-toggle">
+          <label class="accordion-header" for="acc-logic-ics">
+            <span>Logic ICs</span>
+            <svg class="accordion-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </label>
+          <div class="accordion-body list-view">
+            <div class="list-chip" data-tooltip="Quad 2-Input NAND Gate">
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="2" y1="8" x2="4" y2="8"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="2" y1="16" x2="4" y2="16"/><line x1="20" y1="8" x2="22" y2="8"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="20" y1="16" x2="22" y2="16"/></svg>
+              <span class="chip-label">74HC00</span>
+              <span class="chip-meta">14 pins</span>
+            </div>
+            <div class="list-chip" data-tooltip="Hex Inverter">
+              <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="2" y1="8" x2="4" y2="8"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="2" y1="16" x2="4" y2="16"/><line x1="20" y1="8" x2="22" y2="8"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="20" y1="16" x2="22" y2="16"/></svg>
+              <span class="chip-label">74HC04</span>
+              <span class="chip-meta">14 pins</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="canvas-area">
+      Canvas Area
+    </main>
+
+  </div>
+
+<script>
+  // Script removed in favor of CSS-only interaction to ensure robust 
+  // execution in any restrictive iframe/CSP environments.
+</script>
+</body>
+</html>

@@ -22,8 +22,8 @@ test('toolbox menu lists the Component Library and Vision sections', () => {
 test('opening Component Library shows the I/O, analog, gate, and library sections with a back button', () => {
   render(<App />);
   fireEvent.click(screen.getByRole('button', { name: /component library/i }));
-  expect(screen.getByText(/^i\/o & analog$/i)).toBeInTheDocument();
-  expect(screen.getByText(/^logic gates$/i)).toBeInTheDocument();
+  expect(screen.getByText(/^input \/ output$/i)).toBeInTheDocument();
+  expect(screen.getByText(/^basic gates$/i)).toBeInTheDocument();
   // Back returns to the menu.
   fireEvent.click(screen.getByRole('button', { name: /back to toolbox menu/i }));
   expect(screen.getByRole('button', { name: /component library/i })).toBeInTheDocument();
@@ -32,6 +32,10 @@ test('opening Component Library shows the I/O, analog, gate, and library section
 test('renders a palette chip for every gate type', () => {
   render(<App />);
   fireEvent.click(screen.getByRole('button', { name: /component library/i }));
+  
+  // Advanced gates are collapsed by default
+  fireEvent.click(screen.getByText(/^advanced gates$/i));
+
   for (const gate of ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR']) {
     expect(
       screen.getByRole('button', { name: new RegExp(`add ${gate} gate`, 'i') })
@@ -49,7 +53,9 @@ test('renders Input and Output palette chips', () => {
 test('opening Library shows the part search', () => {
   render(<App />);
   fireEvent.click(screen.getByRole('button', { name: /component library/i }));
-  expect(screen.getByLabelText(/search component library/i)).toBeInTheDocument();
+  // Hardware tab must be clicked to see the search bar
+  fireEvent.click(screen.getByRole('button', { name: /^hardware$/i }));
+  expect(screen.getByPlaceholderText(/search.*parts/i)).toBeInTheDocument();
 });
 
 test('opening Vision shows the Image Upload control', () => {
