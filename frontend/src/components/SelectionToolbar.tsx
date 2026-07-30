@@ -30,20 +30,17 @@ function SelectionToolbar({
 
   return (
     <div
-      className="selection-toolbar"
+      className="floating-toolbar glass"
       role="toolbar"
       aria-label="Selection actions"
       style={{ left: screenX, top: Math.max(8, screenY - 52) }}
     >
-      <span className="selection-toolbar__count">{selectedNodes.length}</span>
-      <button className="selection-toolbar__btn" onClick={onDuplicate}>
-        ⧉ Duplicate
+      <span className="selection-toolbar__count" style={{ display: 'none' }}>{selectedNodes.length}</span>
+      <button className="toolbar-btn" title="Duplicate" onClick={onDuplicate}>
+        ⧉
       </button>
-      <button
-        className="selection-toolbar__btn selection-toolbar__btn--danger"
-        onClick={onDelete}
-      >
-        ✕ Delete
+      <button className="toolbar-btn" title="Delete" onClick={onDelete}>
+        ✕
       </button>
     </div>
   );

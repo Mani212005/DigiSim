@@ -96,20 +96,22 @@ export function GateGlyph({ type }: GateGlyphProps): React.ReactElement {
 function GateShell({ type, data, inputs = 2 }: GateShellProps): React.ReactElement {
   const active = data.value === 1;
   return (
-    <div className={`gate-node${active ? ' gate-node--on' : ''}`}>
+    <div className={`node-card glass${active ? ' active' : ''}`}>
+      <div className="node-header">{data.label}</div>
+      <div className="node-body">
+        <svg viewBox="0 0 110 70" className="node-gate" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3">
+          {SYMBOLS[type]}
+        </svg>
+      </div>
       {inputs === 1 ? (
-        <Handle type="target" position={Position.Left} id="a" style={{ top: '50%' }} />
+        <Handle type="target" position={Position.Left} id="a" className="handle handle-left" style={{ top: '50%' }} />
       ) : (
         <>
-          <Handle type="target" position={Position.Left} id="a" style={{ top: '31%' }} />
-          <Handle type="target" position={Position.Left} id="b" style={{ top: '69%' }} />
+          <Handle type="target" position={Position.Left} id="a" className="handle handle-left" style={{ top: '31%' }} />
+          <Handle type="target" position={Position.Left} id="b" className="handle handle-left" style={{ top: '69%' }} />
         </>
       )}
-      <svg viewBox="0 0 110 70" className="gate-symbol" aria-hidden="true">
-        {SYMBOLS[type]}
-      </svg>
-      <span className="gate-node__label">{data.label}</span>
-      <Handle type="source" position={Position.Right} style={{ top: '50%' }} />
+      <Handle type="source" position={Position.Right} className="handle handle-right" style={{ top: '50%' }} />
     </div>
   );
 }

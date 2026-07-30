@@ -23,18 +23,17 @@ function InputNode({ data, id, updateNodeData }: InputNodeProps): React.ReactEle
 
   return (
     <div
-      className={`io-node input-node${active ? ' io-node--on' : ''}`}
+      className={`node-card glass node-input${active ? ' active' : ''}`}
       onClick={toggleInput}
       role="switch"
       aria-checked={active}
       aria-label={`${data.label} toggle`}
     >
-      <span className="io-node__label">{data.label}</span>
-      <div className="toggle-track">
-        <div className="toggle-thumb">{data.value}</div>
+      <div className="node-header">{data.label}</div>
+      <div className="node-body">
+        <div className="switch-toggle" />
       </div>
-      <span className="io-node__state">{active ? 'HIGH' : 'LOW'}</span>
-      <Handle type="source" position={Position.Right} style={{ top: '50%' }} />
+      <Handle type="source" position={Position.Right} className="handle handle-right" />
     </div>
   );
 }
