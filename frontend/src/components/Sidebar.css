@@ -1,0 +1,278 @@
+/* Sidebar Redesign CSS */
+
+.redesigned-library {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 1. Header & Segmented Tabs */
+.redesigned-library .sidebar-header {
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid var(--border-color, #262a33);
+}
+
+.segment-control {
+  display: flex;
+  background: var(--bg-canvas, #121418);
+  border-radius: 6px;
+  padding: 2px;
+  margin-bottom: 12px;
+}
+
+.segment-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 0;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.segment-tab.active {
+  background: var(--panel, #16191f);
+  color: var(--text-primary, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.segment-tab:hover:not(.active) {
+  color: var(--text-primary, #e2e8f0);
+}
+
+/* 2. Search Bar */
+.search-container {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--bg-canvas, #121418);
+  border: 1px solid var(--border-color, #262a33);
+  color: var(--text-primary, #e2e8f0);
+  border-radius: 6px;
+  padding: 8px 10px 8px 32px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: var(--accent, #5e6ad2);
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #64748b);
+}
+
+.search-shortcut {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--border-color, #262a33);
+  color: var(--text-secondary, #94a3b8);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* 3. Scrollable Content Area */
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+
+/* 4. Collapsible Accordions */
+.accordion {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: 4px 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.accordion-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary, #94a3b8);
+}
+
+.accordion-icon {
+  transition: transform 0.2s;
+}
+
+.accordion.collapsed .accordion-icon {
+  transform: rotate(-90deg);
+}
+
+.accordion-body {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.accordion-body .list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 5. Component Chips */
+.component-chip {
+  background: var(--bg-canvas, #121418);
+  border: 1px solid var(--border-color, #262a33);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  cursor: grab;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.component-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent, #5e6ad2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(94, 106, 210, 0.15);
+}
+
+.chip-icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 6px;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.chip-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* 6. Hover Tooltips */
+.component-chip::after, .list-chip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: #2a2e37;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  z-index: 100;
+}
+
+.component-chip:hover::after, .list-chip:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* 7. Pin Indicator */
+.pin-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  color: var(--text-muted, #64748b);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.component-chip:hover .pin-icon {
+  opacity: 1;
+}
+
+.component-chip.pinned .pin-icon {
+  opacity: 1;
+  color: #fbbf24;
+}
+
+/* List Item Style */
+.list-chip {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-canvas, #121418);
+  border: 1px solid var(--border-color, #262a33);
+  border-radius: 6px;
+  cursor: grab;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.list-chip:hover {
+  border-color: var(--accent, #5e6ad2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.list-chip .chip-icon {
+  margin-bottom: 0;
+  margin-right: 12px;
+  width: 16px;
+  height: 16px;
+}
+
+.list-chip .chip-label {
+  flex: 1;
+  font-size: 12px;
+  text-align: left;
+}
+
+.list-chip .chip-meta {
+  font-size: 10px;
+  color: var(--text-muted, #64748b);
+}
+
+/* Custom Scrollbar */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--border-color, #262a33);
+  border-radius: 3px;
+}
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted, #64748b);
+}

@@ -68,6 +68,7 @@ import NetlistPanel from './components/NetlistPanel';
 import NetlistImportDialog from './components/NetlistImportDialog';
 import ProjectsModal from './components/ProjectsModal';
 import InventoryModal from './components/InventoryModal';
+import Sidebar from './components/Sidebar';
 import { exportNetlist } from './logic/netlistIO';
 import { useProjects } from './hooks/useProjects';
 import type {
@@ -1113,236 +1114,36 @@ function App(): React.ReactElement {
         />
       )}
       <div className="content-wrapper">
-        <button
-          className="sidebar-toggle"
-          aria-label="Toggle component drawer"
-          aria-expanded={sidebarOpen}
-          onClick={() => setSidebarOpen((open) => !open)}
-        >
-          {sidebarOpen ? '✕ Close' : '☰ Components'}
-        </button>
-        {!sidebarPinned && (
-          <button
-            className="sidebar-reveal-btn"
-            aria-label="Show toolbox"
-            title="Toolbox — hover to peek, click to pin"
-            onMouseEnter={isTouch ? undefined : holdSidebarPeek}
-            onMouseLeave={isTouch ? undefined : releaseSidebarPeek}
-            onClick={() => {
-              setSidebarPinned(true);
-              setSidebarPeek(false);
-            }}
-          >
-            ☰
-          </button>
-        )}
-        <div
-          className={`sidebar glass${sidebarOpen ? ' sidebar--open' : ''}${
-            !sidebarPinned && !sidebarPeek ? ' sidebar--collapsed' : ''
-          }${!sidebarPinned && sidebarPeek ? ' sidebar--peek' : ''}`}
-          style={{ '--sidebar-w': `${sidebarWidth}px` } as React.CSSProperties}
-          onMouseEnter={!sidebarPinned && !isTouch ? holdSidebarPeek : undefined}
-          onMouseLeave={!sidebarPinned && !isTouch ? releaseSidebarPeek : undefined}
-        >
-          <div className="sidebar-head">
-            <span className="sidebar-head__title">Toolbox</span>
-            <button
-              className="sidebar-collapse-btn"
-              aria-label={sidebarPinned ? 'Close toolbox' : 'Pin toolbox open'}
-              title={sidebarPinned ? 'Close — hover ☰ to peek' : 'Pin open'}
-              onClick={() => {
-                if (sidebarPinned) {
-                  setSidebarPinned(false);
-                } else {
-                  setSidebarPinned(true);
-                  setSidebarPeek(false);
-                }
-              }}
-            >
-              {sidebarPinned ? '☰' : '⊙'}
-            </button>
-          </div>
-
-          {/* Hidden detection inputs stay mounted regardless of the view so
-              the camera fallback and E2E uploads always have a target. */}
-          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden-file-input" id="image-upload-input" />
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleImageUpload}
-            className="hidden-file-input"
-            id="camera-fallback-input"
-          />
-
-          {sidebarView === 'menu' ? (
-            <nav className="sidebar-menu" aria-label="Toolbox sections">
-              <button className="sidebar-menu-btn" onClick={() => setSidebarView('library')}>
-                <span className="sidebar-menu-btn__icon" aria-hidden="true">▦</span>
-                <span className="sidebar-menu-btn__text">
-                  <span className="sidebar-menu-btn__name">Component Library</span>
-                  <span className="sidebar-menu-btn__sub">
-                    gates, I/O, analog, and hardware parts
-                  </span>
-                </span>
-                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
-              </button>
-              <button className="sidebar-menu-btn" onClick={() => setSidebarView('vision')}>
-                <span className="sidebar-menu-btn__icon" aria-hidden="true">📷</span>
-                <span className="sidebar-menu-btn__text">
-                  <span className="sidebar-menu-btn__name">Vision</span>
-                  <span className="sidebar-menu-btn__sub">detect circuits from photos</span>
-                </span>
-                <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
-              </button>
-            </nav>
-          ) : (
-            <div className="sidebar-view-head">
-              <button
-                className="sidebar-back-btn"
-                aria-label="Back to toolbox menu"
-                onClick={() => setSidebarView('menu')}
-              >
-                ← Back
-              </button>
-              <span className="sidebar-view-title">
-                {sidebarView === 'library' && 'Component Library'}
-                {sidebarView === 'vision' && 'Vision'}
-              </span>
-            </div>
-          )}
-
-          {sidebarView === 'library' && (
-          <section className="palette-section palette-section--fill" style={{ overflowY: 'auto' }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.75rem' }}>I/O & Analog</h3>
-              <div className="palette-grid">
-                <button
-                  className="palette-chip"
-                  aria-label="Add Input"
-                  draggable
-                  onDragStart={(e) => onPaletteDragStart(e, 'input', 'Input')}
-                  onClick={() => addNode('input', 'Input')}
-                >
-                  <span className="chip-icon chip-icon--switch" aria-hidden="true">⏻</span>
-                  <span className="chip-name">Input</span>
-                </button>
-                <button
-                  className="palette-chip"
-                  aria-label="Add Output"
-                  draggable
-                  onDragStart={(e) => onPaletteDragStart(e, 'output', 'Output')}
-                  onClick={() => addNode('output', 'Output')}
-                >
-                  <span className="chip-icon chip-icon--led" aria-hidden="true" />
-                  <span className="chip-name">Output</span>
-                </button>
-                {ANALOG_PALETTE.map((part) => (
-                  <button
-                    key={part.type}
-                    className="palette-chip"
-                    aria-label={`Add ${part.label}`}
-                    title={`${part.label} — ${part.hint}`}
-                    draggable
-                    onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
-                    onClick={() => addNode(part.type, part.label)}
-                  >
-                    <span className="chip-icon analog-chip-icon" aria-hidden="true">
-                      {part.type === 'vsource' && '⎓'}
-                      {part.type === 'ground' && '⏚'}
-                      {part.type === 'resistor' && 'Ω'}
-                      {part.type === 'led' && '◗'}
-                      {part.type === 'analogSwitch' && '⌇'}
-                      {part.type === 'potentiometer' && '◲'}
-                    </span>
-                    <span className="chip-name">{part.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.75rem' }}>Logic Gates</h3>
-              <div className="palette-grid">
-                {GATE_PALETTE.map((gate) => (
-                  <button
-                    key={gate.type}
-                    className="palette-chip"
-                    aria-label={`Add ${gate.label}`}
-                    draggable
-                    onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
-                    onClick={() => addNode(gate.type, gate.label)}
-                  >
-                    <GateGlyph type={gate.glyph} />
-                    <span className="chip-name">{gate.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.75rem' }}>Hardware Library</h3>
-              <input
-                className="library-search"
-                placeholder={`Search ${libraryComponents.length} parts…`}
-                value={librarySearch}
-                aria-label="Search component library"
-                onChange={(e) => setLibrarySearch(e.target.value)}
-              />
-              <div className="library-list library-list--full">
-                {filteredLibrary.map((component) => (
-                  <button
-                    key={component.id}
-                    className="library-chip"
-                    aria-label={`Add ${component.canonical_name}`}
-                    title={`${component.canonical_name} — click or drag onto the canvas`}
-                    draggable
-                    onDragStart={(e) => onLibraryDragStart(e, component)}
-                    onClick={() => addHardwareNode(component)}
-                  >
-                    <span className="library-chip__name">
-                      {component.canonical_name}
-                      {component.verified && <span className="library-chip__check"> ✓</span>}
-                    </span>
-                    <span className="library-chip__meta">
-                      {component.category} · {component.pin_map.pins.length} pins
-                    </span>
-                  </button>
-                ))}
-                {libraryComponents.length > 0 && filteredLibrary.length === 0 && (
-                  <p className="palette-hint">no matching parts</p>
-                )}
-              </div>
-            </div>
-            <p className="palette-hint">click or drag onto the canvas</p>
-          </section>
-          )}
-
-          {sidebarView === 'vision' && (
-          <section className="palette-section">
-            <label htmlFor="image-upload-input" className="upload-button">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-              Image Upload
-            </label>
-            <button className="upload-button camera-button" onClick={() => setCameraOpen(true)}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-              Camera Capture
-            </button>
-            <SampleImages images={sampleImages} onImageSelect={handleSampleImageSelect} />
-          </section>
-          )}
-
-          <div className="sidebar-footer">
-            <button className="danger-button" onClick={clearCanvas}>Clear Canvas</button>
-          </div>
-        </div>
-        {sidebarPinned && !isTouch && (
-          <div
-            className="panel-resizer"
-            aria-hidden="true"
-            onMouseDown={startSidebarResize}
-          />
-        )}
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          sidebarPinned={sidebarPinned}
+          sidebarPeek={sidebarPeek}
+          sidebarWidth={sidebarWidth}
+          sidebarView={sidebarView}
+          setSidebarView={setSidebarView}
+          setSidebarPinned={setSidebarPinned}
+          setSidebarPeek={setSidebarPeek}
+          setSidebarOpen={setSidebarOpen}
+          isTouch={isTouch}
+          holdSidebarPeek={holdSidebarPeek}
+          releaseSidebarPeek={releaseSidebarPeek}
+          onPaletteDragStart={onPaletteDragStart}
+          addNode={addNode}
+          analogPalette={ANALOG_PALETTE}
+          gatePalette={GATE_PALETTE}
+          libraryComponents={libraryComponents}
+          filteredLibrary={filteredLibrary}
+          librarySearch={librarySearch}
+          setLibrarySearch={setLibrarySearch}
+          onLibraryDragStart={onLibraryDragStart}
+          addHardwareNode={addHardwareNode}
+          handleImageUpload={handleImageUpload}
+          setCameraOpen={setCameraOpen}
+          sampleImages={sampleImages}
+          handleSampleImageSelect={handleSampleImageSelect}
+          clearCanvas={clearCanvas}
+          startSidebarResize={startSidebarResize}
+        />
         <div className="canvas-column">
         <div
           className="reactflow-wrapper"
