@@ -33,9 +33,8 @@ export * from './api';
 /** Data payload attached to every ReactFlow node in DigiSim. */
 export interface NodeData {
   label: string;
-  /** Logic level: 0 (LOW) or 1 (HIGH). Kept as `number` so the simulation and
-   *  its tests can build values from plain `number[]` without literal-type friction. */
-  value: number;
+  /** Logic level: 0 (LOW), 1 (HIGH), 'Z' (High-Z), or 'X' (Undefined). */
+  value: number | string;
   /** Hardware nodes only: pin layout copied from the library pin map. */
   pins?: LibraryPin[];
   /** Hardware nodes only: shared-library identity for this part. */
@@ -332,30 +331,34 @@ export interface CircuitGraphExport {
 // Netlist export / import (canonical JSON netlist format)
 // ---------------------------------------------------------------------------
 
-/** One gate entry in the canonical JSON netlist file. */
+/** One component entry in the canonical JSON netlist file. */
 export interface NetlistExportComponent {
-  /** Reference designator, e.g. "U1". */
+  /** Unique ID for the component, e.g. "and_1". */
   id: string;
-  /** Uppercased gate type token, e.g. "AND_GATE". */
+  /** Component type token, e.g. "AND_GATE", "INPUT", "OUTPUT". */
   type: string;
-  /** Net names feeding the gate's inputs (handle order 'a' then 'b'). */
-  inputs: string[];
-  /** Net name the gate drives. */
-  output: string;
+  /** Human-readable label from the canvas. */
+  label: string;
   /** Optional canvas position — honored on import, omitted on export. */
   x?: number;
   y?: number;
 }
 
-/** Canonical JSON netlist: pure connectivity, no visual state. */
+/** One connection between two component ports. */
+export interface NetlistExportConnection {
+  /** Source port, e.g. "in_1.out". */
+  from: string;
+  /** Target port, e.g. "and_1.in1". */
+  to: string;
+}
+
+/** Canonical JSON netlist: explicitly declares components and their connections. */
 export interface NetlistExportJSON {
   circuit_name: string;
-  /** Gates only — input/output canvas nodes are implied by `io`. */
+  /** Every component (gates, inputs, outputs) in the circuit. */
   components: NetlistExportComponent[];
-  /** Every net name used anywhere in the netlist. */
-  nets: string[];
-  /** Nets driven by input nodes / consumed by output nodes. */
-  io: { inputs: string[]; outputs: string[] };
+  /** Connections between component ports. */
+  connections: NetlistExportConnection[];
 }
 
 /** Id-agnostic node blueprint produced by parseNetlist (App assigns real ids). */

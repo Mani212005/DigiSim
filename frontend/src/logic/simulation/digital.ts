@@ -1,94 +1,76 @@
 /**
  * @file digital.ts
- * @description Digital circuit evaluation — Kahn's algorithm (BFS topological
- * sort) propagates 0/1 logic values gate-by-gate. Moved intact from
- * useLogicSimulation.ts during the S1 engine layering; gate semantics stay in
- * evaluateGate.ts.
+ * @description Digital circuit evaluation — Relaxation algorithm propagates 0/1/Z/X
+ * logic values gate-by-gate until stable, resolving feedback loops and latches.
  */
 
 import type { DigiEdge, DigiNode } from '../../types';
 import { evaluateGate } from './evaluateGate';
 
-/** Signature of the circuit simulation function. The optional sim-clock time
- *  drives time-dependent analog behavior (blink pins); digital evaluation
- *  ignores it. */
 export type SimulateCircuit = (
   currentNodes: DigiNode[],
   currentEdges: DigiEdge[],
   timeSeconds?: number
 ) => DigiNode[];
 
-/**
- * Run a full topological evaluation of the circuit using Kahn's algorithm.
- * Nodes in cycles are skipped and default to value 0. This is the single pure
- * digital evaluator — the sim loop and the circuit-analysis tools (truth
- * tables) both call it so gate logic never gets duplicated.
- *
- * @param currentNodes - ReactFlow node array (read-only — returns a new array)
- * @param currentEdges - ReactFlow edge array
- * @returns New node array with updated data.value fields
- */
-export const runSimulation: SimulateCircuit = (currentNodes, currentEdges) => {
+export const runSimulation: SimulateCircuit = (currentNodes, currentEdges, timeSeconds = 0) => {
   const newNodes: DigiNode[] = currentNodes.map((node) => ({
     ...node,
     data: { ...node.data },
   }));
   const nodeMap = new Map<string, DigiNode>(newNodes.map((node) => [node.id, node]));
 
-  // Build adjacency list: sourceId → [targetId, ...]
-  const successors = new Map<string, string[]>(newNodes.map((n) => [n.id, []]));
-  // Build in-degree count per node
-  const inDegree = new Map<string, number>(newNodes.map((n) => [n.id, 0]));
+  let changed = true;
+  let iterations = 0;
+  const MAX_ITERATIONS = 50; // Enough to settle combinational loops and latches
 
-  for (const edge of currentEdges) {
-    if (successors.has(edge.source) && inDegree.has(edge.target)) {
-      successors.get(edge.source)!.push(edge.target);
-      inDegree.set(edge.target, inDegree.get(edge.target)! + 1);
-    }
-  }
-
-  // Seed queue with all zero-in-degree nodes; input nodes go first
-  const queue: string[] = [];
+  // Initialize clock nodes
   for (const node of newNodes) {
-    if (inDegree.get(node.id) === 0) {
-      if (node.type === 'input') {
-        queue.unshift(node.id);
-      } else {
-        queue.push(node.id);
-      }
+    if (node.type === 'clock') {
+      const freq = Number(node.data.param) || 1;
+      const period = 1 / freq;
+      node.data.value = (timeSeconds % period) < (period / 2) ? 1 : 0;
     }
   }
 
-  // Kahn's BFS — process each node once its all inputs are resolved
-  while (queue.length > 0) {
-    const id = queue.shift()!;
-    const node = nodeMap.get(id);
-    if (!node) continue;
+  while (changed && iterations < MAX_ITERATIONS) {
+    changed = false;
+    iterations++;
 
-    if (node.type !== 'input') {
-      const incomingEdges = currentEdges.filter((edge) => edge.target === id);
-      const inputs = incomingEdges.map((edge) => {
-        const src = nodeMap.get(edge.source);
-        return src && src.data.value !== undefined ? src.data.value : 0;
+    for (const node of newNodes) {
+      if (node.type === 'input' || node.type === 'clock' || node.type === 'vsource' || node.type === 'ground' || node.type === 'resistor' || node.type === 'potentiometer' || node.type === 'analogSwitch') {
+        continue;
+      }
+
+      const incomingEdges = currentEdges.filter((edge) => edge.target === node.id);
+      
+      // Sort edges by handle name ('a', 'b', 'c', ...) or index
+      incomingEdges.sort((e1, e2) => {
+        const h1 = e1.targetHandle || '';
+        const h2 = e2.targetHandle || '';
+        return h1.localeCompare(h2);
       });
 
-      if (node.type === 'output') {
-        node.data.value = inputs.length > 0 ? inputs[0] : 0;
-      } else {
-        node.data.value = evaluateGate(node.type, inputs);
-      }
-    }
+      const inputs = incomingEdges.map((edge) => {
+        const src = nodeMap.get(edge.source);
+        return src && src.data.value !== undefined ? src.data.value : 'Z';
+      });
 
-    // Decrement in-degree of successors; enqueue those that reach 0
-    for (const successorId of successors.get(id) ?? []) {
-      const newDegree = inDegree.get(successorId)! - 1;
-      inDegree.set(successorId, newDegree);
-      if (newDegree === 0) {
-        queue.push(successorId);
+      const oldVal = node.data.value;
+      let newVal: number | string = 0;
+
+      if (node.type === 'output' || node.type === 'led') {
+        newVal = inputs.length > 0 ? inputs[0] : 'Z';
+      } else {
+        newVal = evaluateGate(node.type, inputs, oldVal);
+      }
+
+      if (newVal !== oldVal) {
+        node.data.value = newVal;
+        changed = true;
       }
     }
   }
 
-  // Nodes never dequeued (cycle members) keep their current value (defaults to 0)
   return newNodes;
 };

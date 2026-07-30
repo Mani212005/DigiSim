@@ -123,7 +123,7 @@ describe('XNOR gate truth table', () => {
 // Kahn's algorithm edge cases
 // ---------------------------------------------------------------------------
 describe('simulateCircuit edge cases', () => {
-  test('disconnected gate defaults to 0', () => {
+  test('disconnected gate defaults to Z', () => {
     const { result } = renderHook(() => useLogicSimulation());
     const { simulateCircuit } = result.current;
 
@@ -131,7 +131,7 @@ describe('simulateCircuit edge cases', () => {
       { id: 'a', type: 'andGate', data: { label: 'A', value: 0 }, position: { x: 0, y: 0 } },
     ];
     const updated = simulateCircuit(nodes, []);
-    expect(updated[0].data.value).toBe(0);
+    expect(updated[0].data.value).toBe('Z');
   });
 
   test('chained gates: AND → NOT propagates correctly', () => {
