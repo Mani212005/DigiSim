@@ -154,7 +154,7 @@ export function generateTruthTable(
     const valueById = new Map(result.map((n) => [n.id, n.data.value]));
     rows.push({
       inputs: assignment,
-      outputs: outputs.map((col) => valueById.get(col.id) ?? 0),
+      outputs: outputs.map((col) => (valueById.get(col.id) ?? 0) as number),
     });
   }
   return { inputs, outputs, rows, truncated: false };

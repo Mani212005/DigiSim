@@ -1,7 +1,7 @@
 /**
  * @file OrGateNode.test.tsx
  * @description Render tests for the OR gate node component — verifies the label
- * renders and the schematic glows (gate-node--on) exactly when the output is 1.
+ * renders and the schematic glows (active) exactly when the output is 1.
  */
 
 import React from 'react';
@@ -21,10 +21,10 @@ test('renders the gate label', () => {
 
 test('stays idle (no glow class) when value is 0', () => {
   const { container } = wrap(<OrGateNode data={data(0)} />);
-  expect(container.querySelector('.gate-node')).not.toHaveClass('gate-node--on');
+  expect(container.querySelector('.node-card')).not.toHaveClass('active');
 });
 
-test('glows (gate-node--on) when value is 1', () => {
+test('glows (active) when value is 1', () => {
   const { container } = wrap(<OrGateNode data={data(1)} />);
-  expect(container.querySelector('.gate-node')).toHaveClass('gate-node--on');
+  expect(container.querySelector('.node-card')).toHaveClass('active');
 });

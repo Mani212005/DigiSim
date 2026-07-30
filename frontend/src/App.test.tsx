@@ -9,8 +9,8 @@ import App from './App';
 
 test('renders the DigiSim brand and Circuit Analyzer tag', () => {
   render(<App />);
-  expect(screen.getByText('DigiSim')).toBeInTheDocument();
-  expect(screen.getByText(/circuit analyzer/i)).toBeInTheDocument();
+  expect(screen.getByText('⚡ DigiSim')).toBeInTheDocument();
+  expect(screen.getByText(/v2\.0 pro/i)).toBeInTheDocument();
 });
 
 test('toolbox menu lists the Component Library and Vision sections', () => {

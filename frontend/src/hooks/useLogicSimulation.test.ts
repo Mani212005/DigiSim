@@ -48,7 +48,7 @@ const simulate = (gateType: string, inputValues: number[]): number => {
   const edges = [...inputEdges, outputEdge];
 
   const updated = simulateCircuit(nodes, edges);
-  return updated.find((n) => n.id === 'gate')!.data.value;
+  return updated.find((n) => n.id === 'gate')!.data.value as number;
 };
 
 // ---------------------------------------------------------------------------
