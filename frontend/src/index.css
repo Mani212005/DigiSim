@@ -4,13 +4,13 @@
  * Ultra-modern glassmorphic dark-theme canvas with clean toolbars.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500;700&display=swap');
 
 :root {
   color-scheme: dark;
   
-  --bg-dark: #0f1115;
-  --bg-canvas: #15181e;
+  --bg-dark: #070B12;
+  --bg-canvas: #070B12;
   --glass-bg: rgba(30, 34, 42, 0.65);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -26,8 +26,8 @@
   --accent-hover: #818cf8;
   --accent-dim: rgba(99, 102, 241, 0.15);
   
-  --signal: #22c55e;
-  --signal-glow: rgba(34, 197, 94, 0.35);
+  --signal: #00F0FF;
+  --signal-glow: rgba(0, 240, 255, 0.35);
   --danger: #ef4444;
   
   --text: #f3f4f6;
@@ -35,7 +35,7 @@
   --stroke-idle: #4b5563;
   
   --font-ui: 'Inter', -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-mono: 'Fira Code', monospace;
   --font-cursive: var(--font-ui); /* Removing old cursive font overrides */
 }
 
@@ -382,8 +382,8 @@ textarea::placeholder {
 \n/* LAVISH DESIGN SYSTEM OVERRIDES */\n
 
   :root {
-    --bg-dark: #0f1115;
-    --bg-canvas: #15181e;
+    --bg-dark: #070B12;
+    --bg-canvas: #070B12;
     --glass-bg: rgba(30, 34, 42, 0.65);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
@@ -395,7 +395,7 @@ textarea::placeholder {
     --border-color: rgba(255, 255, 255, 0.1);
     --danger: #ef4444;
     --success: #10b981;
-    --high-signal: #22c55e;
+    --high-signal: #00F0FF;
     --low-signal: #64748b;
   }
   
@@ -576,7 +576,7 @@ textarea::placeholder {
     position: relative;
     background-image: 
       radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
+    background-size: 24px 24px;
   }
 
   /* Node Components */
@@ -719,3 +719,103 @@ textarea::placeholder {
   .toolbar-btn:hover {
     background: rgba(255, 255, 255, 0.1);
   }
+
+/* Custom Edge Styles for Wires */
+.react-flow__edge-path {
+  stroke: var(--stroke-idle) !important;
+  stroke-width: 2 !important;
+}
+
+.edge-on .react-flow__edge-path {
+  stroke: #00F0FF !important;
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5)) !important;
+}
+
+.edge-clock .react-flow__edge-path {
+  stroke: #FFB300 !important;
+  filter: drop-shadow(0 0 6px rgba(255, 179, 0, 0.5)) !important;
+}
+
+/* GateShell CAD Styles */
+.cad-node {
+  transition: all 0.3s ease;
+  border-width: 2px !important;
+  border-color: rgba(0, 240, 255, 0.2) !important;
+}
+
+.cad-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 240, 255, 0.15) !important;
+  border-color: rgba(0, 240, 255, 0.5) !important;
+}
+
+.cad-glow {
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3) !important;
+  border-color: rgba(0, 240, 255, 0.8) !important;
+}
+
+.cad-header {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: #00F0FF !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cad-badge {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00F0FF;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+}
+
+.cad-symbol {
+  color: var(--text-primary);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.active .cad-symbol {
+  color: #00F0FF;
+  filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.6));
+}
+
+.cad-handle {
+  width: 12px !important;
+  height: 12px !important;
+  border-width: 2px !important;
+  border-color: var(--bg-dark) !important;
+  background: var(--text-primary) !important;
+  transition: all 0.2s;
+}
+
+.active .cad-handle.handle-right {
+  background: #00F0FF !important;
+  box-shadow: 0 0 10px #00F0FF !important;
+}
+
+.cad-handle:hover {
+  background: #00F0FF !important;
+  transform: translateY(-50%) scale(1.3) !important;
+}
+
+.port-indicator {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.port-out-high {
+  background: #00F0FF;
+  box-shadow: 0 0 8px #00F0FF;
+}
+

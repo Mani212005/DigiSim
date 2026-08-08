@@ -135,6 +135,7 @@ export interface GateShellProps {
 /** Props for the standalone palette glyph. */
 export interface GateGlyphProps {
   type: GlyphType;
+  className?: string;
 }
 
 /** Props every gate node component receives from ReactFlow (only `data` is used). */

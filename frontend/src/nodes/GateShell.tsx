@@ -80,9 +80,9 @@ const SYMBOLS: Record<GlyphType, React.ReactElement> = {
  * @param props - Gate symbol key
  * @returns SVG glyph
  */
-export function GateGlyph({ type }: GateGlyphProps): React.ReactElement {
+export function GateGlyph({ type, className }: GateGlyphProps): React.ReactElement {
   return (
-    <svg viewBox="0 0 110 70" className="gate-glyph" aria-hidden="true">
+    <svg viewBox="0 0 110 70" className={`gate-glyph ${className || ''}`} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter">
       {SYMBOLS[type]}
     </svg>
   );
@@ -95,23 +95,34 @@ export function GateGlyph({ type }: GateGlyphProps): React.ReactElement {
  */
 function GateShell({ type, data, inputs = 2 }: GateShellProps): React.ReactElement {
   const active = data.value === 1;
+  const is74xx = data.label && data.label.includes('74');
+
   return (
-    <div className={`node-card glass${active ? ' active' : ''}`}>
-      <div className="node-header">{data.label}</div>
-      <div className="node-body">
-        <svg viewBox="0 0 110 70" className="node-gate" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3">
+    <div className={`node-card glass cad-node${active ? ' active cad-glow' : ''}`}>
+      <div className="node-header cad-header">{data.label || `${type.toUpperCase()} Gate`} {is74xx && <span className="cad-badge">74xx</span>}</div>
+      <div className="node-body cad-body">
+        <svg viewBox="0 0 110 70" className="node-gate cad-symbol" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter">
           {SYMBOLS[type]}
         </svg>
+        
+        {/* Port Status Indicators */}
+        <div className={`port-indicator port-out ${active ? 'port-out-high' : ''}`} style={{ top: '50%', right: '8px' }}></div>
       </div>
       {inputs === 1 ? (
-        <Handle type="target" position={Position.Left} id="a" className="handle handle-left" style={{ top: '50%' }} />
+        <>
+          <div className="port-indicator port-in" style={{ top: '50%', left: '8px' }}></div>
+          <Handle type="target" position={Position.Left} id="a" className="handle handle-left cad-handle" style={{ top: '50%' }} />
+        </>
       ) : (
         <>
-          <Handle type="target" position={Position.Left} id="a" className="handle handle-left" style={{ top: '31%' }} />
-          <Handle type="target" position={Position.Left} id="b" className="handle handle-left" style={{ top: '69%' }} />
+          <div className="port-indicator port-in" style={{ top: '31%', left: '8px' }}></div>
+          <Handle type="target" position={Position.Left} id="a" className="handle handle-left cad-handle" style={{ top: '31%' }} />
+          
+          <div className="port-indicator port-in" style={{ top: '69%', left: '8px' }}></div>
+          <Handle type="target" position={Position.Left} id="b" className="handle handle-left cad-handle" style={{ top: '69%' }} />
         </>
       )}
-      <Handle type="source" position={Position.Right} className="handle handle-right" style={{ top: '50%' }} />
+      <Handle type="source" position={Position.Right} className="handle handle-right cad-handle" style={{ top: '50%' }} />
     </div>
   );
 }
