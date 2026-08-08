@@ -7,8 +7,6 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import SampleImages from './components/SampleImages';
-import './components/SampleImages.css';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -47,7 +45,6 @@ import XorGateNode from './nodes/XorGateNode';
 import NandGateNode from './nodes/NandGateNode';
 import XnorGateNode from './nodes/XnorGateNode';
 import NorGateNode from './nodes/NorGateNode';
-import { GateGlyph } from './nodes/GateShell';
 import {
   AnalogSwitchNode,
   GroundNode,
@@ -972,11 +969,6 @@ function App(): React.ReactElement {
     [edges, nodeValues]
   );
 
-  const highCount = useMemo(
-    () => nodes.filter((n) => n.data.value === 1).length,
-    [nodes]
-  );
-
   return (
     <div className="app-container">
       <header className="navbar glass">
@@ -1358,7 +1350,7 @@ function App(): React.ReactElement {
               maskColor="rgba(8, 12, 22, 0.72)"
             />
             <Controls />
-            <Background variant={BackgroundVariant.Dots} gap={22} size={1.2} color="#1e293b" />
+            <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="rgba(255, 255, 255, 0.2)" />
           </ReactFlow>
         </div>
           <TerminalPanel

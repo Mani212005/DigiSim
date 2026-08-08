@@ -143,7 +143,7 @@ export function parseNetlist(raw: unknown): NetlistParseResult {
       return;
     }
     
-    const [fromCompId, fromHandle] = conn.from.split('.');
+    const [fromCompId] = conn.from.split('.');
     const [toCompId, toHandle] = conn.to.split('.');
 
     if (!compIdMap.has(fromCompId)) {
