@@ -1,0 +1,208 @@
+/**
+ * @file DigiCopilotPanel.css
+ * @description Styles for the DigiCopilot AI Assistant HUD panel.
+ */
+
+.digicopilot-panel {
+  position: absolute;
+  top: 64px;
+  right: 20px;
+  width: 440px;
+  max-height: calc(100vh - 90px);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 18, 32, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  color: #f1f5f9;
+  font-family: inherit;
+  overflow: hidden;
+}
+
+.digicopilot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.digicopilot-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #4ade80;
+}
+
+.digicopilot-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.digicopilot-close:hover {
+  color: #f87171;
+}
+
+.digicopilot-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.digicopilot-tab {
+  flex: 1;
+  padding: 10px 4px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.digicopilot-tab.active {
+  color: #4ade80;
+  border-bottom-color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.digicopilot-body {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.digicopilot-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.digicopilot-prompt-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.digicopilot-input,
+.digicopilot-select {
+  flex: 1;
+  padding: 8px 10px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.digicopilot-input:focus,
+.digicopilot-select:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+
+.digicopilot-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.digicopilot-preset-chip {
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.digicopilot-preset-chip:hover {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.digicopilot-desc {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.digicopilot-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.digicopilot-results {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(74, 222, 128, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 8px;
+}
+
+.digicopilot-res-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.digicopilot-table-wrap {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.digicopilot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.digicopilot-table th,
+.digicopilot-table td {
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.digicopilot-table th {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+}
+
+.pvt-pass {
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.pvt-warn {
+  background: rgba(234, 179, 8, 0.08);
+}
+
+.digicopilot-status {
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #60a5fa;
+  margin-top: 8px;
+}

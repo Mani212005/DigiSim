@@ -1,0 +1,103 @@
+/**
+ * @file Pcb3DViewer.css
+ * @description Styles for the 3D PCB Viewer component.
+ */
+
+.pcb3d-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 8, 16, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+.pcb3d-modal-container {
+  width: 940px;
+  max-width: 95vw;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pcb3d-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pcb3d-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #38bdf8;
+}
+
+.pcb3d-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pcb3d-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.pcb3d-close:hover {
+  color: #f87171;
+}
+
+.pcb3d-body {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  align-items: center;
+}
+
+.pcb3d-layer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.pcb3d-layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.pcb3d-canvas {
+  width: 100%;
+  height: 550px;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: grab;
+}
+
+.pcb3d-canvas:active {
+  cursor: grabbing;
+}

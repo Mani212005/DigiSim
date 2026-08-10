@@ -1,0 +1,271 @@
+/**
+ * @file MosfetNode.css
+ * @description Styling for NMOS, PMOS, and Sub-circuit nodes in DigiSim.
+ */
+
+.mosfet-node {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 170px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  color: #f8fafc;
+  font-family: inherit;
+  font-size: 0.75rem;
+}
+
+.nmos-node {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.pmos-node {
+  border-color: rgba(244, 114, 182, 0.4);
+}
+
+.mosfet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.mosfet-title {
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  color: #e2e8f0;
+}
+
+.mosfet-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mosfet-badge--sat {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.5);
+}
+
+.mosfet-badge--triode {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.5);
+}
+
+.mosfet-badge--cutoff {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.mosfet-glyph {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 4px 0;
+  color: #38bdf8;
+}
+
+.pmos-node .mosfet-glyph {
+  color: #f472b6;
+}
+
+.mosfet-pin-label {
+  font-size: 8px;
+  fill: #94a3b8;
+  font-weight: 600;
+}
+
+.mosfet-autobulk {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.mosfet-autobulk input {
+  margin-right: 4px;
+  accent-color: #38bdf8;
+}
+
+.mosfet-params {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin-bottom: 4px;
+}
+
+.mosfet-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.mosfet-row:last-child {
+  margin-bottom: 0;
+}
+
+.mosfet-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.mosfet-select {
+  background: #0f172a;
+  color: #f1f5f9;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  padding: 1px 3px;
+  flex: 1;
+}
+
+.mosfet-input {
+  background: #0f172a;
+  color: #f1f5f9;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  width: 36px;
+  padding: 1px 2px;
+  text-align: center;
+  margin: 0 2px;
+}
+
+.mosfet-input--short {
+  width: 26px;
+}
+
+.mosfet-cdf-readout {
+  font-size: 0.62rem;
+  font-family: monospace;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  padding: 0 2px;
+}
+
+.mosfet-readout {
+  font-size: 0.7rem;
+  font-family: monospace;
+  font-weight: 600;
+  color: #38bdf8;
+  text-align: right;
+}
+
+.pmos-node .mosfet-readout {
+  color: #f472b6;
+}
+
+.mosfet-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #38bdf8 !important;
+  border: 1.5px solid #0f172a !important;
+}
+
+.mosfet-handle--b {
+  background: #a855f7 !important;
+}
+
+.subckt-node {
+  background: rgba(15, 23, 42, 0.94);
+  border: 1.5px solid #818cf8;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 180px;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
+  color: #f8fafc;
+}
+
+.subckt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(129, 140, 248, 0.3);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.subckt-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #c7d2fe;
+}
+
+.subckt-cellname {
+  font-size: 0.65rem;
+  color: #818cf8;
+  font-family: monospace;
+  background: rgba(99, 102, 241, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.subckt-params-title {
+  font-weight: 600;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.subckt-param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.subckt-param-key {
+  font-size: 0.68rem;
+  color: #cbd5e1;
+  font-family: monospace;
+}
+
+.subckt-param-input {
+  background: #0f172a;
+  color: #818cf8;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  width: 55px;
+  padding: 1px 4px;
+  font-family: monospace;
+  text-align: right;
+}
+
+.subckt-actions {
+  margin-top: 8px;
+}
+
+.subckt-btn-drill {
+  width: 100%;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.subckt-btn-drill:hover {
+  background: linear-gradient(135deg, #4338ca, #4f46e5);
+  transform: translateY(-1px);
+}

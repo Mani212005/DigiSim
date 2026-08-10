@@ -298,7 +298,7 @@ export default function Sidebar({
                   </Accordion>
                   
                   <Accordion title="Passives & Output">
-                    {analogPalette.filter(p => !['vsource', 'ground'].includes(p.type)).map((part) => (
+                    {analogPalette.filter(p => !['vsource', 'ground', 'nmos', 'pmos', 'subckt'].includes(p.type)).map((part) => (
                       <div
                         key={part.type}
                         role="button"
@@ -314,6 +314,28 @@ export default function Sidebar({
                           {part.type === 'potentiometer' && <><polyline points="2 12 6 12 8 8 12 16 16 8 18 12 22 12"/><line x1="12" y1="2" x2="12" y2="6"/><polygon points="10 6 14 6 12 10"/></>}
                           {part.type === 'led' && <><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></>}
                           {part.type === 'analogSwitch' && <><rect x="4" y="8" width="16" height="8" rx="4"/><circle cx="8" cy="12" r="2" fill="currentColor"/></>}
+                        </svg>
+                        <span className="chip-label">{part.name}</span>
+                      </div>
+                    ))}
+                  </Accordion>
+
+                  <Accordion title="Transistors & Hierarchy">
+                    {analogPalette.filter(p => ['nmos', 'pmos', 'subckt'].includes(p.type)).map((part) => (
+                      <div
+                        key={part.type}
+                        role="button"
+                        aria-label={`Add ${part.label}`}
+                        className="component-chip"
+                        data-tooltip={`${part.label} (${part.hint})`}
+                        draggable
+                        onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
+                        onClick={() => addNode(part.type, part.label)}
+                      >
+                        <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          {part.type === 'nmos' && <><line x1="6" y1="4" x2="6" y2="20"/><line x1="10" y1="6" x2="10" y2="18"/><path d="M10 8h8V4M10 16h8v4M10 12h8"/><polygon points="12 12 15 10 15 14" fill="currentColor"/></>}
+                          {part.type === 'pmos' && <><line x1="4" y1="4" x2="4" y2="20"/><circle cx="7" cy="12" r="2"/><line x1="10" y1="6" x2="10" y2="18"/><path d="M10 8h8V4M10 16h8v4M10 12h8"/><polygon points="15 12 12 10 12 14" fill="currentColor"/></>}
+                          {part.type === 'subckt' && <><rect x="4" y="6" width="16" height="12" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></>}
                         </svg>
                         <span className="chip-label">{part.name}</span>
                       </div>

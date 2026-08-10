@@ -17,6 +17,9 @@ export const ANALOG_TYPES: ReadonlySet<string> = new Set([
   'led',
   'analogSwitch',
   'potentiometer',
+  'nmos',
+  'pmos',
+  'subckt',
 ]);
 
 /** One electrically independent sub-circuit of the canvas. */

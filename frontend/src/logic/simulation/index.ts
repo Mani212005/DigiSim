@@ -61,6 +61,9 @@ export function simulate(
         node.data.voltageDrop = outputs.voltageDrop;
         if (outputs.brightness !== undefined) node.data.brightness = outputs.brightness;
         if (outputs.simWarning) node.data.simWarning = outputs.simWarning;
+        if (outputs.region) node.data.region = outputs.region;
+        if (outputs.vth !== undefined) node.data.vth = outputs.vth;
+        if (outputs.cdf) node.data.cdf = outputs.cdf;
       });
     } else if (island.mixed) {
       for (const islandNode of island.nodes) {

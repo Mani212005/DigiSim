@@ -25,6 +25,8 @@ import type {
 } from './api';
 
 export * from './api';
+export * from './pdk';
+export * from './hierarchy';
 
 // ---------------------------------------------------------------------------
 // Circuit domain
@@ -34,7 +36,7 @@ export * from './api';
 export interface NodeData {
   label: string;
   /** Logic level: 0 (LOW), 1 (HIGH), 'Z' (High-Z), or 'X' (Undefined). */
-  value: number | string;
+  value?: number | string;
   /** Hardware nodes only: pin layout copied from the library pin map. */
   pins?: LibraryPin[];
   /** Hardware nodes only: shared-library identity for this part. */
@@ -63,6 +65,28 @@ export interface NodeData {
   logicVoltage?: number;
   /** Hardware nodes: community part — its pin map can be edited and saved. */
   editablePins?: boolean;
+  /** PDK / MOSFET nodes: Process technology node ('180nm' | '90nm' | '28nm'). */
+  techNode?: import('./pdk').TechNode;
+  /** PDK / MOSFET nodes: Channel width in microns (um). */
+  width?: number;
+  /** PDK / MOSFET nodes: Channel length in microns (um). */
+  length?: number;
+  /** PDK / MOSFET nodes: Number of fingers. */
+  nf?: number;
+  /** PDK / MOSFET nodes: Auto-bulk fallback to VSS/VDD. */
+  autoBulk?: boolean;
+  /** PDK / MOSFET solver outputs: Live operating region. */
+  region?: import('./pdk').OperatingRegion;
+  /** PDK / MOSFET solver outputs: Effective threshold voltage (V). */
+  vth?: number;
+  /** PDK / MOSFET solver outputs: Calculated CDF parameters. */
+  cdf?: import('./pdk').CDFParameters;
+  /** Subckt nodes: OpenAccess cell name (e.g. INVERTER). */
+  cellName?: string;
+  /** Subckt nodes: OpenAccess library name (e.g. worklib). */
+  libraryName?: string;
+  /** Subckt nodes: Instance parameter overrides. */
+  params?: Record<string, number | string>;
 }
 
 /** Analog solver outputs for one component (subset of NodeData fields). */
@@ -71,6 +95,9 @@ export interface AnalogOutputs {
   voltageDrop: number;
   brightness?: number;
   simWarning?: string;
+  region?: import('./pdk').OperatingRegion;
+  vth?: number;
+  cdf?: import('./pdk').CDFParameters;
 }
 
 /** Electrical behavior of one configurable board pin (S3 pin stubs). */
@@ -574,3 +601,101 @@ export interface GlassFieldProps {
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   autoComplete: string;
 }
+
+// ---------------------------------------------------------------------------
+// SPICE Netlister & Non-Linear Solver (Checkpoint 3)
+// ---------------------------------------------------------------------------
+
+/** SPICE Netlist export options. */
+export interface NetlistSpiceOptions {
+  format?: 'spice' | 'spectre';
+  title?: string;
+  includeModels?: boolean;
+}
+
+/** Non-linear SPICE solver outputs per component node. */
+export interface SpiceOutputs extends AnalogOutputs {
+  vgs?: number;
+  vds?: number;
+  vsb?: number;
+  id?: number;
+  region?: import('./pdk').OperatingRegion;
+  powerMw?: number;
+}
+
+/** Props for the Falstad green-dot current flow canvas overlay. */
+export interface FalstadFlowOverlayProps {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+  simOutputs?: Map<string, AnalogOutputs | SpiceOutputs>;
+}
+
+// ---------------------------------------------------------------------------
+// DigiCopilot AI HUD & 3D PCB View (Checkpoint 4)
+// ---------------------------------------------------------------------------
+
+/** DigiCopilot active HUD tab. */
+export type DigiCopilotTab = 'synthesis' | 'routing' | 'optimizer' | 'pvt';
+
+/** Process, Voltage, Temperature corner parameter set. */
+export interface PvtCorner {
+  corner: 'TT' | 'SS' | 'FF';
+  voltageFactor: number;
+  tempCelsius: number;
+}
+
+/** Single PVT check evaluation result. */
+export interface PvtCheckResult {
+  cornerName: string;
+  vthN: number;
+  vthP: number;
+  delayPs: number;
+  powerMw: number;
+  passed: boolean;
+  details: string;
+}
+
+/** W/L Ratio optimization input targets. */
+export interface WlOptimizationTarget {
+  vdd: number;
+  targetVout: number;
+  targetGain: number;
+  channelLengthNm: number;
+}
+
+/** W/L Ratio optimization computed results. */
+export interface WlOptimizationResult {
+  wpNm: number;
+  wnNm: number;
+  ratio: number;
+  predictedGain: number;
+  predictedVthSymmetry: number;
+  predictedDelayPs: number;
+}
+
+/** Props for the DigiCopilot HUD panel. */
+export interface DigiCopilotPanelProps {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+  open: boolean;
+  onClose: () => void;
+  onApplySchematic?: (nodes: DigiNode[], edges: DigiEdge[]) => void;
+}
+
+/** 3D PCB layer visibility options. */
+export interface Pcb3DLayerVisibility {
+  topCopper: boolean;
+  bottomCopper: boolean;
+  silkscreen: boolean;
+  substrate: boolean;
+  components3D: boolean;
+}
+
+/** Props for the WebGL 3D PCB Viewer component. */
+export interface Pcb3DViewerProps {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+  open: boolean;
+  onClose: () => void;
+}
+

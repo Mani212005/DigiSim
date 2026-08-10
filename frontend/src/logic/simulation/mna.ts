@@ -13,7 +13,9 @@
  * Explicit non-goals: AC/transient analysis, firmware emulation.
  */
 
-import type { AnalogOutputs, DigiEdge, DigiNode, LibraryPin, PinConfig } from '../../types';
+import type { AnalogOutputs, DigiEdge, DigiNode, LibraryPin, PinConfig, TechNode } from '../../types';
+import { PDKManager } from '../pdk/PDKManager';
+import { CellRegistry } from '../hierarchy/CellRegistry';
 
 /** LED piecewise model: off below VF, then a resistive segment. */
 const LED_VF = 1.9;
@@ -40,13 +42,15 @@ export const DEFAULT_POT_OHMS = 10000;
 export const DEFAULT_LOGIC_V = 3.3;
 
 /** Terminal names per analog node type (index 0 = 'a' side, 1 = 'b' side). */
-const TERMINALS: Record<string, [string, string] | [string]> = {
+const TERMINALS: Record<string, string[]> = {
   vsource: ['pos', 'neg'],
   resistor: ['a', 'b'],
   led: ['anode', 'cathode'],
   analogSwitch: ['a', 'b'],
   potentiometer: ['a', 'b'],
   ground: ['gnd'],
+  nmos: ['d', 'g', 's', 'b'],
+  pmos: ['s', 'g', 'd', 'b'],
 };
 
 /**
@@ -59,6 +63,11 @@ const TERMINALS: Record<string, [string, string] | [string]> = {
 export function terminalsOfNode(node: DigiNode): readonly string[] {
   if (node.type === 'hardware') {
     return (node.data.pins ?? []).map((pin) => pin.name);
+  }
+  if (node.type === 'subckt') {
+    const cellDef = CellRegistry.getCell(node.data.cellName || 'INVERTER');
+    if (cellDef) return cellDef.ports.map((p) => p.name);
+    return ['in', 'out', 'vdd', 'vss'];
   }
   return TERMINALS[node.type ?? ''] ?? ['a', 'b'];
 }
@@ -299,6 +308,44 @@ export function solveAnalogIsland(
           } else {
             stampG(`${node.id}/anode`, `${node.id}/cathode`, G_MIN);
           }
+        } else if (type === 'nmos' || type === 'pmos') {
+          const isNmos = type === 'nmos';
+          const techNode: TechNode = node.data.techNode ?? '180nm';
+          const model = PDKManager.getModelCard(techNode, isNmos ? 'nmos' : 'pmos');
+          const width = node.data.width ?? (isNmos ? 1.2 : 2.4);
+          const length = node.data.length ?? 0.18;
+          const nf = node.data.nf ?? 1;
+
+          const vd = voltageAt(node.id, 'd');
+          const vg = voltageAt(node.id, 'g');
+          const vs = voltageAt(node.id, 's');
+          let vb = voltageAt(node.id, 'b');
+
+          if (node.data.autoBulk !== false && vb === 0) {
+            vb = isNmos ? 0 : model.Vdd;
+          }
+
+          const op = PDKManager.calculateOperatingRegion(
+            isNmos ? 'nmos' : 'pmos',
+            model,
+            width,
+            length,
+            nf,
+            vd,
+            vg,
+            vs,
+            vb
+          );
+
+          stampG(`${node.id}/g`, `${node.id}/s`, G_MIN);
+
+          if (op.region === 'Cutoff') {
+            stampG(`${node.id}/d`, `${node.id}/s`, G_MIN);
+          } else {
+            const vdsEff = Math.max(0.01, Math.abs(vd - vs));
+            const g_ds = Math.max(1e-4, op.ids / vdsEff);
+            stampG(`${node.id}/d`, `${node.id}/s`, g_ds);
+          }
         }
       }
       // Board pins: Norton source (volts behind ohms) from pin net to reference.
@@ -373,6 +420,40 @@ export function solveAnalogIsland(
         out.current = current;
         out.voltageDrop = drop;
         out.brightness = Math.min(1, current / LED_FULL_A);
+      } else if (type === 'nmos' || type === 'pmos') {
+        const isNmos = type === 'nmos';
+        const techNode: TechNode = node.data.techNode ?? '180nm';
+        const model = PDKManager.getModelCard(techNode, isNmos ? 'nmos' : 'pmos');
+        const width = node.data.width ?? (isNmos ? 1.2 : 2.4);
+        const length = node.data.length ?? 0.18;
+        const nf = node.data.nf ?? 1;
+
+        const vd = voltageAt(node.id, 'd');
+        const vg = voltageAt(node.id, 'g');
+        const vs = voltageAt(node.id, 's');
+        let vb = voltageAt(node.id, 'b');
+
+        if (node.data.autoBulk !== false && vb === 0) {
+          vb = isNmos ? 0 : model.Vdd;
+        }
+
+        const op = PDKManager.calculateOperatingRegion(
+          isNmos ? 'nmos' : 'pmos',
+          model,
+          width,
+          length,
+          nf,
+          vd,
+          vg,
+          vs,
+          vb
+        );
+
+        out.current = op.ids;
+        out.voltageDrop = Math.abs(vd - vs);
+        out.region = op.region;
+        out.vth = op.vth;
+        out.cdf = op.cdf;
       } else if (type === 'vsource') {
         const sourceIndex = sources.findIndex((s) => s.id === node.id);
         out.current = Math.abs(voltages[netCount - 1 + sourceIndex] ?? 0);
@@ -408,6 +489,9 @@ export function solveAnalogIsland(
     if (on.brightness !== undefined) {
       out.brightness = off ? mix(on.brightness, off.brightness ?? 0) : on.brightness;
     }
+    if (on.region) out.region = on.region;
+    if (on.vth !== undefined) out.vth = on.vth;
+    if (on.cdf) out.cdf = on.cdf;
     if (node.type === 'led' && out.current > LED_MAX_A) {
       out.simWarning = `LED overcurrent (${Math.round(out.current * 1000)}mA) — add a series resistor`;
     }

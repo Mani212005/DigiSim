@@ -53,6 +53,10 @@ import {
   ResistorNode,
   VSourceNode,
 } from './nodes/AnalogNodes';
+import NmosNode from './components/nodes/NmosNode';
+import PmosNode from './components/nodes/PmosNode';
+import SubcktNode from './components/nodes/SubcktNode';
+import { CellRegistry } from './logic/hierarchy/CellRegistry';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
 import { useAuth } from './hooks/useAuth';
@@ -66,6 +70,9 @@ import NetlistImportDialog from './components/NetlistImportDialog';
 import ProjectsModal from './components/ProjectsModal';
 import InventoryModal from './components/InventoryModal';
 import Sidebar from './components/Sidebar';
+import FalstadFlowOverlay from './components/canvas/FalstadFlowOverlay';
+import DigiCopilotPanel from './components/hud/DigiCopilotPanel';
+import Pcb3DViewer from './components/canvas/Pcb3DViewer';
 import { exportNetlist } from './logic/netlistIO';
 import { useProjects } from './hooks/useProjects';
 import type {
@@ -139,6 +146,9 @@ const ANALOG_PALETTE: { type: string; label: string; name: string; hint: string 
   { type: 'led', label: 'LED', name: 'LED', hint: 'glows by current' },
   { type: 'analogSwitch', label: 'Switch', name: 'Switch', hint: 'click to toggle' },
   { type: 'potentiometer', label: 'Potentiometer', name: 'Pot', hint: '10kΩ' },
+  { type: 'nmos', label: 'NMOS Transistor', name: 'NMOS', hint: '4-Terminal MOSFET' },
+  { type: 'pmos', label: 'PMOS Transistor', name: 'PMOS', hint: '4-Terminal MOSFET' },
+  { type: 'subckt', label: 'Sub-Circuit Block', name: 'Subckt', hint: 'OpenAccess Subckt' },
 ];
 
 /** Initial data.param/percent/closed values per analog node type. */
@@ -147,6 +157,9 @@ const ANALOG_DEFAULT_DATA: Record<string, Partial<NodeData>> = {
   resistor: { param: 220 },
   potentiometer: { param: 10000, percent: 50 },
   analogSwitch: { closed: false },
+  nmos: { techNode: '180nm', width: 1.2, length: 0.18, nf: 1, autoBulk: true },
+  pmos: { techNode: '180nm', width: 2.4, length: 0.18, nf: 1, autoBulk: true },
+  subckt: { cellName: 'INVERTER', params: { W_p: 2.4, W_n: 1.2, L: 0.18 } },
 };
 
 const GATE_PALETTE: PaletteEntry[] = [
@@ -180,6 +193,8 @@ function App(): React.ReactElement {
   const sidebarPeekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [netlistOpen, setNetlistOpen] = useState(true);
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [pcb3dOpen, setPcb3dOpen] = useState(false);
   const [netlistImportOpen, setNetlistImportOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
@@ -193,6 +208,48 @@ function App(): React.ReactElement {
   const [librarySearch, setLibrarySearch] = useState('');
   const isTouch = useIsTouch();
   const { simulateCircuit } = useLogicSimulation();
+
+  const [hierarchyStack, setHierarchyStack] = useState<
+    Array<{ label: string; cellName: string; nodes: DigiNode[]; edges: DigiEdge[] }>
+  >([]);
+
+  const handleDrillDown = useCallback(
+    (cellName: string, params: Record<string, number | string>) => {
+      const instantiated = CellRegistry.instantiateSchematic(cellName, params, `sub_${Date.now()}`);
+      if (instantiated.nodes.length === 0) {
+        alert(`No schematic view found for cell '${cellName}'.`);
+        return;
+      }
+      setHierarchyStack((prev) => [
+        ...prev,
+        { label: cellName, cellName, nodes, edges },
+      ]);
+      setNodes(instantiated.nodes);
+      setEdges(instantiated.edges);
+      setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+    },
+    [nodes, edges, setNodes, setEdges, rfInstance]
+  );
+
+  useEffect(() => {
+    const onCustomDrillDown = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.cellName) {
+        handleDrillDown(detail.cellName, detail.params || {});
+      }
+    };
+    window.addEventListener('digisim:drilldown', onCustomDrillDown);
+    return () => window.removeEventListener('digisim:drilldown', onCustomDrillDown);
+  }, [handleDrillDown]);
+
+  const handlePopHierarchy = useCallback(() => {
+    if (hierarchyStack.length === 0) return;
+    const previous = hierarchyStack[hierarchyStack.length - 1];
+    setHierarchyStack((prev) => prev.slice(0, prev.length - 1));
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+    setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+  }, [hierarchyStack, setNodes, setEdges, rfInstance]);
 
   // Load the shared component library once for the placement palette.
   useEffect(() => {
@@ -256,6 +313,15 @@ function App(): React.ReactElement {
     ),
     potentiometer: (props: NodeProps<NodeData>) => (
       <PotentiometerNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    nmos: (props: NodeProps<NodeData>) => (
+      <NmosNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    pmos: (props: NodeProps<NodeData>) => (
+      <PmosNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    subckt: (props: NodeProps<NodeData>) => (
+      <SubcktNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
     ),
   }), [updateNodeData, libraryApi]);
 
@@ -1048,6 +1114,20 @@ function App(): React.ReactElement {
           >
             ⌘ Terminal
           </button>
+          <button
+            className={`stat-chip terminal-toggle${copilotOpen ? ' terminal-toggle--on' : ''}`}
+            onClick={() => setCopilotOpen((open) => !open)}
+            title="DigiCopilot AI EDA Assistant"
+          >
+            🤖 DigiCopilot
+          </button>
+          <button
+            className={`stat-chip terminal-toggle${pcb3dOpen ? ' terminal-toggle--on' : ''}`}
+            onClick={() => setPcb3dOpen((open) => !open)}
+            title="Interactive 3D PCB View"
+          >
+            🧊 3D PCB
+          </button>
           {user ? (
             <span className="stat-chip user-chip">
               {user.email}
@@ -1137,6 +1217,46 @@ function App(): React.ReactElement {
           startSidebarResize={startSidebarResize}
         />
         <div className="canvas-column">
+          {hierarchyStack.length > 0 && (
+            <div
+              className="hierarchy-breadcrumb-bar"
+              style={{
+                padding: '6px 16px',
+                background: 'rgba(15, 23, 42, 0.96)',
+                borderBottom: '1px solid rgba(129, 140, 248, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                zIndex: 20,
+                fontSize: '0.8rem',
+                color: '#c7d2fe',
+              }}
+            >
+              <button
+                onClick={handlePopHierarchy}
+                className="btn"
+                style={{
+                  padding: '3px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                ← Pop to Parent
+              </button>
+              <span style={{ color: '#94a3b8' }}>Hierarchy: Root</span>
+              {hierarchyStack.map((item, idx) => (
+                <React.Fragment key={idx}>
+                  <span style={{ color: '#64748b' }}>&gt;</span>
+                  <span style={{ fontWeight: 600, color: '#38bdf8' }}>{item.label}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
         <div
           className="reactflow-wrapper"
           onDrop={onCanvasDrop}
@@ -1146,6 +1266,23 @@ function App(): React.ReactElement {
           onTouchEnd={isTouch ? cancelLongPress : undefined}
           style={{ position: 'relative' }}
         >
+          <FalstadFlowOverlay nodes={nodes} edges={edges} />
+          <DigiCopilotPanel
+            open={copilotOpen}
+            onClose={() => setCopilotOpen(false)}
+            nodes={nodes}
+            edges={edges}
+            onApplySchematic={(newNodes, newEdges) => {
+              setNodes(newNodes);
+              setEdges(newEdges);
+            }}
+          />
+          <Pcb3DViewer
+            open={pcb3dOpen}
+            onClose={() => setPcb3dOpen(false)}
+            nodes={nodes}
+            edges={edges}
+          />
           {/* Subtle PCB Trace Background matching the user's reference image */}
           <div className="pcb-trace-bg" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.18, overflow: 'hidden', zIndex: 0 }}>
             <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">

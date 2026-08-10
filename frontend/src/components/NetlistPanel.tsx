@@ -9,6 +9,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { buildNetlist, findCircuits } from '../logic/circuitAnalysis';
+import { generateSpiceNetlist, generateSpectreNetlist } from '../logic/simulation/netlistSpice';
 import type { NetlistPanelProps } from '../types';
 import './NetlistPanel.css';
 
@@ -27,12 +28,17 @@ function NetlistPanel({
 }: NetlistPanelProps): React.ReactElement {
   const [peek, setPeek] = useState(false);
   const [width, setWidth] = useState(300);
+  const [format, setFormat] = useState<'logic' | 'spice' | 'spectre'>('logic');
   const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const spiceText = useMemo(() => generateSpiceNetlist(nodes, edges), [nodes, edges]);
+  const spectreText = useMemo(() => generateSpectreNetlist(nodes, edges), [nodes, edges]);
 
   const netlists = useMemo(() => {
     const circuits = findCircuits(nodes, edges);
     return circuits.map((c) => buildNetlist(c, nodes, edges));
   }, [nodes, edges]);
+
 
   /** Keep the hover peek open (cancel any scheduled close). */
   const holdPeek = (): void => {
@@ -133,8 +139,58 @@ function NetlistPanel({
             </div>
           </div>
 
+          <div className="netlist-tabs" style={{ display: 'flex', gap: 4, padding: '6px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <button
+              className={`netlist-tab-btn${format === 'logic' ? ' active' : ''}`}
+              onClick={() => setFormat('logic')}
+              style={{ flex: 1, padding: '4px 6px', background: format === 'logic' ? 'rgba(74,222,128,0.15)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: format === 'logic' ? '#4ade80' : '#94a3b8', borderRadius: 4, fontSize: '0.75rem', cursor: 'pointer' }}
+            >
+              JSON
+            </button>
+            <button
+              className={`netlist-tab-btn${format === 'spice' ? ' active' : ''}`}
+              onClick={() => setFormat('spice')}
+              style={{ flex: 1, padding: '4px 6px', background: format === 'spice' ? 'rgba(74,222,128,0.15)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: format === 'spice' ? '#4ade80' : '#94a3b8', borderRadius: 4, fontSize: '0.75rem', cursor: 'pointer' }}
+            >
+              SPICE .cir
+            </button>
+            <button
+              className={`netlist-tab-btn${format === 'spectre' ? ' active' : ''}`}
+              onClick={() => setFormat('spectre')}
+              style={{ flex: 1, padding: '4px 6px', background: format === 'spectre' ? 'rgba(74,222,128,0.15)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: format === 'spectre' ? '#4ade80' : '#94a3b8', borderRadius: 4, fontSize: '0.75rem', cursor: 'pointer' }}
+            >
+              Spectre
+            </button>
+          </div>
+
           <div className="netlist-body">
-            {netlists.length === 0 ? (
+            {format === 'spice' ? (
+              <section className="netlist-section">
+                <div className="netlist-section__head">
+                  <span className="netlist-section__name">SPICE Netlist</span>
+                  <button
+                    className="netlist-copy"
+                    onClick={() => navigator.clipboard?.writeText(spiceText)}
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre className="netlist-pre">{spiceText}</pre>
+              </section>
+            ) : format === 'spectre' ? (
+              <section className="netlist-section">
+                <div className="netlist-section__head">
+                  <span className="netlist-section__name">Spectre Native Netlist</span>
+                  <button
+                    className="netlist-copy"
+                    onClick={() => navigator.clipboard?.writeText(spectreText)}
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre className="netlist-pre">{spectreText}</pre>
+              </section>
+            ) : netlists.length === 0 ? (
               <p className="netlist-empty">
                 No runnable circuits yet. Add input and output nodes and connect them to
                 generate a netlist.
@@ -157,6 +213,7 @@ function NetlistPanel({
               ))
             )}
           </div>
+
         </div>
       )}
     </>

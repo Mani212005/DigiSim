@@ -29,7 +29,7 @@ app = Flask(__name__)
 CORS(
     app,
     supports_credentials=True,
-    origins=os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").split(","),
+    origins=os.getenv("FRONTEND_ORIGIN", "http://localhost:3000,http://localhost:3005,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3005").split(","),
 )
 app.register_blueprint(auth_bp)
 app.register_blueprint(projects_bp)

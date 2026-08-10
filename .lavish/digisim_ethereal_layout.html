@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DigiSim — Ethereal CAD Glass & Luminescent Circuit Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #030508;
+      --bg-space: #070B14;
+      --glass-base: rgba(14, 22, 38, 0.45);
+      --glass-border: rgba(0, 240, 255, 0.18);
+      --glass-highlight: rgba(255, 255, 255, 0.08);
+      --ethereal-cyan: #00F0FF;
+      --ethereal-teal: #00E5A3;
+      --ethereal-violet: #8A2BE2;
+      --ethereal-gold: #FFB800;
+      --ethereal-rose: #FF2A85;
+      --text-main: #EDF4FC;
+      --text-dim: #7E93B0;
+      --text-bright: #FFFFFF;
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-serif: 'Cinzel', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #0F1F38 0%, #060B17 50%, #020408 100%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Ambient animated mesh backdrop */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 60% 40% at 20% 20%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(138, 43, 226, 0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0, 229, 163, 0.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ethereal drafting grid */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 1;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+    }
+
+    /* Top Ethereal Navigation Bar */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: rgba(8, 14, 26, 0.6);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(138, 43, 226, 0.25));
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: var(--ethereal-cyan);
+      stroke-width: 2;
+    }
+
+    .brand-title {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(120deg, #FFFFFF, #B9E6FE);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-ethereal {
+      font-size: 0.65rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--ethereal-cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-pill {
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--glass-border);
+      background: rgba(14, 24, 44, 0.4);
+      color: var(--text-main);
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .btn-pill:hover {
+      background: rgba(0, 240, 255, 0.12);
+      border-color: rgba(0, 240, 255, 0.5);
+      color: var(--text-bright);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary-ethereal {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(0, 229, 163, 0.25));
+      border: 1px solid rgba(0, 240, 255, 0.5);
+      color: #FFFFFF;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);
+    }
+
+    .btn-primary-ethereal:hover {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(0, 229, 163, 0.4));
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.5);
+    }
+
+    /* Main Studio Layout */
+    .studio-viewport {
+      flex: 1;
+      position: relative;
+      z-index: 5;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Left Floating Glass Dock */
+    .glass-dock-left {
+      width: 270px;
+      margin: 20px 0 20px 20px;
+      background: var(--glass-base);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      gap: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .dock-title {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .component-tile {
+      background: rgba(10, 18, 32, 0.5);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .component-tile:hover {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.35);
+      transform: translateX(3px);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+    }
+
+    .comp-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ethereal-cyan);
+    }
+
+    .comp-info h4 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+
+    .comp-info p {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    /* Central Interactive Schematic Canvas */
+    .schematic-canvas {
+      flex: 1;
+      position: relative;
+      margin: 20px;
+      background: rgba(5, 9, 18, 0.5);
+      border: 1px solid rgba(0, 240, 255, 0.12);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Glow circuit SVG traces */
+    .circuit-traces {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .trace-cyan {
+      stroke: var(--ethereal-cyan);
+      stroke-width: 2;
+      fill: none;
+      filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.8));
+    }
+
+    .trace-violet {
+      stroke: var(--ethereal-violet);
+      stroke-width: 2;
+      fill: none;
+      filter: drop-shadow(0 0 6px rgba(138, 43, 226, 0.8));
+    }
+
+    .trace-gold {
+      stroke: var(--ethereal-gold);
+      stroke-width: 2;
+      fill: none;
+      filter: drop-shadow(0 0 6px rgba(255, 184, 0, 0.8));
+    }
+
+    /* Luminescent Logic Gate Nodes */
+    .node-luminescent {
+      position: absolute;
+      background: rgba(10, 18, 34, 0.75);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      backdrop-filter: blur(16px);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(255, 255, 255, 0.05);
+      cursor: grab;
+      transition: all 0.2s ease;
+      min-width: 160px;
+    }
+
+    .node-luminescent:hover {
+      border-color: var(--ethereal-cyan);
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+    }
+
+    .node-glyph {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 48px;
+      background: rgba(0, 240, 255, 0.05);
+      border-radius: 8px;
+      border: 1px dashed rgba(0, 240, 255, 0.2);
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--ethereal-cyan);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+    }
+
+    .pin-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+    }
+
+    .pin-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pin-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ethereal-teal);
+      box-shadow: 0 0 8px var(--ethereal-teal);
+    }
+
+    /* Right Glass Pin Inspector (Replaces the broken vertical pill) */
+    .glass-inspector-right {
+      position: absolute;
+      right: 24px;
+      top: 24px;
+      width: 340px;
+      background: rgba(11, 19, 36, 0.7);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      backdrop-filter: blur(28px);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 240, 255, 0.15);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .inspector-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+      padding-bottom: 14px;
+    }
+
+    .inspector-header h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inspector-header span {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--ethereal-cyan);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: rgba(14, 25, 48, 0.5);
+      border: 1px solid rgba(0, 240, 255, 0.12);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .metric-label {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .metric-val {
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--ethereal-cyan);
+      margin-top: 4px;
+      text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+    }
+
+    .warning-glass-card {
+      background: rgba(255, 184, 0, 0.08);
+      border: 1px solid rgba(255, 184, 0, 0.3);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .warning-icon {
+      color: var(--ethereal-gold);
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .warning-text {
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #FFF0C2;
+    }
+
+    .btn-full-ethereal {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(138, 43, 226, 0.2));
+      color: #FFFFFF;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    }
+
+    .btn-full-ethereal:hover {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.35), rgba(138, 43, 226, 0.35));
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* Comparison Section */
+    .comparison-section {
+      position: relative;
+      z-index: 10;
+      margin: 0 28px 30px 28px;
+      background: var(--glass-base);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 24px;
+    }
+
+    .comparison-section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .diff-box {
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(6, 10, 20, 0.6);
+    }
+
+    .diff-box.bad {
+      border-color: rgba(255, 42, 133, 0.3);
+      background: rgba(255, 42, 133, 0.04);
+    }
+
+    .diff-box.good {
+      border-color: rgba(0, 229, 163, 0.4);
+      background: rgba(0, 229, 163, 0.04);
+      box-shadow: 0 0 30px rgba(0, 229, 163, 0.08);
+    }
+
+    .diff-box h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .diff-box.bad h3 { color: var(--ethereal-rose); }
+    .diff-box.good h3 { color: var(--ethereal-teal); }
+
+    .diff-box ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    .diff-box ul li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-overlay"></div>
+
+  <!-- Top Glass Bar -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+        </svg>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h1 class="brand-title">DigiSim</h1>
+          <span class="badge-ethereal">ETHEREAL CAD</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-pill">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--ethereal-teal); box-shadow: 0 0 8px var(--ethereal-teal);"></span>
+        4 Active Gates
+      </button>
+      <button class="btn-pill">
+        <span>⚡</span> 2.48V Logic High
+      </button>
+      <button class="btn-pill btn-primary-ethereal">
+        <span>▶</span> Run Simulation
+      </button>
+      <button class="btn-pill">Export JSON</button>
+    </div>
+  </header>
+
+  <!-- Interactive Studio Viewport -->
+  <div class="studio-viewport">
+    
+    <!-- Left Glass Component Dock -->
+    <div class="glass-dock-left">
+      <div class="dock-title">
+        <span>Luminescent Library</span>
+        <span>+ NEW</span>
+      </div>
+
+      <div class="component-tile">
+        <div class="comp-icon">⊻</div>
+        <div class="comp-info">
+          <h4>XOR Gate</h4>
+          <p>U1 • 2 Input Dual Logic</p>
+        </div>
+      </div>
+
+      <div class="component-tile">
+        <div class="comp-icon">&</div>
+        <div class="comp-info">
+          <h4>AND Array</h4>
+          <p>U2 • CMOS 74HC08</p>
+        </div>
+      </div>
+
+      <div class="component-tile">
+        <div class="comp-icon">≥1</div>
+        <div class="comp-info">
+          <h4>OR Matrix</h4>
+          <p>U3 • Fast Propagation</p>
+        </div>
+      </div>
+
+      <div class="component-tile">
+        <div class="comp-icon">CLK</div>
+        <div class="comp-info">
+          <h4>Crystal Clock</h4>
+          <p>10 MHz Square Wave</p>
+        </div>
+      </div>
+
+      <div style="margin-top: auto;">
+        <button class="btn-full-ethereal">Upload Schematic Photo</button>
+      </div>
+    </div>
+
+    <!-- Central Schematic Canvas -->
+    <div class="schematic-canvas">
+      
+      <!-- Glowing circuit traces -->
+      <svg class="circuit-traces" viewBox="0 0 1000 600">
+        <!-- Pulse wire from U1 to U2 -->
+        <path d="M 260 210 L 380 210 L 380 320 L 460 320" class="trace-cyan" />
+        <!-- Clock wire -->
+        <path d="M 180 390 L 340 390 L 340 340 L 460 340" class="trace-violet" />
+        <!-- Output wire -->
+        <path d="M 640 330 L 760 330" class="trace-gold" />
+      </svg>
+
+      <!-- Gate Node 1 -->
+      <div class="node-luminescent" style="left: 100px; top: 170px;">
+        <div class="node-header">
+          <span>U1: AND_GATE</span>
+          <span style="color: var(--ethereal-teal);">ACTIVE</span>
+        </div>
+        <div class="node-glyph">&</div>
+        <div class="pin-row">
+          <span class="pin-tag"><span class="pin-dot"></span> A: 5.0V</span>
+          <span class="pin-tag"><span class="pin-dot"></span> B: 5.0V</span>
+          <span class="pin-tag" style="color: var(--ethereal-cyan);">OUT: 4.98V</span>
+        </div>
+      </div>
+
+      <!-- Gate Node 2 (Selected) -->
+      <div class="node-luminescent" style="left: 460px; top: 280px; border-color: var(--ethereal-cyan); box-shadow: 0 0 40px rgba(0, 240, 255, 0.4);">
+        <div class="node-header">
+          <span style="color: var(--ethereal-cyan); font-weight: 700;">U2: XOR_STAGE (SELECTED)</span>
+          <span style="color: var(--ethereal-cyan);">INSPECTING</span>
+        </div>
+        <div class="node-glyph" style="background: rgba(0, 240, 255, 0.15);">⊻</div>
+        <div class="pin-row">
+          <span class="pin-tag"><span class="pin-dot"></span> IN1: 4.98V</span>
+          <span class="pin-tag"><span class="pin-dot"></span> CLK: 10MHz</span>
+          <span class="pin-tag" style="color: var(--ethereal-gold);">OUT: 0.02V</span>
+        </div>
+      </div>
+
+      <!-- Right Docked Glass Inspector (Fixed Replacement for Broken Pill) -->
+      <div class="glass-inspector-right">
+        <div class="inspector-header">
+          <div>
+            <h3><span>⊻</span> U2: Dual-Input XOR</h3>
+            <span>74HCT86 • High-Speed CMOS</span>
+          </div>
+          <button style="background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem;">✕</button>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-label">Logic State</div>
+            <div class="metric-val" style="color: var(--ethereal-teal);">HIGH (1)</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Output Pin</div>
+            <div class="metric-val">4.92 V</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Propagation</div>
+            <div class="metric-val">4.2 ns</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Fan-Out</div>
+            <div class="metric-val">8 Gates</div>
+          </div>
+        </div>
+
+        <div class="warning-glass-card">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-text">
+            <strong>Hardware Rule Violation:</strong> Analog signals cannot directly drive pure CMOS gates without an intermediate ADC buffer (STM32 Pin PB4).
+          </div>
+        </div>
+
+        <button class="btn-full-ethereal">Configure Parameters</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Design Transformation Comparison -->
+  <div class="comparison-section">
+    <h2><span>✦</span> Design Language Transformation: Ethereal Glass CAD vs Old UI</h2>
+    <div class="diff-grid">
+      <div class="diff-box bad">
+        <h3>✕ Previous Broken Implementation</h3>
+        <ul>
+          <li>• Unconstrained vertical pill modal stretching across 100vh</li>
+          <li>• Dark generic solid cards clipping warning text and pinout data</li>
+          <li>• Dull static background with zero depth or luminescent cues</li>
+          <li>• Occluded circuit schematic canvas during inspection</li>
+        </ul>
+      </div>
+
+      <div class="diff-box good">
+        <h3>✓ New Ethereal Glass CAD System</h3>
+        <ul>
+          <li>• 340px Fixed Docked Glass Inspector with backdrop blur (28px)</li>
+          <li>• Luminescent cyan/violet circuit traces with dynamic neon drop shadows</li>
+          <li>• Organic radial lighting & drafting grid that preserves schematic visibility</li>
+          <li>• Live electrical telemetry: voltage, propagation delay, and clear hardware alerts</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

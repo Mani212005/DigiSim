@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DigiSim — Conceptual Sketch & Engineering Blueprint Design System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-blueprint: #070B12;
+      --bg-surface: #0E1524;
+      --bg-surface-elevated: #151F33;
+      --bg-card: rgba(14, 21, 36, 0.75);
+      --border-cad: #1C2B45;
+      --border-focus: #00F0FF;
+      --accent-cyan: #00F0FF;
+      --accent-cyan-glow: rgba(0, 240, 255, 0.25);
+      --accent-amber: #FFB300;
+      --accent-coral: #FF476E;
+      --accent-green: #00E676;
+      --text-primary: #F0F4FC;
+      --text-secondary: #8E9DB8;
+      --text-dim: #4F6180;
+      --grid-dot: #16243B;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Fira Code', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-blueprint);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(var(--grid-dot) 1.2px, transparent 1.2px),
+        linear-gradient(to right, rgba(28, 43, 69, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(28, 43, 69, 0.15) 1px, transparent 1px);
+      background-size: 24px 24px, 120px 120px, 120px 120px;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 11, 18, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-cad);
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-cyan), #0077FF);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #000;
+      font-size: 16px;
+      box-shadow: 0 0 12px var(--accent-cyan-glow);
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(21, 31, 51, 0.6);
+      padding: 0.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-cad);
+    }
+    .nav-tab {
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-tab:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-tab.active {
+      color: #000;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 14px var(--accent-cyan-glow);
+    }
+
+    /* Status Badge */
+    .live-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--accent-green);
+      background: rgba(0, 230, 118, 0.1);
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 230, 118, 0.25);
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(14, 21, 36, 0.9), rgba(21, 31, 51, 0.7));
+      border: 1px solid var(--border-cad);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .hero-banner::before {
+      content: "SCHEMATIC // V2.0";
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+    }
+    .hero-title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #FFFFFF, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 780px;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Card System */
+    .blueprint-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-cad);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .blueprint-card:hover {
+      border-color: rgba(0, 240, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.08);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(28, 43, 69, 0.6);
+      padding-bottom: 0.75rem;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(28, 43, 69, 0.6);
+      color: var(--text-secondary);
+    }
+
+    /* Comparison Section: Fixing the Broken Popup */
+    .comparison-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 1.5rem 0;
+    }
+    .comparison-side {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-cad);
+      border-radius: 14px;
+      padding: 1.5rem;
+      position: relative;
+    }
+    .side-tag {
+      position: absolute;
+      top: -10px;
+      left: 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+    .tag-before {
+      background: var(--accent-coral);
+      color: #FFF;
+    }
+    .tag-after {
+      background: var(--accent-cyan);
+      color: #000;
+    }
+
+    .screenshot-frame {
+      background: #03060A;
+      border: 1px solid #1C2B45;
+      border-radius: 10px;
+      overflow: hidden;
+      text-align: center;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .screenshot-img {
+      max-height: 440px;
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255, 71, 110, 0.3);
+    }
+    .flaw-callout {
+      margin-top: 1rem;
+      background: rgba(255, 71, 110, 0.1);
+      border: 1px solid rgba(255, 71, 110, 0.3);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #FFB3C0;
+      text-align: left;
+      width: 100%;
+    }
+    .flaw-callout ul {
+      margin-left: 1.25rem;
+      margin-top: 0.4rem;
+    }
+
+    /* Conceptual Blueprint UI Mockup */
+    .cad-canvas {
+      height: 480px;
+      background: #040810;
+      border: 1px solid var(--border-cad);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      background-image: 
+        radial-gradient(#142238 1px, transparent 1px),
+        linear-gradient(to right, rgba(20, 34, 56, 0.2) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(20, 34, 56, 0.2) 1px, transparent 1px);
+      background-size: 20px 20px, 100px 100px, 100px 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Blueprint Node */
+    .schematic-node {
+      width: 180px;
+      background: rgba(14, 21, 36, 0.95);
+      border: 1.5px solid var(--accent-cyan);
+      border-radius: 10px;
+      padding: 0.75rem;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+      position: relative;
+    }
+    .node-header-mini {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      border-bottom: 1px solid var(--border-cad);
+      padding-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+    .node-glyph {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .node-glyph svg {
+      width: 70px;
+      height: 40px;
+      stroke: var(--accent-cyan);
+      fill: none;
+      stroke-width: 2.5;
+    }
+    .node-ports {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+    .port-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    /* Fixed & Polished Inspector Popover */
+    .inspector-popover {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      width: 320px;
+      background: rgba(10, 16, 28, 0.95);
+      border: 1.5px solid var(--accent-cyan);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(0, 240, 255, 0.2);
+      backdrop-filter: blur(20px);
+      z-index: 10;
+      animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.92) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .popover-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-cad);
+      padding-bottom: 0.6rem;
+      margin-bottom: 0.8rem;
+    }
+    .popover-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .popover-close {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.2rem;
+    }
+    .popover-close:hover { color: var(--accent-coral); }
+
+    .prop-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      font-size: 0.85rem;
+    }
+    .prop-label {
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .prop-val {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--accent-cyan);
+    }
+    .warning-box {
+      background: rgba(255, 71, 110, 0.12);
+      border: 1px solid rgba(255, 71, 110, 0.35);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.75rem;
+      color: #FFA4B6;
+      margin-top: 0.75rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    /* Plan & Actions */
+    .plan-step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      background: rgba(14, 21, 36, 0.5);
+      border: 1px solid var(--border-cad);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      background: var(--accent-cyan);
+      color: #000;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .step-content h4 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+    .step-content p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* Action Buttons */
+    .btn-action {
+      background: var(--accent-cyan);
+      color: #000;
+      font-weight: 700;
+      border: none;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 16px var(--accent-cyan-glow);
+    }
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(0, 240, 255, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(28, 43, 69, 0.6);
+      color: var(--text-primary);
+      border: 1px solid var(--border-cad);
+      font-weight: 600;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .btn-secondary:hover {
+      background: var(--border-cad);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">D</div>
+      <div>
+        <div class="brand-title">DigiSim Studio</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">Conceptual Sketch & Blueprint UX</div>
+      </div>
+      <span class="brand-tag">v2.0 PRO DESIGN</span>
+    </div>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('canvas-tab', this)">📐 Canvas & Circuit UX</button>
+      <button class="nav-tab" onclick="switchTab('popup-tab', this)">🔍 Popup Fix & Inspector</button>
+      <button class="nav-tab" onclick="switchTab('components-tab', this)">⚡ Blueprint Palette</button>
+      <button class="nav-tab" onclick="switchTab('plan-tab', this)">📋 Execution Plan</button>
+    </nav>
+
+    <div class="live-status">
+      <div class="pulse-dot"></div>
+      LAVISH LIVE SESSION
+    </div>
+  </header>
+
+  <main>
+
+    <!-- TAB 1: CANVAS & CIRCUIT UX -->
+    <section id="canvas-tab" class="tab-pane active">
+      <div class="hero-banner">
+        <h1 class="hero-title">Conceptual Sketch & Blueprint Design System</h1>
+        <p class="hero-subtitle">
+          An ultra-clean, technical drafting aesthetic for digital logic simulation. Features dark schematic grid lines, CAD-grade glyphs, sub-millisecond signal glow animations, and dockable technical inspectors.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="blueprint-card">
+          <div class="card-header">
+            <div class="card-title">💡 Core Design Directives</div>
+            <span class="card-badge">BLUEPRINT // CAD</span>
+          </div>
+          <ul style="margin-left: 1.25rem; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.8;">
+            <li><strong style="color: var(--text-primary);">Zero-Clutter Canvas:</strong> Deep navy drafting background with subtle 24px / 120px grid intersections.</li>
+            <li><strong style="color: var(--text-primary);">Signal Physics Glow:</strong> Cyan (<code style="color: var(--accent-cyan);">#00F0FF</code>) for Logic HIGH, Slate (<code style="color: var(--text-dim);">#1A3045</code>) for Logic LOW.</li>
+            <li><strong style="color: var(--text-primary);">Dockable HUD Inspectors:</strong> Replaces vertical clipping modals with crisp, bounded glassmorphic popovers.</li>
+            <li><strong style="color: var(--text-primary);">YOLOv8 Vision OCR:</strong> Drag and drop hand-drawn sketches to auto-generate schematic wiring.</li>
+          </ul>
+        </div>
+
+        <div class="blueprint-card">
+          <div class="card-header">
+            <div class="card-title">🎨 Color Tokens & Blueprint Palette</div>
+            <span class="card-badge">CSS TOKENS</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-family: var(--font-mono); font-size: 0.8rem;">
+            <div style="background: #070B12; border: 1px solid #1C2B45; padding: 0.6rem; border-radius: 6px;">
+              <div style="color: var(--accent-cyan);">--bg-blueprint</div>
+              <div style="color: var(--text-dim);">#070B12 (Deep Navy)</div>
+            </div>
+            <div style="background: rgba(0, 240, 255, 0.15); border: 1px solid #00F0FF; padding: 0.6rem; border-radius: 6px;">
+              <div style="color: #00F0FF;">--accent-cyan</div>
+              <div style="color: #FFFFFF;">#00F0FF (Logic 1)</div>
+            </div>
+            <div style="background: rgba(255, 179, 0, 0.15); border: 1px solid #FFB300; padding: 0.6rem; border-radius: 6px;">
+              <div style="color: #FFB300;">--accent-amber</div>
+              <div style="color: #FFFFFF;">#FFB300 (Clock / Pulse)</div>
+            </div>
+            <div style="background: rgba(255, 71, 110, 0.15); border: 1px solid #FF476E; padding: 0.6rem; border-radius: 6px;">
+              <div style="color: #FF476E;">--accent-coral</div>
+              <div style="color: #FFFFFF;">#FF476E (Short-Circuit)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Interactive Blueprint Canvas Mockup -->
+      <div class="blueprint-card">
+        <div class="card-header">
+          <div class="card-title">📐 Interactive Blueprint Canvas Mockup</div>
+          <span class="card-badge">LIVE SIMULATION PREVIEW</span>
+        </div>
+        <div class="cad-canvas">
+          <!-- Gate 1: AND Gate -->
+          <div class="schematic-node" style="position: absolute; left: 140px; top: 120px;">
+            <div class="node-header-mini">
+              <span>U1: AND</span>
+              <span>74HC08</span>
+            </div>
+            <div class="node-glyph">
+              <svg viewBox="0 0 110 70">
+                <path d="M 25 15 L 55 15 A 20 20 0 0 1 55 55 L 25 55 Z" stroke="var(--accent-cyan)" fill="none"/>
+              </svg>
+            </div>
+            <div class="node-ports">
+              <span><span class="port-dot"></span>A: 1</span>
+              <span>Q: 1<span class="port-dot" style="margin-left:4px; margin-right:0;"></span></span>
+            </div>
+          </div>
+
+          <!-- Gate 2: NOT Gate -->
+          <div class="schematic-node" style="position: absolute; left: 420px; top: 120px; border-color: var(--accent-amber);">
+            <div class="node-header-mini" style="color: var(--accent-amber);">
+              <span>U2: NOT</span>
+              <span>74HC04</span>
+            </div>
+            <div class="node-glyph">
+              <svg viewBox="0 0 110 70">
+                <polygon points="25,15 75,35 25,55" stroke="var(--accent-amber)" fill="none"/>
+                <circle cx="82" cy="35" r="5" stroke="var(--accent-amber)" fill="none"/>
+              </svg>
+            </div>
+            <div class="node-ports">
+              <span><span class="port-dot" style="background: var(--accent-amber);"></span>IN: 1</span>
+              <span>OUT: 0<span class="port-dot" style="background: #1A3045; margin-left:4px; margin-right:0;"></span></span>
+            </div>
+          </div>
+
+          <!-- Connecting Wire -->
+          <svg style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+            <path d="M 320 185 L 420 185" stroke="var(--accent-cyan)" stroke-width="2.5" fill="none" stroke-dasharray="4 2" />
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: POPUP FIX & INSPECTOR -->
+    <section id="popup-tab" class="tab-pane">
+      <div class="hero-banner">
+        <h1 class="hero-title">Modal / Popup Fix & Technical Inspector</h1>
+        <p class="hero-subtitle">
+          Eliminating the vertically stretched pill modal that clips node text, and replacing it with a docked, high-density technical HUD inspector.
+        </p>
+      </div>
+
+      <div class="comparison-container">
+        <!-- Before: Current Broken Popup -->
+        <div class="comparison-side" style="border-color: rgba(255, 71, 110, 0.4);">
+          <span class="side-tag tag-before">CURRENT PROBLEM (UPLOADED IMAGE)</span>
+          <h3 style="margin-top: 0.5rem; font-size: 1.1rem; color: #FFA4B6;">Vertical Pill Clipping Issue</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+            The current modal popup has unconstrained vertical stretching, zero width bounds, and obscures the active circuit node.
+          </p>
+
+          <div class="screenshot-frame">
+            <img src="current_broken_popup.png" alt="Current Broken Vertical Popup" class="screenshot-img" />
+          </div>
+
+          <div class="flaw-callout">
+            <strong>❌ Identified UI Defects:</strong>
+            <ul>
+              <li>Modal stretched into an elongated vertical pill with zero readable width.</li>
+              <li>Text strings (<code style="color:#FFA4B6;">Analog ... rive gates yet — co ... S3)</code>) clipped and unreadable.</li>
+              <li>Obscures the circuit canvas and node handles completely.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- After: New Blueprint Inspector Popover -->
+        <div class="comparison-side" style="border-color: var(--accent-cyan);">
+          <span class="side-tag tag-after">PROPOSED FIX // CONCEPTUAL BLUEPRINT</span>
+          <h3 style="margin-top: 0.5rem; font-size: 1.1rem; color: var(--accent-cyan);">Docked Technical HUD Inspector</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+            A bounded, 320px glassmorphic card anchored to the top-right of the viewport with clean diagnostics and waveform probes.
+          </p>
+
+          <div class="cad-canvas" style="height: 440px; margin-top: 1rem; align-items: flex-start; justify-content: flex-start; padding: 1.5rem;">
+            <!-- Node on canvas -->
+            <div class="schematic-node" style="position: absolute; left: 30px; top: 120px;">
+              <div class="node-header-mini">
+                <span>ADC_IN</span>
+                <span>ESP32-S3</span>
+              </div>
+              <div class="node-glyph">
+                <span style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--accent-cyan);">ANALOG</span>
+              </div>
+              <div class="node-ports">
+                <span>PIN: GPIO 4</span>
+                <span>3.3V MAX</span>
+              </div>
+            </div>
+
+            <!-- New Clean Inspector -->
+            <div class="inspector-popover" style="position: absolute; right: 20px; top: 20px;">
+              <div class="popover-header">
+                <div class="popover-title">
+                  <span style="color: var(--accent-cyan);">⚡</span> PIN INSPECTOR
+                </div>
+                <button class="popover-close">✕</button>
+              </div>
+
+              <div class="prop-row">
+                <span class="prop-label">COMPONENT</span>
+                <span class="prop-val">ESP32-S3 Pin Header</span>
+              </div>
+              <div class="prop-row">
+                <span class="prop-label">SIGNAL TYPE</span>
+                <span class="prop-val">Analog (ADC1_CH3)</span>
+              </div>
+              <div class="prop-row">
+                <span class="prop-label">VOLTAGE LEVEL</span>
+                <span class="prop-val" style="color: var(--accent-green);">2.48 V (Logic HIGH)</span>
+              </div>
+              <div class="prop-row">
+                <span class="prop-label">PIN BINDING</span>
+                <span class="prop-val">GPIO 4</span>
+              </div>
+
+              <div class="warning-box">
+                <span>⚠️</span>
+                <div>
+                  <strong>Hardware Constraint:</strong>
+                  <div>Analog signals cannot directly drive pure digital CMOS gates without an ADC/DAC stage.</div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="btn-action" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; width: 100%; justify-content: center;">
+                  ✓ Auto-Insert ADC Buffer
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-primary);">
+            <strong>✅ Key Improvements:</strong>
+            <ul style="margin-left: 1.25rem; margin-top: 0.4rem; color: var(--text-secondary);">
+              <li>320px fixed-width viewport docking with no canvas occlusion.</li>
+              <li>Structured diagnostic warnings with one-click resolution actions.</li>
+              <li>Live pin voltages and waveform statistics.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: BLUEPRINT PALETTE -->
+    <section id="components-tab" class="tab-pane">
+      <div class="hero-banner">
+        <h1 class="hero-title">Blueprint Component Palette</h1>
+        <p class="hero-subtitle">
+          Standardized digital logic and embedded hardware components in the Conceptual Sketch style.
+        </p>
+      </div>
+
+      <div class="grid-3">
+        <!-- Logic Gates -->
+        <div class="blueprint-card">
+          <div class="card-header">
+            <div class="card-title">🔌 Logic Gates</div>
+            <span class="card-badge">74XX SERIES</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Standard 2-input and multi-input Boolean gates with live propagation delay modeling.
+          </p>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.75rem;">
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-cyan);">AND Gate</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-cyan);">OR Gate</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-cyan);">NOT Gate</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-cyan);">NAND Gate</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-cyan);">NOR Gate</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-cyan);">XOR Gate</span>
+          </div>
+        </div>
+
+        <!-- Sequential & Memory -->
+        <div class="blueprint-card">
+          <div class="card-header">
+            <div class="card-title">⏱️ Sequential & Clocks</div>
+            <span class="card-badge">STORAGE</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Edge-triggered flip-flops, latches, frequency dividers, and variable clock oscillators.
+          </p>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.75rem;">
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-amber);">D Flip-Flop</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-amber);">JK Flip-Flop</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-amber);">Clock Gen</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-amber);">4-Bit Counter</span>
+          </div>
+        </div>
+
+        <!-- Output & Visualization -->
+        <div class="blueprint-card">
+          <div class="card-header">
+            <div class="card-title">📊 Probes & Displays</div>
+            <span class="card-badge">I/O TEST</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Oscilloscope probes, LED indicators, Seven-Segment displays, and live Truth Table generators.
+          </p>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.75rem;">
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-green);">7-Segment</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-green);">Logic Probe</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-green);">Oscilloscope</span>
+            <span style="background: #151F33; border: 1px solid var(--border-cad); padding: 0.3rem 0.6rem; border-radius: 4px; color: var(--accent-green);">Truth Table</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: EXECUTION PLAN -->
+    <section id="plan-tab" class="tab-pane">
+      <div class="hero-banner">
+        <h1 class="hero-title">Frontend Implementation Plan</h1>
+        <p class="hero-subtitle">
+          Upon your approval, this implementation plan will be stored in <code style="color: var(--accent-cyan);">projects/DigiSim/plans/digisim_conceptual_sketch_plan.md</code> (gitignored) for agent execution.
+        </p>
+      </div>
+
+      <div class="blueprint-card">
+        <div class="plan-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>Cleanse & Replace Broken Popups (`components/InspectorPanel.tsx`)</h4>
+            <p>Replace the unconstrained vertical pill modal with the dockable 320px HUD Inspector. Add clear pinout mappings, voltage level indicators, and structured error callouts.</p>
+          </div>
+        </div>
+
+        <div class="plan-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Implement Blueprint Design System Tokens (`index.css` & `Sidebar.css`)</h4>
+            <p>Apply Deep Navy (<code style="color: var(--accent-cyan);">#070B12</code>) background, 24px schematic dot grid, glowing cyan signal wires, and CAD monospace typography.</p>
+          </div>
+        </div>
+
+        <div class="plan-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>Refactor Logic Nodes (`nodes/GateShell.tsx`)</h4>
+            <p>Render sharp vector glyphs, live pin status indicators, and hover glow effects matching the Conceptual Sketch style.</p>
+          </div>
+        </div>
+
+        <div class="plan-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h4>Verify YOLOv8 Vision Upload & Netlist Exporter</h4>
+            <p>Test end-to-end circuit synthesis from paper sketches and verify Netlist JSON export with 100% test coverage.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+          <button class="btn-action" onclick="alert('Thank you, Captain! The plan will be committed to plans/ folder upon your approval.')">
+            ✓ Approve Conceptual Sketch UX
+          </button>
+          <button class="btn-secondary" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            ↑ Back to Top
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      el.classList.add('active');
+    }
+  </script>
+</body>
+</html>
