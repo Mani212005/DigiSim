@@ -1,14 +1,12 @@
 /**
  * @file NmosNode.tsx
- * @description 4-Terminal NMOS Transistor Node component for ReactFlow canvas.
- * Features 4 handles (Drain, Gate, Source, Bulk), auto-bulk fallback to VSS,
- * live operating region badges (Cutoff, Triode, Saturation), parameter editing (W, L, nf, PDK),
- * and CDF parameter readout.
+ * @description Clean, Professional 4-Terminal NMOS Transistor Node for ReactFlow canvas (Cadence Virtuoso Style).
+ * Displays a clean IEEE schematic symbol with subtle instance & geometry text.
+ * Double-clicking opens the deep Virtuoso Object Properties Inspector.
  */
 
 import React from 'react';
 import { Handle, Position } from 'reactflow';
-import { PDKManager } from '../../logic/pdk/PDKManager';
 import type { AnalogNodeProps, TechNode } from '../../types';
 import './MosfetNode.css';
 
@@ -24,160 +22,80 @@ function MosfetHandle({ terminal, position }: { terminal: string; position: Posi
   );
 }
 
-export function NmosNode({ id, data, updateNodeData }: AnalogNodeProps): React.ReactElement {
+export function NmosNode({ id, data }: AnalogNodeProps): React.ReactElement {
   const techNode: TechNode = data.techNode ?? '180nm';
   const width = data.width ?? 1.2; // um
   const length = data.length ?? 0.18; // um
-  const nf = data.nf ?? 1;
-  const autoBulk = data.autoBulk ?? true;
+  const label = data.label || 'NMOS';
+  const region = data.region;
 
-  const model = PDKManager.getModelCard(techNode, 'nmos');
-  const cdf = PDKManager.calculateCDF(techNode, width, length, nf);
-
-  // If operating region wasn't pre-computed by solver, calculate default operating state
-  const vsourceVal = data.param ?? 0;
-  const vdrop = data.voltageDrop ?? 0;
-  const current = data.current ?? 0;
-
-  // Evaluate default operating region estimate for display
-  const opResult = PDKManager.calculateOperatingRegion(
-    'nmos',
-    model,
-    width,
-    length,
-    nf,
-    vdrop, // Vd estimate
-    vsourceVal, // Vg estimate
-    0, // Vs estimate
-    0 // Vb estimate (VSS)
-  );
-
-  const region = data.region ?? opResult.region;
-  const ids = current > 0 ? current : opResult.ids;
-
-  const regionBadgeClass =
+  const regionDotClass =
     region === 'Saturation'
-      ? 'mosfet-badge--sat'
+      ? 'mosfet-dot--sat'
       : region === 'Triode'
-        ? 'mosfet-badge--triode'
-        : 'mosfet-badge--cutoff';
+        ? 'mosfet-dot--triode'
+        : region === 'Cutoff'
+          ? 'mosfet-dot--cutoff'
+          : '';
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Dispatch custom event caught by App.tsx to open the Properties Modal
+    window.dispatchEvent(new CustomEvent('digisim:open-node-properties', { detail: { nodeId: id } }));
+  };
 
   return (
-    <div className="mosfet-node nmos-node">
-      {/* 4 Handles: Drain (top), Gate (left), Source (bottom), Bulk (right) */}
+    <div
+      className="mosfet-node mosfet-node--pro nmos-node"
+      onDoubleClick={handleDoubleClick}
+      title="Double-click to edit Cadence Virtuoso Object Properties (W, L, PDK, Bulk)"
+    >
+      {/* 4 Standard IEEE Terminals: Drain (top), Gate (left), Source (bottom), Bulk (right) */}
       <MosfetHandle terminal="d" position={Position.Top} />
       <MosfetHandle terminal="g" position={Position.Left} />
       <MosfetHandle terminal="s" position={Position.Bottom} />
       <MosfetHandle terminal="b" position={Position.Right} />
 
-      <div className="mosfet-header">
-        <span className="mosfet-title">{data.label || 'NMOS'}</span>
-        <span className={`mosfet-badge ${regionBadgeClass}`}>{region}</span>
+      {/* Clean Header: Instance Tag + Status Dot */}
+      <div className="mosfet-pro-header">
+        <span className="mosfet-pro-title">{label}</span>
+        {region && <span className={`mosfet-status-dot ${regionDotClass}`} title={`Region: ${region}`} />}
       </div>
 
-      {/* Schematic SVG Glyph */}
-      <div className="mosfet-glyph">
-        <svg width="60" height="50" viewBox="0 0 60 50" aria-label="NMOS Schematic Symbol">
-          {/* Gate Line & Terminal */}
-          <line x1="0" y1="25" x2="20" y2="25" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="20" y1="12" x2="20" y2="38" stroke="currentColor" strokeWidth="2" />
+      {/* Clean IEEE Schematic SVG Glyph */}
+      <div className="mosfet-pro-glyph">
+        <svg width="68" height="54" viewBox="0 0 68 54" aria-label="NMOS Schematic Symbol">
+          {/* Gate Terminal (Left) */}
+          <line x1="0" y1="27" x2="22" y2="27" stroke="currentColor" strokeWidth="1.6" />
+          <line x1="22" y1="12" x2="22" y2="42" stroke="currentColor" strokeWidth="2.2" />
           {/* Oxide gap */}
-          <line x1="25" y1="10" x2="25" y2="40" stroke="currentColor" strokeWidth="2" />
+          <line x1="28" y1="10" x2="28" y2="44" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
 
           {/* Drain Line (Top) */}
-          <line x1="25" y1="14" x2="45" y2="14" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="45" y1="14" x2="45" y2="0" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="28" y1="15" x2="48" y2="15" stroke="currentColor" strokeWidth="1.6" />
+          <line x1="48" y1="15" x2="48" y2="0" stroke="currentColor" strokeWidth="1.6" />
 
           {/* Source Line (Bottom) */}
-          <line x1="25" y1="36" x2="45" y2="36" stroke="currentColor" strokeWidth="1.5" />
-          <line x1="45" y1="36" x2="45" y2="50" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="28" y1="39" x2="48" y2="39" stroke="currentColor" strokeWidth="1.6" />
+          <line x1="48" y1="39" x2="48" y2="54" stroke="currentColor" strokeWidth="1.6" />
 
           {/* Bulk Channel Line (Middle) */}
-          <line x1="25" y1="25" x2="60" y2="25" stroke="currentColor" strokeWidth="1.5" />
+          <line x1="28" y1="27" x2="68" y2="27" stroke="currentColor" strokeWidth="1.6" />
           {/* NMOS Substrate Arrow (pointing IN towards channel) */}
-          <polygon points="25,25 32,21 32,29" fill="currentColor" />
+          <polygon points="28,27 36,23 36,31" fill="currentColor" />
 
-          {/* Labels for D, G, S, B */}
-          <text x="47" y="10" className="mosfet-pin-label">D</text>
-          <text x="5" y="20" className="mosfet-pin-label">G</text>
-          <text x="47" y="46" className="mosfet-pin-label">S</text>
-          <text x="50" y="22" className="mosfet-pin-label">B</text>
+          {/* Terminal Pin Labels */}
+          <text x="50" y="10" className="mosfet-pin-label">D</text>
+          <text x="6" y="22" className="mosfet-pin-label">G</text>
+          <text x="50" y="50" className="mosfet-pin-label">S</text>
+          <text x="58" y="24" className="mosfet-pin-label">B</text>
         </svg>
       </div>
 
-      {/* Auto-Bulk Indicator */}
-      <div className="mosfet-autobulk">
-        <label className="nodrag">
-          <input
-            type="checkbox"
-            checked={autoBulk}
-            onChange={(e) => updateNodeData(id, { autoBulk: e.target.checked })}
-          />
-          Auto-Bulk {autoBulk ? '(VSS)' : ''}
-        </label>
-      </div>
-
-      {/* PDK Controls & Parameter Inputs */}
-      <div className="mosfet-params nodrag">
-        <div className="mosfet-row">
-          <span className="mosfet-label">PDK:</span>
-          <select
-            value={techNode}
-            onChange={(e) => updateNodeData(id, { techNode: e.target.value as TechNode })}
-            className="mosfet-select"
-          >
-            <option value="180nm">180nm CMOS</option>
-            <option value="90nm">90nm CMOS</option>
-            <option value="28nm">28nm HKMG</option>
-          </select>
-        </div>
-
-        <div className="mosfet-row">
-          <label title="Width in microns">
-            W:
-            <input
-              type="number"
-              step="0.05"
-              min="0.05"
-              value={width}
-              onChange={(e) => updateNodeData(id, { width: Number(e.target.value) })}
-              className="mosfet-input"
-            />
-            μm
-          </label>
-          <label title="Length in microns">
-            L:
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={length}
-              onChange={(e) => updateNodeData(id, { length: Number(e.target.value) })}
-              className="mosfet-input"
-            />
-            μm
-          </label>
-          <label title="Fingers">
-            nf:
-            <input
-              type="number"
-              min="1"
-              value={nf}
-              onChange={(e) => updateNodeData(id, { nf: Number(e.target.value) })}
-              className="mosfet-input mosfet-input--short"
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* CDF Readout */}
-      <div className="mosfet-cdf-readout" title="CDF Diffusion Geometry">
-        <span>ad:{cdf.ad}p</span> <span>as:{cdf.as}p</span> <span>pd:{cdf.pd}u</span> <span>ps:{cdf.ps}u</span>
-      </div>
-
-      {/* Live Readout */}
-      <div className="mosfet-readout">
-        <span>Ids: {(ids * 1000).toFixed(3)} mA</span>
+      {/* Subtle Virtuoso-style Monospaced Size Subtitle */}
+      <div className="mosfet-pro-specs">
+        <span className="mosfet-spec-size">{width}μ / {length}μ</span>
+        <span className="mosfet-spec-pdk">{techNode}</span>
       </div>
     </div>
   );

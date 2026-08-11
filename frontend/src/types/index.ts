@@ -699,3 +699,123 @@ export interface Pcb3DViewerProps {
   onClose: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Circuit Gallery Showcase & Interactive Onboarding Tour (UX)
+// ---------------------------------------------------------------------------
+
+/** Sample circuit categories in the Showcase gallery. */
+export type SampleCircuitCategory = 'all' | 'cmos' | 'analog' | 'digital' | 'rf';
+
+/** Difficulty level badge for sample circuits. */
+export type SampleCircuitDifficulty = 'Beginner' | 'Intermediate' | 'Advanced';
+
+/** Specification stats for a sample circuit card. */
+export interface SampleCircuitStats {
+  nodes: number;
+  edges: number;
+  speed?: string;
+  power?: string;
+  gain?: string;
+  bandwidth?: string;
+}
+
+/** Pre-configured, 1-click playable sample circuit definition. */
+export interface SampleCircuit {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  techNode: import('./pdk').TechNode | string;
+  category: SampleCircuitCategory;
+  difficulty: SampleCircuitDifficulty;
+  badgeColor: string;
+  icon: string;
+  stats: SampleCircuitStats;
+  features: string[];
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+}
+
+/** Props for the Circuit Gallery Showcase modal dialog. */
+export interface CircuitGalleryModalProps {
+  open: boolean;
+  onClose: () => void;
+  onLoadCircuit: (circuit: SampleCircuit) => void;
+}
+
+/** Definition for one onboarding spotlight tour step. */
+export interface TourStep {
+  step: number;
+  title: string;
+  tag: string;
+  description: string;
+  highlights: string[];
+  icon: string;
+  previewType: 'palette' | 'mosfet' | 'falstad' | 'copilot' | 'pcb3d';
+}
+
+/** Props for the 60-second interactive guided onboarding tour modal. */
+export interface InteractiveTourModalProps {
+  open: boolean;
+  onClose: () => void;
+  onOpenGallery?: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Live Probing & Interactive Diagnostics
+// ---------------------------------------------------------------------------
+
+/** Probed electrical readings extracted from a wire or node terminal. */
+export interface ProbedElectricalState {
+  targetType: 'wire' | 'terminal' | 'node';
+  targetId: string;
+  label: string;
+  subLabel?: string;
+  voltage: number;
+  current: number;
+  logicState: '0' | '1' | 'X' | 'Z';
+  operatingRegion?: import('./pdk').OperatingRegion;
+  history: number[];
+  vdd?: number;
+  resistance?: number;
+  simWarning?: string;
+}
+
+/** Props for the Interactive Probe Tooltip component. */
+export interface InteractiveProbeTooltipProps {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+  simOutputs?: Map<string, AnalogOutputs | SpiceOutputs>;
+  vdd?: number;
+  visible?: boolean;
+}
+
+/** Transistor operating region counts summary. */
+export interface TransistorRegionSummary {
+  nmos: { saturation: number; triode: number; cutoff: number; total: number };
+  pmos: { saturation: number; triode: number; cutoff: number; total: number };
+  summaryText: string;
+}
+
+/** Diagnostic issue detected by the Circuit Health monitor. */
+export interface CircuitHealthIssue {
+  id: string;
+  type: 'floating_node' | 'floating_input' | 'untied_bulk' | 'overcurrent';
+  message: string;
+  nodeId?: string;
+  handleId?: string;
+  edgeId?: string;
+}
+
+/** Props for the Circuit Health & Convergence Diagnostic Ribbon. */
+export interface CircuitHealthBarProps {
+  nodes: DigiNode[];
+  edges: DigiEdge[];
+  onAutoFix?: (fixedNodes: DigiNode[], fixedEdges: DigiEdge[]) => void;
+  fps?: number;
+  solverMode?: string;
+  convergenceState?: 'converged' | 'stepping' | 'unconverged';
+  iterationCount?: number;
+}
+
+

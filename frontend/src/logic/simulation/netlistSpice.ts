@@ -298,3 +298,49 @@ export function generateSpectreNetlist(
 
   return lines.join('\n');
 }
+
+/**
+ * Trigger browser file download of standard SPICE (.cir) netlist.
+ *
+ * @param nodes - Schematic nodes
+ * @param edges - Schematic edges
+ * @param filename - Name for downloaded .cir file
+ */
+export function downloadSpiceNetlist(
+  nodes: DigiNode[],
+  edges: DigiEdge[],
+  filename = 'digisim_circuit'
+): void {
+  const content = generateSpiceNetlist(nodes, edges, { title: filename });
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename.endsWith('.cir') ? filename : `${filename}.cir`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Trigger browser file download of Cadence Spectre (.scs) netlist.
+ *
+ * @param nodes - Schematic nodes
+ * @param edges - Schematic edges
+ * @param filename - Name for downloaded .scs file
+ */
+export function downloadSpectreNetlist(
+  nodes: DigiNode[],
+  edges: DigiEdge[],
+  filename = 'digisim_circuit'
+): void {
+  const content = generateSpectreNetlist(nodes, edges, { title: filename });
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename.endsWith('.scs') ? filename : `${filename}.scs`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+

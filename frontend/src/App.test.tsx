@@ -1,16 +1,26 @@
 /**
- * @file App.test.js
+ * @file App.test.tsx
  * @description Smoke tests for the DigiSim root App component — verifies the navbar,
- * the toolbox menu navigation, palette sections, and vision section render correctly.
+ * the menu dropdowns, transport controls, palette sections, and modal triggers.
  */
 
+import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders the DigiSim brand and Circuit Analyzer tag', () => {
+test('renders the DigiSim brand and v2.0 Pro tag', () => {
   render(<App />);
-  expect(screen.getByText('⚡ DigiSim')).toBeInTheDocument();
+  expect(screen.getByText('DigiSim')).toBeInTheDocument();
   expect(screen.getByText(/v2\.0 pro/i)).toBeInTheDocument();
+});
+
+test('renders professional menu bar and transport controls', () => {
+  render(<App />);
+  expect(screen.getByRole('button', { name: /file/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /simulate/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /tools/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /help/i })).toBeInTheDocument();
+  expect(screen.getByTitle(/run \/ pause simulation/i)).toBeInTheDocument();
 });
 
 test('toolbox menu lists the Component Library and Vision sections', () => {
@@ -64,7 +74,23 @@ test('opening Vision shows the Image Upload control', () => {
   expect(screen.getByText(/image upload/i)).toBeInTheDocument();
 });
 
-test('renders the Clear Canvas button', () => {
+test('renders the Clear Canvas button in toolbox', () => {
   render(<App />);
   expect(screen.getByRole('button', { name: /clear canvas/i })).toBeInTheDocument();
 });
+
+test('clicking Examples opens the CircuitGalleryModal', () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /examples/i }));
+  expect(screen.getByRole('heading', { level: 2, name: /circuit gallery showcase/i })).toBeInTheDocument();
+  expect(screen.getByText('180nm CMOS Inverter')).toBeInTheDocument();
+});
+
+test('opening Help menu allows launching the 60-Sec Interactive Guide', () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /help/i }));
+  fireEvent.click(screen.getByRole('button', { name: /60-sec interactive guide/i }));
+  expect(screen.getByText(/step 1 of 5/i)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 2, name: /canvas & component palette/i })).toBeInTheDocument();
+});
+

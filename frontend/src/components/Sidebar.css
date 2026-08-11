@@ -179,30 +179,119 @@
   text-align: center;
 }
 
-/* 6. Hover Tooltips */
-.component-chip::after, .list-chip::after {
-  content: attr(data-tooltip);
+/* 6. Rich Hover Tooltips */
+.component-rich-tooltip {
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  background: #2a2e37;
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  white-space: nowrap;
+  transform: translateX(-50%) translateY(4px);
+  width: 220px;
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid rgba(129, 140, 248, 0.45);
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(99, 102, 241, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s, transform 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  z-index: 100;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+  text-align: left;
 }
 
-.component-chip:hover::after, .list-chip:hover::after {
+.component-chip:hover .component-rich-tooltip,
+.list-chip:hover .component-rich-tooltip {
   opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
+  transform: translateX(-50%) translateY(0);
 }
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tooltip-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.tooltip-category {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tooltip-desc {
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.tooltip-pins {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.tooltip-pin-icon {
+  font-size: 9px;
+}
+
+.tooltip-pin-text {
+  font-weight: 500;
+}
+
+.tooltip-formula-box {
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.tooltip-formula-label {
+  display: block;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tooltip-formula-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  color: #e2e8f0;
+  display: block;
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+.tooltip-hint {
+  font-size: 9.5px;
+  color: #fbbf24;
+  font-style: italic;
+}
+
 
 /* 7. Pin Indicator */
 .pin-icon {

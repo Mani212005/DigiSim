@@ -71,10 +71,20 @@ import ProjectsModal from './components/ProjectsModal';
 import InventoryModal from './components/InventoryModal';
 import Sidebar from './components/Sidebar';
 import FalstadFlowOverlay from './components/canvas/FalstadFlowOverlay';
+import InteractiveProbeTooltip from './components/canvas/InteractiveProbeTooltip';
+import CircuitHealthBar from './components/hud/CircuitHealthBar';
 import DigiCopilotPanel from './components/hud/DigiCopilotPanel';
 import Pcb3DViewer from './components/canvas/Pcb3DViewer';
+import CircuitGalleryModal from './components/showcase/CircuitGalleryModal';
+import InteractiveTourModal from './components/onboarding/InteractiveTourModal';
+import CommandPaletteModal from './components/palette/CommandPaletteModal';
+import HotkeyCheatsheetModal, { HotkeyFloatingTrigger } from './components/hud/HotkeyCheatsheetModal';
+import ComponentPropertiesModal from './components/hud/ComponentPropertiesModal';
 import { exportNetlist } from './logic/netlistIO';
+import { downloadGerberFile } from './logic/gerberExport';
+import { downloadSpiceNetlist, downloadSpectreNetlist } from './logic/simulation/netlistSpice';
 import { useProjects } from './hooks/useProjects';
+import type { TechNode } from './types/pdk';
 import type {
   ActiveProject,
   ApiErrorResponse,
@@ -93,6 +103,7 @@ import type {
   PaletteEntry,
   PhotoPlacement,
   ProjectFolder,
+  SampleCircuit,
   SaveStatus,
   SidebarView,
   UpdateNodeData,
@@ -198,7 +209,134 @@ function App(): React.ReactElement {
   const [netlistImportOpen, setNetlistImportOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [hotkeyCheatsheetOpen, setHotkeyCheatsheetOpen] = useState(false);
+  const [propModalOpen, setPropModalOpen] = useState(false);
+  const [selectedPropNode, setSelectedPropNode] = useState<DigiNode | null>(null);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<'file' | 'simulate' | 'tools' | 'help' | null>(null);
+  const [activeTechNode, setActiveTechNode] = useState<TechNode>('180nm');
+  const [isSimulating, setIsSimulating] = useState(true);
+  const [wireMode, setWireMode] = useState(false);
+  const [probeMode, setProbeMode] = useState(false);
+  const [history, setHistory] = useState<Array<{ nodes: DigiNode[]; edges: DigiEdge[] }>>([]);
   const [activeProject, setActiveProject] = useState<ActiveProject | null>(null);
+
+  const pushHistory = useCallback(() => {
+    setHistory((prev) => [...prev.slice(-30), { nodes, edges }]);
+  }, [nodes, edges]);
+
+  const handleUndo = useCallback(() => {
+    if (history.length === 0) return;
+    const previous = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, prev.length - 1));
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+  }, [history, setNodes, setEdges]);
+
+  const handleSwitchPDK = useCallback((techNode: TechNode) => {
+    setActiveTechNode(techNode);
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.type === 'nmos' || node.type === 'pmos') {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              techNode,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
+
+  const handleSpiceExport = useCallback(() => {
+    const name =
+      activeProject?.name.replace(/[^\w\- ]+/g, '').trim() || 'digisim_circuit';
+    downloadSpiceNetlist(nodes, edges, name);
+    setExportDropdownOpen(false);
+  }, [nodes, edges, activeProject]);
+
+  const handleSpectreExport = useCallback(() => {
+    const name =
+      activeProject?.name.replace(/[^\w\- ]+/g, '').trim() || 'digisim_circuit';
+    downloadSpectreNetlist(nodes, edges, name);
+    setExportDropdownOpen(false);
+  }, [nodes, edges, activeProject]);
+
+  const handleGerberExport = useCallback(() => {
+    const name =
+      activeProject?.name.replace(/[^\w\- ]+/g, '').trim() || 'digisim_top_copper';
+    downloadGerberFile(nodes, edges, name);
+    setExportDropdownOpen(false);
+  }, [nodes, edges, activeProject]);
+
+  // Listener for double-clicking nodes / digisim:open-node-properties
+  useEffect(() => {
+    const handleOpenProps = (e: Event) => {
+      const customEvent = e as CustomEvent<{ nodeId: string }>;
+      const targetNode = nodes.find((n) => n.id === customEvent.detail?.nodeId);
+      if (targetNode) {
+        setSelectedPropNode(targetNode);
+        setPropModalOpen(true);
+      }
+    };
+    window.addEventListener('digisim:open-node-properties', handleOpenProps);
+    return () => window.removeEventListener('digisim:open-node-properties', handleOpenProps);
+  }, [nodes]);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const closeMenus = () => {
+      setActiveMenu(null);
+      setExportDropdownOpen(false);
+    };
+    window.addEventListener('click', closeMenus);
+    return () => window.removeEventListener('click', closeMenus);
+  }, []);
+
+  // Check on initial mount whether the user has completed the onboarding tour
+  useEffect(() => {
+    try {
+      const tourSeen = localStorage.getItem('digisim_tour_completed');
+      if (!tourSeen) {
+        const timer = setTimeout(() => setTourOpen(true), 800);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      /* ignore storage access errors in restricted environments */
+    }
+  }, []);
+
+  /**
+   * Load a curated sample circuit into the ReactFlow schematic canvas.
+   * @param circuit - Selected sample circuit metadata, nodes, and edges
+   */
+  const handleLoadSampleCircuit = useCallback(
+    (circuit: SampleCircuit) => {
+      const newNodes = circuit.nodes.map((n) => ({
+        ...n,
+        position: { ...n.position },
+        data: { ...n.data },
+      }));
+      const newEdges = circuit.edges.map((e) => ({ ...e }));
+
+      bumpIdCounter(newNodes);
+      setNodes(newNodes);
+      setEdges(newEdges);
+      setGalleryOpen(false);
+
+      setTimeout(() => {
+        rfInstance?.fitView({ padding: 0.15 });
+      }, 60);
+    },
+    [rfInstance, setNodes, setEdges]
+  );
+
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSave = useRef(false);
@@ -344,6 +482,7 @@ function App(): React.ReactElement {
   }, [needsClock]);
 
   useEffect(() => {
+    if (!isSimulating) return;
     const simulatedNodes = simulateCircuit(nodes, edges, simTime);
 
     // Re-render when any simulation output changed (digital value or analog
@@ -363,36 +502,101 @@ function App(): React.ReactElement {
     if (hasChanges) {
       setNodes(simulatedNodes);
     }
-  }, [nodes, edges, simulateCircuit, setNodes, simTime]);
+  }, [nodes, edges, simulateCircuit, setNodes, simTime, isSimulating]);
 
-  // Ctrl/Cmd+J toggles the bottom terminal (like a code editor).
+  // Global Keyboard Shortcuts (Cmd+K, Cmd+J, Cmd+Z, Space, ?, W, P, Esc)
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
+      const target = event.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+
+      // Cmd+K / Ctrl+K: Command Palette
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandPaletteOpen((open) => !open);
+        return;
+      }
+
+      // Ctrl/Cmd+J toggles the bottom terminal (like a code editor).
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'j') {
         event.preventDefault();
         setTerminalOpen((open) => !open);
+        return;
+      }
+
+      // Cmd+Z / Ctrl+Z: Undo (when not typing inside an input)
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+        if (!isInput) {
+          event.preventDefault();
+          handleUndo();
+          return;
+        }
+      }
+
+      // Ignore single-letter shortcuts when typing in inputs
+      if (isInput) return;
+
+      if (event.key === '?' || (event.shiftKey && event.key === '/')) {
+        event.preventDefault();
+        setHotkeyCheatsheetOpen((open) => !open);
+      } else if (event.key === 'Escape') {
+        if (commandPaletteOpen) {
+          setCommandPaletteOpen(false);
+        } else if (hotkeyCheatsheetOpen) {
+          setHotkeyCheatsheetOpen(false);
+        } else if (hierarchyStack.length > 0) {
+          handlePopHierarchy();
+        }
+      } else if (event.code === 'Space') {
+        event.preventDefault();
+        setIsSimulating((sim) => !sim);
+      } else if (event.key.toLowerCase() === 'w' && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        setWireMode((wm) => !wm);
+      } else if (event.key.toLowerCase() === 'p' && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        setProbeMode((pm) => !pm);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [
+    commandPaletteOpen,
+    hotkeyCheatsheetOpen,
+    hierarchyStack.length,
+    handlePopHierarchy,
+    handleUndo,
+  ]);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      pushHistory();
+      setEdges((eds) => addEdge(params, eds));
+    },
+    [setEdges, pushHistory]
   );
 
   const addNode = useCallback(
-    (type: string, label: string, position?: { x: number; y: number }) => {
+    (
+      type: string,
+      label: string,
+      position?: { x: number; y: number },
+      extraData?: Record<string, unknown>
+    ) => {
+      pushHistory();
       const newNode: DigiNode = {
         id: getId(),
         position: position || { x: 120 + Math.random() * 200, y: 80 + Math.random() * 220 },
-        data: { label, value: 0, ...ANALOG_DEFAULT_DATA[type] },
+        data: { label, value: 0, ...ANALOG_DEFAULT_DATA[type], ...extraData },
         type,
       };
       setNodes((nds) => nds.concat(newNode));
     },
-    [setNodes]
+    [setNodes, pushHistory]
   );
 
   /**
@@ -1037,28 +1241,402 @@ function App(): React.ReactElement {
 
   return (
     <div className="app-container">
-      <header className="navbar glass">
-        <div className="navbar-brand">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M9 3v18M15 3v18" />
-          </svg>
-          ⚡ DigiSim
-          <span className="brand-tag">v2.0 Pro</span>
+      <header className="navbar">
+        {/* Left Section: Brand & Toolbar Menus */}
+        <div className="navbar-left">
+          <div className="navbar-brand" title="DigiSim Virtuoso EDA Workstation">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <path d="M9 3v18M15 3v18" />
+            </svg>
+            <span>DigiSim</span>
+            <span className="brand-tag">v2.0 Pro</span>
+          </div>
+
+          <div className="nav-divider" />
+
+          {/* Professional Menu Toolbar Dropdowns */}
+          <nav className="nav-menu-bar" onClick={(e) => e.stopPropagation()}>
+            {/* File Menu */}
+            <div className="nav-menu-item">
+              <button
+                type="button"
+                className={`nav-menu-btn ${activeMenu === 'file' ? 'nav-menu-btn--active' : ''}`}
+                onClick={() => setActiveMenu((m) => (m === 'file' ? null : 'file'))}
+              >
+                File <span className="nav-menu-arrow">▾</span>
+              </button>
+              {activeMenu === 'file' && (
+                <div className="nav-dropdown">
+                  <label htmlFor="header-image-upload" className="nav-dropdown-item" style={{ cursor: 'pointer' }}>
+                    <span>📷 Upload Schematic Image</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setNetlistImportOpen(true);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>📥 Import Netlist</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setProjectsOpen(true);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>🗀 Projects Manager</span>
+                  </button>
+                  {activeProject && (
+                    <button
+                      type="button"
+                      className="nav-dropdown-item"
+                      onClick={() => {
+                        setInventoryOpen(true);
+                        setActiveMenu(null);
+                      }}
+                    >
+                      <span>⛭ Project Inventory</span>
+                    </button>
+                  )}
+                  <div className="nav-dropdown-sep" />
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setNodes([]);
+                      setEdges([]);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>🗑 Clear Canvas</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Simulate Menu */}
+            <div className="nav-menu-item">
+              <button
+                type="button"
+                className={`nav-menu-btn ${activeMenu === 'simulate' ? 'nav-menu-btn--active' : ''}`}
+                onClick={() => setActiveMenu((m) => (m === 'simulate' ? null : 'simulate'))}
+              >
+                Simulate <span className="nav-menu-arrow">▾</span>
+              </button>
+              {activeMenu === 'simulate' && (
+                <div className="nav-dropdown">
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setIsSimulating((s) => !s);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>{isSimulating ? '⏸ Pause Simulation' : '▶ Run Simulation'}</span>
+                    <span className="nav-dropdown-kbd">Space</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setIsSimulating(false);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>⏭ Single Step</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setIsSimulating(false);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>↺ Reset Simulation</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Tools Menu */}
+            <div className="nav-menu-item">
+              <button
+                type="button"
+                className={`nav-menu-btn ${activeMenu === 'tools' ? 'nav-menu-btn--active' : ''}`}
+                onClick={() => setActiveMenu((m) => (m === 'tools' ? null : 'tools'))}
+              >
+                Tools <span className="nav-menu-arrow">▾</span>
+              </button>
+              {activeMenu === 'tools' && (
+                <div className="nav-dropdown">
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setCommandPaletteOpen(true);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>⌘ Command Palette</span>
+                    <span className="nav-dropdown-kbd">⌘K</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setCopilotOpen((o) => !o);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>🤖 DigiCopilot AI</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setPcb3dOpen((o) => !o);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>🧊 3D PCB View</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setTerminalOpen((o) => !o);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>⌘ Interactive Terminal</span>
+                    <span className="nav-dropdown-kbd">Ctrl+J</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Help Menu */}
+            <div className="nav-menu-item">
+              <button
+                type="button"
+                className={`nav-menu-btn ${activeMenu === 'help' ? 'nav-menu-btn--active' : ''}`}
+                onClick={() => setActiveMenu((m) => (m === 'help' ? null : 'help'))}
+              >
+                Help <span className="nav-menu-arrow">▾</span>
+              </button>
+              {activeMenu === 'help' && (
+                <div className="nav-dropdown">
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setGalleryOpen(true);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>🚀 Examples Showcase</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setTourOpen(true);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>💡 60-Sec Interactive Guide</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-dropdown-item"
+                    onClick={() => {
+                      setHotkeyCheatsheetOpen(true);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    <span>⌨ Keyboard Shortcuts</span>
+                    <span className="nav-dropdown-kbd">?</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </nav>
         </div>
-        <div className="navbar-status">
-          <div className="stat-chip">
+
+        {/* Center Section: Transport Controls & Status */}
+        <div className="navbar-center">
+          <div className="nav-transport-pill">
+            <button
+              type="button"
+              className={`nav-transport-btn ${isSimulating ? 'nav-transport-btn--run' : 'nav-transport-btn--paused'}`}
+              onClick={() => setIsSimulating((sim) => !sim)}
+              title="Run / Pause Simulation (Space)"
+            >
+              {isSimulating ? (
+                <>
+                  <span className="pulse-dot" />
+                  <span>Running</span>
+                </>
+              ) : (
+                <>
+                  <span>▶</span>
+                  <span>Run</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="nav-transport-btn"
+              onClick={() => setIsSimulating(false)}
+              title="Single Time Step"
+            >
+              ⏭
+            </button>
+            <button
+              type="button"
+              className="nav-transport-btn"
+              onClick={() => {
+                setIsSimulating(false);
+              }}
+              title="Reset Simulation (↺)"
+            >
+              ↺
+            </button>
+          </div>
+
+          <div className="stat-chip" title="Canvas Elements Count">
             <span>{nodes.length} Nodes</span>
           </div>
-          <div className="stat-chip stat-chip--live">
-            <span className="pulse-dot"></span>
-            <span>Simulating</span>
+
+          {activeProject && (
+            <span className="stat-chip project-chip" title="Active Project">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
+              {activeProject.name}
+              <button
+                className="logout-btn"
+                onClick={closeProject}
+                title="Close Project"
+              >
+                ✕
+              </button>
+            </span>
+          )}
+        </div>
+
+        {/* Right Section: Quick Triggers, Export Dropdown, and User Profile */}
+        <div className="navbar-right">
+          <button
+            type="button"
+            className="nav-tool-btn nav-tool-btn--showcase"
+            onClick={() => setGalleryOpen(true)}
+            title="Explore 1-click playable example circuits"
+          >
+            🚀 Examples
+          </button>
+
+          <button
+            type="button"
+            className={`nav-tool-btn nav-tool-btn--copilot ${copilotOpen ? 'nav-tool-btn--active' : ''}`}
+            onClick={() => setCopilotOpen((o) => !o)}
+            title="DigiCopilot AI EDA Assistant"
+          >
+            🤖 DigiCopilot
+          </button>
+
+          <button
+            type="button"
+            className={`nav-tool-btn ${pcb3dOpen ? 'nav-tool-btn--active' : ''}`}
+            onClick={() => setPcb3dOpen((o) => !o)}
+            title="Interactive 3D PCB View"
+          >
+            🧊 3D PCB
+          </button>
+
+          <button
+            type="button"
+            className="nav-tool-btn"
+            onClick={() => setCommandPaletteOpen(true)}
+            title="Command Palette (⌘K / Ctrl+K)"
+          >
+            ⌘K
+          </button>
+
+          <div className="nav-divider" />
+
+          {/* Export Dropdown on Side */}
+          <div className="nav-export-wrap" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="nav-export-btn"
+              onClick={() => setExportDropdownOpen((o) => !o)}
+              title="Export Circuit Netlists and Manufacturing Files"
+            >
+              <span>Export</span>
+              <span className="nav-menu-arrow">▾</span>
+            </button>
+            {exportDropdownOpen && (
+              <div className="nav-dropdown" style={{ right: 0, left: 'auto' }}>
+                <button
+                  type="button"
+                  className="nav-dropdown-item"
+                  onClick={handleNetlistExport}
+                >
+                  <span>📄 Export JSON Netlist</span>
+                </button>
+                <button
+                  type="button"
+                  className="nav-dropdown-item"
+                  onClick={handleSpiceExport}
+                >
+                  <span>⚡ Export SPICE (.cir)</span>
+                </button>
+                <button
+                  type="button"
+                  className="nav-dropdown-item"
+                  onClick={handleSpectreExport}
+                >
+                  <span>🏛 Export Cadence Spectre</span>
+                </button>
+                <div className="nav-dropdown-sep" />
+                <button
+                  type="button"
+                  className="nav-dropdown-item"
+                  onClick={handleGerberExport}
+                >
+                  <span>🖨 Export Gerber RS-274X</span>
+                </button>
+              </div>
+            )}
           </div>
-          <button className="btn btn-primary" style={{ background: 'var(--success)', borderColor: 'var(--success)' }}>Run Simulation</button>
-          
-          <label htmlFor="header-image-upload" className="btn" style={{ cursor: 'pointer', marginBottom: 0 }}>
-            Upload Schematic Image
-          </label>
+
+          <div className="nav-divider" />
+
+          {/* User Auth Section */}
+          <div className="nav-user-section">
+            {user ? (
+              <div className="user-chip-logged">
+                <span>👤 {user.email}</span>
+                <button className="btn-logout-link" onClick={logout} title="Log Out">
+                  Sign out
+                </button>
+              </div>
+            ) : isGuest ? (
+              <div className="user-chip-guest">
+                <span>👤 Guest</span>
+                <button className="btn-login-accent" onClick={logout} title="Log in to your account">
+                  Log in
+                </button>
+              </div>
+            ) : null}
+          </div>
+
           <input
             type="file"
             accept="image/*"
@@ -1066,79 +1644,6 @@ function App(): React.ReactElement {
             id="header-image-upload"
             style={{ display: 'none' }}
           />
-
-          <button className="btn btn-primary" onClick={handleNetlistExport}>Export JSON</button>
-
-          {activeProject && (
-            <span className="stat-chip project-chip" title="Open project">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
-              {activeProject.name}
-              <span className={`save-status save-status--${saveStatus}`}>
-                {saveStatus === 'saving'
-                  ? 'Saving…'
-                  : saveStatus === 'saved'
-                    ? 'Saved ✓'
-                    : saveStatus === 'error'
-                      ? 'Save failed'
-                      : ''}
-              </span>
-              <button
-                className="logout-btn"
-                onClick={closeProject}
-                title="Close project (canvas stays, autosave stops)"
-              >
-                ✕
-              </button>
-            </span>
-          )}
-          <button
-            className="stat-chip terminal-toggle"
-            onClick={() => setProjectsOpen(true)}
-            title="Projects — saved circuit folders"
-          >
-            🗀 Projects
-          </button>
-          {activeProject && (
-            <button
-              className="stat-chip terminal-toggle"
-              onClick={() => setInventoryOpen(true)}
-              title="Project inventory — parts list and reference photos"
-            >
-              ⛭ Inventory
-            </button>
-          )}
-          <button
-            className={`stat-chip terminal-toggle${terminalOpen ? ' terminal-toggle--on' : ''}`}
-            onClick={() => setTerminalOpen((open) => !open)}
-            title="Toggle terminal (Ctrl+J)"
-          >
-            ⌘ Terminal
-          </button>
-          <button
-            className={`stat-chip terminal-toggle${copilotOpen ? ' terminal-toggle--on' : ''}`}
-            onClick={() => setCopilotOpen((open) => !open)}
-            title="DigiCopilot AI EDA Assistant"
-          >
-            🤖 DigiCopilot
-          </button>
-          <button
-            className={`stat-chip terminal-toggle${pcb3dOpen ? ' terminal-toggle--on' : ''}`}
-            onClick={() => setPcb3dOpen((open) => !open)}
-            title="Interactive 3D PCB View"
-          >
-            🧊 3D PCB
-          </button>
-          {user ? (
-            <span className="stat-chip user-chip">
-              {user.email}
-              <button className="logout-btn btn" style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', border: 'none', background: 'transparent' }} onClick={logout}>Log out</button>
-            </span>
-          ) : isGuest ? (
-            <span className="stat-chip user-chip">
-              Guest
-              <button className="logout-btn btn" style={{ marginLeft: '0.5rem', padding: '0.25rem 0.5rem', border: 'none', background: 'transparent' }} onClick={logout}>Log in</button>
-            </span>
-          ) : null}
         </div>
       </header>      {cameraOpen && (
         <CameraCapture
@@ -1185,6 +1690,81 @@ function App(): React.ReactElement {
           onCancel={() => setPhotoReview(null)}
         />
       )}
+      {galleryOpen && (
+        <CircuitGalleryModal
+          open={galleryOpen}
+          onClose={() => setGalleryOpen(false)}
+          onLoadCircuit={handleLoadSampleCircuit}
+        />
+      )}
+      {tourOpen && (
+        <InteractiveTourModal
+          open={tourOpen}
+          onClose={() => setTourOpen(false)}
+          onOpenGallery={() => {
+            setTourOpen(false);
+            setGalleryOpen(true);
+          }}
+        />
+      )}
+      <CommandPaletteModal
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onAddComponent={(type, label, extra) => addNode(type, label, undefined, extra)}
+        onAddHardwareNode={addHardwareNode}
+        onSwitchPDK={handleSwitchPDK}
+        onRunSimulation={() => setIsSimulating(true)}
+        onStepSimulation={() => {
+          setIsSimulating(false);
+          setSimTime((t) => t + 0.1);
+        }}
+        onResetSimulation={() => {
+          setNodes((nds) =>
+            nds.map((n) => ({
+              ...n,
+              data: {
+                ...n.data,
+                value: 0,
+                current: 0,
+                voltageDrop: 0,
+                brightness: 0,
+              },
+            }))
+          );
+        }}
+        onOpenPcb3D={() => setPcb3dOpen(true)}
+        onOpenCopilot={() => setCopilotOpen(true)}
+        onExportSpice={handleSpiceExport}
+        onExportGerber={handleGerberExport}
+        onExportJson={handleNetlistExport}
+        onToggleTerminal={() => setTerminalOpen((open) => !open)}
+        onToggleWireMode={() => setWireMode((wm) => !wm)}
+        onToggleProbeMode={() => setProbeMode((pm) => !pm)}
+        onDrillDown={() => {
+          const subckt = nodes.find((n) => n.selected && n.type === 'subckt');
+          if (subckt) {
+            handleDrillDown(subckt.data.cellName || 'INVERTER', subckt.data.params || {});
+          }
+        }}
+        onPopHierarchy={handlePopHierarchy}
+        onFitView={() => rfInstance?.fitView({ padding: 0.15 })}
+        onClearCanvas={clearCanvas}
+        onOpenHotkeyCheatsheet={() => setHotkeyCheatsheetOpen(true)}
+        libraryComponents={libraryComponents}
+        activeTechNode={activeTechNode}
+      />
+      <HotkeyCheatsheetModal
+        open={hotkeyCheatsheetOpen}
+        onClose={() => setHotkeyCheatsheetOpen(false)}
+        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        onToggleSimulation={() => setIsSimulating((sim) => !sim)}
+        onToggleWireMode={() => setWireMode((wm) => !wm)}
+        onToggleProbeMode={() => setProbeMode((pm) => !pm)}
+        onUndo={handleUndo}
+        onPopHierarchy={handlePopHierarchy}
+        onToggleTerminal={() => setTerminalOpen((open) => !open)}
+      />
+      <HotkeyFloatingTrigger onClick={() => setHotkeyCheatsheetOpen(true)} />
       <div className="content-wrapper">
         <Sidebar
           sidebarOpen={sidebarOpen}
@@ -1257,6 +1837,14 @@ function App(): React.ReactElement {
               ))}
             </div>
           )}
+          <CircuitHealthBar
+            nodes={nodes}
+            edges={edges}
+            onAutoFix={(fixedNodes, fixedEdges) => {
+              setNodes(fixedNodes);
+              setEdges(fixedEdges);
+            }}
+          />
         <div
           className="reactflow-wrapper"
           onDrop={onCanvasDrop}
@@ -1267,6 +1855,7 @@ function App(): React.ReactElement {
           style={{ position: 'relative' }}
         >
           <FalstadFlowOverlay nodes={nodes} edges={edges} />
+          <InteractiveProbeTooltip nodes={nodes} edges={edges} />
           <DigiCopilotPanel
             open={copilotOpen}
             onClose={() => setCopilotOpen(false)}
@@ -1283,141 +1872,6 @@ function App(): React.ReactElement {
             nodes={nodes}
             edges={edges}
           />
-          {/* Subtle PCB Trace Background matching the user's reference image */}
-          <div className="pcb-trace-bg" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.18, overflow: 'hidden', zIndex: 0 }}>
-            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-              {/* Top Left IC Outline */}
-              <rect x="80" y="60" width="70" height="70" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
-              {Array.from({ length: 4 }).map((_, i) => (
-                <g key={`pins-tl-${i}`}>
-                  <line x1="72" y1={72 + i*11} x2="80" y2={72 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1="150" y1={72 + i*11} x2="158" y2={72 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1={92 + i*11} y1="52" x2={92 + i*11} y2="60" stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1={92 + i*11} y1="130" x2={92 + i*11} y2="138" stroke="var(--border-bright)" strokeWidth="1.5" />
-                </g>
-              ))}
-
-              {/* Top Right IC Outline */}
-              <rect x="220" y="50" width="80" height="80" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
-              {Array.from({ length: 5 }).map((_, i) => (
-                <g key={`pins-tr-${i}`}>
-                  <line x1="212" y1={62 + i*12} x2="220" y2={62 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1="300" y1={62 + i*12} x2="308" y2={62 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1={232 + i*12} y1="42" x2={232 + i*12} y2="50" stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1={232 + i*12} y1="130" x2={232 + i*12} y2="138" stroke="var(--border-bright)" strokeWidth="1.5" />
-                </g>
-              ))}
-
-              {/* Center IC Outline */}
-              <rect x="380" y="200" width="90" height="90" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
-              {Array.from({ length: 6 }).map((_, i) => (
-                <g key={`pins-c-${i}`}>
-                  <line x1="372" y1={212 + i*12} x2="380" y2={212 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1="470" y1={212 + i*12} x2="478" y2={212 + i*12} stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1={392 + i*12} y1="192" x2={392 + i*12} y2="200" stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1={392 + i*12} y1="290" x2={392 + i*12} y2="298" stroke="var(--border-bright)" strokeWidth="1.5" />
-                </g>
-              ))}
-
-              {/* Bottom Left IC Outline */}
-              <rect x="100" y="280" width="100" height="65" rx="6" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.5" />
-              {Array.from({ length: 4 }).map((_, i) => (
-                <g key={`pins-bl-${i}`}>
-                  <line x1="92" y1={290 + i*11} x2="100" y2={290 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1="200" y1={290 + i*11} x2="208" y2={290 + i*11} stroke="var(--border-bright)" strokeWidth="1.5" />
-                </g>
-              ))}
-              {Array.from({ length: 6 }).map((_, i) => (
-                <g key={`pins-bl-tb-${i}`}>
-                  <line x1={112 + i*11} y1="272" x2={112 + i*11} y2="280" stroke="var(--border-bright)" strokeWidth="1.5" />
-                  <line x1={112 + i*11} y1="345" x2={112 + i*11} y2="353" stroke="var(--border-bright)" strokeWidth="1.5" />
-                </g>
-              ))}
-
-              {/* Smaller connector blocks */}
-              <rect x="520" y="210" width="50" height="70" rx="3" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.2" />
-              <rect x="320" y="5" width="25" height="25" rx="3" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.2" />
-              <rect x="760" y="70" width="25" height="30" rx="3" fill="var(--panel)" stroke="var(--border-bright)" strokeWidth="1.2" />
-
-              {/* Copper PCB routing lines connecting chips exactly like the user's uploaded image */}
-              {/* Traces from Top Left to Top Right */}
-              {Array.from({ length: 4 }).map((_, i) => (
-                <path
-                  key={`trace-tl-tr-${i}`}
-                  d={`M 150,${72 + i*11} L 170,${72 + i*11} L 190,${62 + i*12} L 220,${62 + i*12}`}
-                  stroke="var(--accent)"
-                  strokeWidth="1.2"
-                  fill="none"
-                  opacity="0.6"
-                />
-              ))}
-
-              {/* Traces from Top Right to Center Chip */}
-              {Array.from({ length: 5 }).map((_, i) => (
-                <path
-                  key={`trace-tr-c-${i}`}
-                  d={`M 300,${86 + i*12} L 340,${86 + i*12} L 392,${212 + i*12}`}
-                  stroke="var(--accent)"
-                  strokeWidth="1.2"
-                  fill="none"
-                  opacity="0.6"
-                />
-              ))}
-
-              {/* Traces from Bottom Left to Center Chip */}
-              {Array.from({ length: 5 }).map((_, i) => (
-                <path
-                  key={`trace-bl-c-${i}`}
-                  d={`M 200,${301 + i*11} L 260,${301 + i*11} L 330,${248 + i*12} L 380,${248 + i*12}`}
-                  stroke="var(--accent)"
-                  strokeWidth="1.2"
-                  fill="none"
-                  opacity="0.6"
-                />
-              ))}
-
-              {/* Traces from Top Left to Bottom Left */}
-              {Array.from({ length: 4 }).map((_, i) => (
-                <path
-                  key={`trace-tl-bl-${i}`}
-                  d={`M 92,${72 + i*11} L 50,${72 + i*11} L 50,${301 + i*11} L 100,${301 + i*11}`}
-                  stroke="var(--accent)"
-                  strokeWidth="1.2"
-                  fill="none"
-                  opacity="0.6"
-                />
-              ))}
-
-              {/* Traces from Center to Connector block */}
-              {Array.from({ length: 5 }).map((_, i) => (
-                <path
-                  key={`trace-c-conn-${i}`}
-                  d={`M 470,${224 + i*12} L 495,${224 + i*12} L 505,${220 + i*11} L 520,${220 + i*11}`}
-                  stroke="var(--accent)"
-                  strokeWidth="1.2"
-                  fill="none"
-                  opacity="0.6"
-                />
-              ))}
-
-              {/* Traces from Connector block to right bus */}
-              {Array.from({ length: 6 }).map((_, i) => (
-                <path
-                  key={`trace-conn-bus-${i}`}
-                  d={`M 570,${220 + i*11} L 610,${220 + i*11} L 670,${82 + i*13} L 760,${82 + i*13}`}
-                  stroke="var(--accent)"
-                  strokeWidth="1.2"
-                  fill="none"
-                  opacity="0.6"
-                />
-              ))}
-
-              {/* Vertical grounding traces */}
-              <line x1="280" y1="130" x2="280" y2="230" stroke="var(--accent)" strokeWidth="1.2" opacity="0.4" />
-              <line x1="140" y1="130" x2="140" y2="230" stroke="var(--accent)" strokeWidth="1.2" opacity="0.4" />
-
-            </svg>
-          </div>
           {isTouch && touchSelectMode && (
             <button
               className="select-mode-chip"
@@ -1461,6 +1915,10 @@ function App(): React.ReactElement {
             onInit={setRfInstance}
             onMove={(_, vp) => setViewport(vp)}
             nodeTypes={nodeTypes}
+            onNodeDoubleClick={(_, node) => {
+              setSelectedPropNode(node as DigiNode);
+              setPropModalOpen(true);
+            }}
             // Loose mode lets wires land on the stacked target+source handle
             // pairs used by analog terminals and hardware pins (bidirectional).
             connectionMode={ConnectionMode.Loose}
@@ -1490,6 +1948,19 @@ function App(): React.ReactElement {
             <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="rgba(255, 255, 255, 0.2)" />
           </ReactFlow>
         </div>
+        <ComponentPropertiesModal
+          open={propModalOpen}
+          node={selectedPropNode}
+          onClose={() => setPropModalOpen(false)}
+          onUpdateNodeData={(nodeId, updatedData) => {
+            updateNodeData(nodeId, updatedData);
+            setSelectedPropNode((prev) =>
+              prev && prev.id === nodeId
+                ? { ...prev, data: { ...prev.data, ...updatedData } }
+                : prev
+            );
+          }}
+        />
           <TerminalPanel
             nodes={nodes}
             edges={edges}

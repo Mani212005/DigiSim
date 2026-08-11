@@ -1,0 +1,288 @@
+/**
+ * @file InteractiveProbeTooltip.css
+ * @description Glassmorphic floating HUD styling for the live oscilloscope wire/terminal probe.
+ */
+
+.interactive-probe-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  width: 260px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(0, 240, 255, 0.2);
+  padding: 12px 14px;
+  color: #f1f5f9;
+  font-family: var(--font-ui, 'Inter', -apple-system, sans-serif);
+  font-size: 0.78rem;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  user-select: none;
+  transform: translate(16px, 16px);
+}
+
+.probe-tooltip--hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(16px, 22px) scale(0.96);
+}
+
+.probe-tooltip--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Tooltip Header */
+.probe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.probe-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.probe-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.probe-target-icon {
+  font-size: 0.85rem;
+  color: var(--signal, #00F0FF);
+  filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.6));
+}
+
+.probe-target-title {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.probe-sublabel {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Logic State Badge */
+.probe-logic-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.probe-logic--1 {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+}
+
+.probe-logic--0 {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.probe-logic--X {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.probe-logic--Z {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+/* Readings Section */
+.probe-readings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.probe-metric-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.probe-metric-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.probe-metric-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.probe-metric-value--volts {
+  color: var(--signal, #00F0FF);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.probe-metric-value--amps {
+  color: #4ade80;
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+}
+
+/* Voltage Gauge Bar */
+.probe-gauge-container {
+  margin-bottom: 10px;
+}
+
+.probe-gauge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.probe-gauge-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.probe-gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #00F0FF 55%, #4ade80 100%);
+  border-radius: 999px;
+  transition: width 0.12s ease-out;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+/* Sparkline Waveform */
+.probe-waveform-container {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 8px;
+  padding: 6px 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.probe-waveform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.probe-waveform-svg {
+  display: block;
+  width: 100%;
+  height: 42px;
+}
+
+.sparkline-pulse-dot {
+  animation: probePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes probePulse {
+  0% {
+    r: 3;
+    opacity: 1;
+  }
+  50% {
+    r: 5;
+    opacity: 0.6;
+  }
+  100% {
+    r: 3;
+    opacity: 1;
+  }
+}
+
+/* Operating Region / Warnings */
+.probe-footer {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+}
+
+.probe-region-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.probe-region--sat {
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
+}
+
+.probe-region--triode {
+  background: rgba(14, 165, 233, 0.2);
+  color: #7dd3fc;
+  border-color: rgba(14, 165, 233, 0.5);
+}
+
+.probe-region--cutoff {
+  background: rgba(100, 116, 139, 0.2);
+  color: #cbd5e1;
+  border-color: rgba(100, 116, 139, 0.4);
+}
+
+.probe-warning-text {
+  color: #fbbf24;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

@@ -17,7 +17,9 @@ describe('Mosfet & Subckt Nodes', () => {
     mockUpdateNodeData.mockReset();
   });
 
-  it('renders NmosNode with live region badge and PDK inputs', () => {
+  it('renders streamlined NmosNode with IEEE symbol, specs, and double-click trigger', () => {
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
     render(
       <ReactFlowProvider>
         <NmosNode
@@ -29,15 +31,21 @@ describe('Mosfet & Subckt Nodes', () => {
     );
 
     expect(screen.getByText('M_NMOS1')).toBeInTheDocument();
-    expect(screen.getByText('Saturation')).toBeInTheDocument();
-    expect(screen.getByText(/180nm CMOS/i)).toBeInTheDocument();
+    expect(screen.getByText(/1\.2μ \/ 0\.18μ/i)).toBeInTheDocument();
+    expect(screen.getByText('180nm')).toBeInTheDocument();
 
-    const wInput = screen.getByDisplayValue('1.2');
-    fireEvent.change(wInput, { target: { value: '2.4' } });
-    expect(mockUpdateNodeData).toHaveBeenCalledWith('n1', { width: 2.4 });
+    const nodeCard = screen.getByTitle(/Double-click to edit Cadence Virtuoso Object Properties/i);
+    fireEvent.doubleClick(nodeCard);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'digisim:open-node-properties',
+        detail: { nodeId: 'n1' },
+      })
+    );
+    dispatchSpy.mockRestore();
   });
 
-  it('renders PmosNode with live region badge and auto-bulk checkbox', () => {
+  it('renders streamlined PmosNode with IEEE inversion bubble and specs', () => {
     render(
       <ReactFlowProvider>
         <PmosNode
@@ -49,8 +57,9 @@ describe('Mosfet & Subckt Nodes', () => {
     );
 
     expect(screen.getByText('M_PMOS1')).toBeInTheDocument();
-    expect(screen.getByText('Triode')).toBeInTheDocument();
-    expect(screen.getByText(/Auto-Bulk/i)).toBeInTheDocument();
+    expect(screen.getByText(/2\.4μ \/ 0\.09μ/i)).toBeInTheDocument();
+    expect(screen.getByText('90nm')).toBeInTheDocument();
+    expect(screen.getByLabelText(/PMOS Schematic Symbol/i)).toBeInTheDocument();
   });
 
   it('renders SubcktNode with parameter pass-through and drill down button', () => {
@@ -76,3 +85,4 @@ describe('Mosfet & Subckt Nodes', () => {
     expect(mockDrillDown).toHaveBeenCalledWith('INVERTER', { W_p: 2.4, W_n: 1.2, L: 0.18 });
   });
 });
+

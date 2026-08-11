@@ -1,0 +1,666 @@
+/**
+ * @file InteractiveTourModal.css
+ * @description Modern glassmorphic styling and animated mockups for the DigiSim Interactive Tour.
+ */
+
+.tour-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 14, 0.84);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1.5rem;
+  animation: tourModalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tourModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tour-modal-card {
+  width: 100%;
+  max-width: 980px;
+  background: linear-gradient(145deg, rgba(17, 24, 39, 0.96), rgba(11, 15, 25, 0.98));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.88), 0 0 40px rgba(56, 189, 248, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Progress bar */
+.tour-progress-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.tour-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #6366f1, #10b981);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Top header */
+.tour-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2rem 0.75rem;
+}
+
+.tour-header__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tour-header__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tour-header__tag {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.tour-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tour-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  transform: scale(1.05);
+}
+
+/* Body: 2-column layout */
+.tour-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding: 1.25rem 2rem 1.75rem;
+}
+
+.tour-body__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-body__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.tour-body__icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.tour-body__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.tour-body__desc {
+  margin: 0 0 1.25rem;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.55;
+}
+
+.tour-body__highlights-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.65rem;
+}
+
+.tour-body__highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.tour-body__highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  line-height: 1.45;
+}
+
+.tour-body__highlights svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Right column: Interactive preview mockups */
+.tour-body__preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tour-mockup {
+  background: rgba(13, 17, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-mockup__header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tour-mockup__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dot-red { background: #ef4444; }
+.dot-yellow { background: #f59e0b; }
+.dot-green { background: #10b981; }
+
+.tour-mockup__title {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.tour-mockup__caption {
+  padding: 0.6rem 0.85rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* Mockup 1: Palette */
+.tour-mockup__canvas {
+  padding: 2.2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: radial-gradient(circle at center, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+}
+
+.tour-mockup__node {
+  padding: 0.6rem 0.85rem;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.node-tag {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.node-val--on {
+  color: #4ade80;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.node-gate {
+  padding: 0.75rem 1.1rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(79, 70, 229, 0.35));
+  border-color: rgba(99, 102, 241, 0.6);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.node-led-glow {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 12px #00f0ff;
+}
+
+.tour-mockup__wire {
+  height: 3px;
+  width: 32px;
+  background: #334155;
+}
+
+.wire-glow {
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+}
+
+/* Mockup 2: MOSFET */
+.tour-mockup__mosfet-card {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tour-pdk-chips {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.tour-pdk-chip {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tour-pdk-chip.active {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+  font-weight: 600;
+}
+
+.tour-mosfet-body {
+  position: relative;
+  height: 90px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.tour-mosfet-symbol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+
+.tour-region-badge.sat {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.tour-handle {
+  position: absolute;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-family: var(--font-mono);
+}
+.tour-handle--drain { top: 4px; }
+.tour-handle--gate { left: 8px; }
+.tour-handle--source { bottom: 4px; }
+.tour-handle--bulk { right: 8px; }
+
+.tour-cdf-stats {
+  display: flex;
+  justify-content: space-around;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  font-family: var(--font-mono);
+  padding: 0.4rem 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+}
+
+/* Mockup 3: Falstad */
+.tour-falstad-canvas {
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  background: #060910;
+}
+
+.tour-falstad-wire {
+  width: 220px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tour-falstad-wire .particle {
+  position: absolute;
+  top: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+  animation: particleSlide 1.8s infinite linear;
+}
+
+.tour-falstad-wire .p1 { animation-delay: 0s; }
+.tour-falstad-wire .p2 { animation-delay: 0.45s; }
+.tour-falstad-wire .p3 { animation-delay: 0.9s; }
+.tour-falstad-wire .p4 { animation-delay: 1.35s; }
+
+@keyframes particleSlide {
+  0% { left: -10px; }
+  100% { left: 230px; }
+}
+
+.tour-falstad-meter {
+  display: flex;
+  gap: 0.85rem;
+  font-size: 0.8rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+}
+.meter-label { color: #94a3b8; }
+.meter-val { color: #34d399; font-weight: 700; font-family: var(--font-mono); }
+.meter-volt { color: #38bdf8; font-family: var(--font-mono); }
+
+/* Mockup 4: Copilot */
+.tour-copilot-content {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tour-chat-msg {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.bot-avatar {
+  font-size: 1.3rem;
+}
+
+.msg-bubble {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #e0e7ff;
+  line-height: 1.4;
+}
+
+.tour-copilot-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.copilot-action-btn {
+  font-size: 0.72rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.copilot-action-btn.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(79, 70, 229, 0.4));
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Mockup 5: 3D PCB */
+.tour-pcb-viewport {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.tour-pcb-board {
+  width: 180px;
+  height: 100px;
+  background: linear-gradient(135deg, #064e3b, #047857);
+  border: 2px solid #34d399;
+  border-radius: 6px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 0 12px rgba(52, 211, 153, 0.2);
+  transform: perspective(300px) rotateX(20deg);
+}
+
+.tour-pcb-chip {
+  padding: 0.35rem 0.65rem;
+  background: #0f172a;
+  border: 1px solid #94a3b8;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 3px;
+}
+
+.tour-pcb-trace {
+  position: absolute;
+  height: 2px;
+  background: #f59e0b;
+}
+.tour-pcb-trace.t1 { width: 40px; left: 15px; top: 30px; }
+.tour-pcb-trace.t2 { width: 50px; right: 15px; bottom: 30px; }
+
+.tour-pcb-layers {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.layer-tag {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+}
+.layer-tag.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Footer */
+.tour-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 14, 23, 0.8);
+}
+
+.tour-footer__left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.tour-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tour-checkbox-label input {
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.tour-gallery-link-btn {
+  background: none;
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  color: #c7d2fe;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tour-gallery-link-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.8);
+  color: #ffffff;
+}
+
+.tour-footer__right {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.tour-step-indicators {
+  display: flex;
+  gap: 0.45rem;
+  margin-right: 0.5rem;
+}
+
+.tour-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tour-step-dot--active {
+  width: 22px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+}
+
+.tour-nav-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tour-nav-btn--primary {
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+}
+
+.tour-nav-btn--primary:hover {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+}
+
+@media (max-width: 768px) {
+  .tour-body {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .tour-header, .tour-body, .tour-footer {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  .tour-footer {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .tour-footer__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

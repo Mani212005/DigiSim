@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './Sidebar.css';
 import { GateGlyph } from '../nodes/GateShell';
 import SampleImages from './SampleImages';
+import { COMPONENT_TOOLTIP_DATA, ComponentTooltipInfo } from './palette/componentTooltipData';
 import type { PaletteEntry, LibraryComponent, SidebarView } from '../types';
 
 interface SidebarProps {
@@ -55,6 +56,27 @@ const Accordion: React.FC<{ title: string; defaultOpen?: boolean; children: Reac
     </div>
   );
 };
+
+export const ComponentTooltipCard: React.FC<{ info: ComponentTooltipInfo }> = ({ info }) => (
+  <div className="component-rich-tooltip" role="tooltip">
+    <div className="tooltip-header">
+      <span className="tooltip-title">{info.name}</span>
+      <span className="tooltip-category">{info.category}</span>
+    </div>
+    <div className="tooltip-desc">{info.description}</div>
+    <div className="tooltip-pins">
+      <span className="tooltip-pin-icon">⚡</span>
+      <span className="tooltip-pin-text">{info.pins}</span>
+    </div>
+    {info.formula && (
+      <div className="tooltip-formula-box">
+        <span className="tooltip-formula-label">Formula:</span>
+        <code className="tooltip-formula-code">{info.formula}</code>
+      </div>
+    )}
+    {info.hint && <div className="tooltip-hint">💡 {info.hint}</div>}
+  </div>
+);
 
 export default function Sidebar({
   sidebarOpen, sidebarPinned, sidebarPeek, sidebarWidth,
@@ -211,7 +233,6 @@ export default function Sidebar({
                       role="button"
                       aria-label="Add Input"
                       className="component-chip pinned" 
-                      data-tooltip="Input Toggle Switch"
                       draggable
                       onDragStart={(e) => onPaletteDragStart(e, 'input', 'Input')}
                       onClick={() => addNode('input', 'Input')}
@@ -219,13 +240,13 @@ export default function Sidebar({
                       <svg className="pin-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
                       <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="4" y="8" width="16" height="8" rx="4"/><circle cx="8" cy="12" r="2" fill="currentColor"/></svg>
                       <span className="chip-label">Input</span>
+                      <ComponentTooltipCard info={COMPONENT_TOOLTIP_DATA.input} />
                     </div>
                     
                     <div 
                       role="button"
                       aria-label="Add Output"
                       className="component-chip pinned" 
-                      data-tooltip="Output LED Indicator"
                       draggable
                       onDragStart={(e) => onPaletteDragStart(e, 'output', 'Output')}
                       onClick={() => addNode('output', 'Output')}
@@ -233,43 +254,60 @@ export default function Sidebar({
                       <svg className="pin-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 8L22 9L17 14L18 21L12 17L6 21L7 14L2 9L9 8L12 2Z"/></svg>
                       <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
                       <span className="chip-label">Output</span>
+                      <ComponentTooltipCard info={COMPONENT_TOOLTIP_DATA.output} />
                     </div>
                   </Accordion>
 
                   <Accordion title="Basic Gates">
-                    {gatePalette.filter(g => ['andGate', 'orGate', 'notGate', 'nandGate', 'norGate'].includes(g.type)).map((gate) => (
-                      <div
-                        key={gate.type}
-                        role="button"
-                        aria-label={`Add ${gate.label}`}
-                        className="component-chip"
-                        data-tooltip={gate.label}
-                        draggable
-                        onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
-                        onClick={() => addNode(gate.type, gate.label)}
-                      >
-                        <GateGlyph type={gate.glyph} className="chip-icon" />
-                        <span className="chip-label">{gate.name}</span>
-                      </div>
-                    ))}
+                    {gatePalette.filter(g => ['andGate', 'orGate', 'notGate', 'nandGate', 'norGate'].includes(g.type)).map((gate) => {
+                      const tipInfo = COMPONENT_TOOLTIP_DATA[gate.type] ?? {
+                        name: gate.label,
+                        category: 'LOGIC GATE',
+                        description: `${gate.label} digital logic component.`,
+                        pins: '3 Pins: [In A, In B, Out Y]',
+                      };
+                      return (
+                        <div
+                          key={gate.type}
+                          role="button"
+                          aria-label={`Add ${gate.label}`}
+                          className="component-chip"
+                          draggable
+                          onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
+                          onClick={() => addNode(gate.type, gate.label)}
+                        >
+                          <GateGlyph type={gate.glyph} className="chip-icon" />
+                          <span className="chip-label">{gate.name}</span>
+                          <ComponentTooltipCard info={tipInfo} />
+                        </div>
+                      );
+                    })}
                   </Accordion>
 
                   <Accordion title="Advanced Gates" defaultOpen={false}>
-                    {gatePalette.filter(g => ['xorGate', 'xnorGate'].includes(g.type)).map((gate) => (
-                      <div
-                        key={gate.type}
-                        role="button"
-                        aria-label={`Add ${gate.label}`}
-                        className="component-chip"
-                        data-tooltip={gate.label}
-                        draggable
-                        onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
-                        onClick={() => addNode(gate.type, gate.label)}
-                      >
-                        <GateGlyph type={gate.glyph} className="chip-icon" />
-                        <span className="chip-label">{gate.name}</span>
-                      </div>
-                    ))}
+                    {gatePalette.filter(g => ['xorGate', 'xnorGate'].includes(g.type)).map((gate) => {
+                      const tipInfo = COMPONENT_TOOLTIP_DATA[gate.type] ?? {
+                        name: gate.label,
+                        category: 'ARITHMETIC',
+                        description: `${gate.label} digital logic component.`,
+                        pins: '3 Pins: [In A, In B, Out Y]',
+                      };
+                      return (
+                        <div
+                          key={gate.type}
+                          role="button"
+                          aria-label={`Add ${gate.label}`}
+                          className="component-chip"
+                          draggable
+                          onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
+                          onClick={() => addNode(gate.type, gate.label)}
+                        >
+                          <GateGlyph type={gate.glyph} className="chip-icon" />
+                          <span className="chip-label">{gate.name}</span>
+                          <ComponentTooltipCard info={tipInfo} />
+                        </div>
+                      );
+                    })}
                   </Accordion>
                 </>
               )}
@@ -277,69 +315,93 @@ export default function Sidebar({
               {activeTab === 'analog' && (
                 <>
                   <Accordion title="Power & Reference">
-                    {analogPalette.filter(p => ['vsource', 'ground'].includes(p.type)).map((part) => (
-                      <div
-                        key={part.type}
-                        role="button"
-                        aria-label={`Add ${part.label}`}
-                        className="component-chip"
-                        data-tooltip={`${part.label} (${part.hint})`}
-                        draggable
-                        onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
-                        onClick={() => addNode(part.type, part.label)}
-                      >
-                        <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          {part.type === 'vsource' && <><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></>}
-                          {part.type === 'ground' && <><line x1="12" y1="4" x2="12" y2="12"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></>}
-                        </svg>
-                        <span className="chip-label">{part.name}</span>
-                      </div>
-                    ))}
+                    {analogPalette.filter(p => ['vsource', 'ground'].includes(p.type)).map((part) => {
+                      const tipInfo = COMPONENT_TOOLTIP_DATA[part.type] ?? {
+                        name: part.label,
+                        category: 'POWER & REF',
+                        description: `${part.label} (${part.hint})`,
+                        pins: '2 Pins',
+                      };
+                      return (
+                        <div
+                          key={part.type}
+                          role="button"
+                          aria-label={`Add ${part.label}`}
+                          className="component-chip"
+                          draggable
+                          onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
+                          onClick={() => addNode(part.type, part.label)}
+                        >
+                          <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            {part.type === 'vsource' && <><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></>}
+                            {part.type === 'ground' && <><line x1="12" y1="4" x2="12" y2="12"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/></>}
+                          </svg>
+                          <span className="chip-label">{part.name}</span>
+                          <ComponentTooltipCard info={tipInfo} />
+                        </div>
+                      );
+                    })}
                   </Accordion>
                   
                   <Accordion title="Passives & Output">
-                    {analogPalette.filter(p => !['vsource', 'ground', 'nmos', 'pmos', 'subckt'].includes(p.type)).map((part) => (
-                      <div
-                        key={part.type}
-                        role="button"
-                        aria-label={`Add ${part.label}`}
-                        className="component-chip"
-                        data-tooltip={`${part.label} (${part.hint})`}
-                        draggable
-                        onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
-                        onClick={() => addNode(part.type, part.label)}
-                      >
-                        <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          {part.type === 'resistor' && <polyline points="2 12 6 12 8 8 12 16 16 8 18 12 22 12"/>}
-                          {part.type === 'potentiometer' && <><polyline points="2 12 6 12 8 8 12 16 16 8 18 12 22 12"/><line x1="12" y1="2" x2="12" y2="6"/><polygon points="10 6 14 6 12 10"/></>}
-                          {part.type === 'led' && <><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></>}
-                          {part.type === 'analogSwitch' && <><rect x="4" y="8" width="16" height="8" rx="4"/><circle cx="8" cy="12" r="2" fill="currentColor"/></>}
-                        </svg>
-                        <span className="chip-label">{part.name}</span>
-                      </div>
-                    ))}
+                    {analogPalette.filter(p => !['vsource', 'ground', 'nmos', 'pmos', 'subckt'].includes(p.type)).map((part) => {
+                      const tipInfo = COMPONENT_TOOLTIP_DATA[part.type] ?? {
+                        name: part.label,
+                        category: 'ANALOG PASSIVE',
+                        description: `${part.label} (${part.hint})`,
+                        pins: '2 Pins',
+                      };
+                      return (
+                        <div
+                          key={part.type}
+                          role="button"
+                          aria-label={`Add ${part.label}`}
+                          className="component-chip"
+                          draggable
+                          onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
+                          onClick={() => addNode(part.type, part.label)}
+                        >
+                          <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            {part.type === 'resistor' && <polyline points="2 12 6 12 8 8 12 16 16 8 18 12 22 12"/>}
+                            {part.type === 'potentiometer' && <><polyline points="2 12 6 12 8 8 12 16 16 8 18 12 22 12"/><line x1="12" y1="2" x2="12" y2="6"/><polygon points="10 6 14 6 12 10"/></>}
+                            {part.type === 'led' && <><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></>}
+                            {part.type === 'analogSwitch' && <><rect x="4" y="8" width="16" height="8" rx="4"/><circle cx="8" cy="12" r="2" fill="currentColor"/></>}
+                          </svg>
+                          <span className="chip-label">{part.name}</span>
+                          <ComponentTooltipCard info={tipInfo} />
+                        </div>
+                      );
+                    })}
                   </Accordion>
 
                   <Accordion title="Transistors & Hierarchy">
-                    {analogPalette.filter(p => ['nmos', 'pmos', 'subckt'].includes(p.type)).map((part) => (
-                      <div
-                        key={part.type}
-                        role="button"
-                        aria-label={`Add ${part.label}`}
-                        className="component-chip"
-                        data-tooltip={`${part.label} (${part.hint})`}
-                        draggable
-                        onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
-                        onClick={() => addNode(part.type, part.label)}
-                      >
-                        <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          {part.type === 'nmos' && <><line x1="6" y1="4" x2="6" y2="20"/><line x1="10" y1="6" x2="10" y2="18"/><path d="M10 8h8V4M10 16h8v4M10 12h8"/><polygon points="12 12 15 10 15 14" fill="currentColor"/></>}
-                          {part.type === 'pmos' && <><line x1="4" y1="4" x2="4" y2="20"/><circle cx="7" cy="12" r="2"/><line x1="10" y1="6" x2="10" y2="18"/><path d="M10 8h8V4M10 16h8v4M10 12h8"/><polygon points="15 12 12 10 12 14" fill="currentColor"/></>}
-                          {part.type === 'subckt' && <><rect x="4" y="6" width="16" height="12" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></>}
-                        </svg>
-                        <span className="chip-label">{part.name}</span>
-                      </div>
-                    ))}
+                    {analogPalette.filter(p => ['nmos', 'pmos', 'subckt'].includes(p.type)).map((part) => {
+                      const tipInfo = COMPONENT_TOOLTIP_DATA[part.type] ?? {
+                        name: part.label,
+                        category: 'TRANSISTOR',
+                        description: `${part.label} (${part.hint})`,
+                        pins: '4 Pins',
+                      };
+                      return (
+                        <div
+                          key={part.type}
+                          role="button"
+                          aria-label={`Add ${part.label}`}
+                          className="component-chip"
+                          draggable
+                          onDragStart={(e) => onPaletteDragStart(e, part.type, part.label)}
+                          onClick={() => addNode(part.type, part.label)}
+                        >
+                          <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            {part.type === 'nmos' && <><line x1="6" y1="4" x2="6" y2="20"/><line x1="10" y1="6" x2="10" y2="18"/><path d="M10 8h8V4M10 16h8v4M10 12h8"/><polygon points="12 12 15 10 15 14" fill="currentColor"/></>}
+                            {part.type === 'pmos' && <><line x1="4" y1="4" x2="4" y2="20"/><circle cx="7" cy="12" r="2"/><line x1="10" y1="6" x2="10" y2="18"/><path d="M10 8h8V4M10 16h8v4M10 12h8"/><polygon points="15 12 12 10 12 14" fill="currentColor"/></>}
+                            {part.type === 'subckt' && <><rect x="4" y="6" width="16" height="12" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></>}
+                          </svg>
+                          <span className="chip-label">{part.name}</span>
+                          <ComponentTooltipCard info={tipInfo} />
+                        </div>
+                      );
+                    })}
                   </Accordion>
                 </>
               )}
@@ -347,27 +409,36 @@ export default function Sidebar({
               {activeTab === 'hardware' && (
                 <Accordion title="Library Components">
                   <div className="list-view" style={{ width: '100%', gridColumn: '1 / -1' }}>
-                    {filteredLibrary.map((component) => (
-                      <div
-                        key={component.id}
-                        className="list-chip"
-                        data-tooltip={`${component.canonical_name} — click or drag`}
-                        draggable
-                        onDragStart={(e) => onLibraryDragStart(e, component)}
-                        onClick={() => addHardwareNode(component)}
-                      >
-                        <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <rect x="4" y="4" width="16" height="16" rx="2"/>
-                          <line x1="2" y1="8" x2="4" y2="8"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="2" y1="16" x2="4" y2="16"/>
-                          <line x1="20" y1="8" x2="22" y2="8"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="20" y1="16" x2="22" y2="16"/>
-                        </svg>
-                        <span className="chip-label">
-                          {component.canonical_name}
-                          {component.verified && <span style={{ color: 'var(--high-signal)', marginLeft: '4px' }}>✓</span>}
-                        </span>
-                        <span className="chip-meta">{component.pin_map.pins.length} pins</span>
-                      </div>
-                    ))}
+                    {filteredLibrary.map((component) => {
+                      const tipInfo: ComponentTooltipInfo = {
+                        name: component.canonical_name,
+                        category: component.category?.toUpperCase() || 'HARDWARE PART',
+                        description: `Shared hardware part. Aliases: ${component.aliases.join(', ') || 'None'}.`,
+                        pins: `${component.pin_map.pins.length} Pins: [${component.pin_map.pins.map(p => p.name).slice(0, 4).join(', ')}${component.pin_map.pins.length > 4 ? '...' : ''}]`,
+                        hint: 'Click or drag to place on canvas',
+                      };
+                      return (
+                        <div
+                          key={component.id}
+                          className="list-chip"
+                          draggable
+                          onDragStart={(e) => onLibraryDragStart(e, component)}
+                          onClick={() => addHardwareNode(component)}
+                        >
+                          <svg className="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/>
+                            <line x1="2" y1="8" x2="4" y2="8"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="2" y1="16" x2="4" y2="16"/>
+                            <line x1="20" y1="8" x2="22" y2="8"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="20" y1="16" x2="22" y2="16"/>
+                          </svg>
+                          <span className="chip-label">
+                            {component.canonical_name}
+                            {component.verified && <span style={{ color: 'var(--high-signal)', marginLeft: '4px' }}>✓</span>}
+                          </span>
+                          <span className="chip-meta">{component.pin_map.pins.length} pins</span>
+                          <ComponentTooltipCard info={tipInfo} />
+                        </div>
+                      );
+                    })}
                     {libraryComponents.length > 0 && filteredLibrary.length === 0 && (
                       <p className="palette-hint" style={{ gridColumn: '1 / -1', textAlign: 'center' }}>no matching parts</p>
                     )}
