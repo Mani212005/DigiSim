@@ -1923,8 +1923,8 @@ function App(): React.ReactElement {
             // pairs used by analog terminals and hardware pins (bidirectional).
             connectionMode={ConnectionMode.Loose}
             fitView
-            minZoom={0.2}
-            maxZoom={2.5}
+            minZoom={0.02}
+            maxZoom={10.0}
             panOnScroll={!isTouch}
             zoomOnPinch
             // Desktop: left-drag draws a selection box, middle/right-drag pans.

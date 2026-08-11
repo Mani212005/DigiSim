@@ -1,201 +1,175 @@
 /**
  * @file MosfetNode.css
- * @description Clean, Compact, Professional Cadence Virtuoso styling for MOSFET & Subckt nodes in DigiSim.
+ * @description Cadence Virtuoso EDA Schematic Symbol styling.
+ * Pure vector lines, red square pin terminals, and floating CAD engineering annotations.
+ * No box, card, or container background.
  */
 
-.mosfet-node {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 8px;
-  padding: 6px 10px;
-  width: 96px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  color: #f8fafc;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.72rem;
+/* ---------- Virtuoso Schematic Symbol Base ---------- */
+.virtuoso-schematic-symbol {
+  position: relative;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: 90px;
+  height: 64px;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  font-family: var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace);
 }
 
-.mosfet-node:hover {
-  border-color: #38bdf8;
-  box-shadow: 0 6px 24px rgba(56, 189, 248, 0.25);
-  transform: translateY(-1px);
+/* Hover / Selection Subtle Luminous Glow */
+.virtuoso-schematic-symbol:hover .virtuoso-symbol-svg {
+  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.7));
 }
 
-.nmos-node {
-  border-color: rgba(56, 189, 248, 0.3);
+.react-flow__node.selected .virtuoso-schematic-symbol .virtuoso-symbol-svg {
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.9));
 }
 
-.pmos-node {
-  border-color: rgba(244, 114, 182, 0.3);
+.react-flow__node.selected .virtuoso-schematic-symbol {
+  outline: 1px dashed rgba(56, 189, 248, 0.4) !important;
+  outline-offset: 4px !important;
 }
 
-.pmos-node:hover {
-  border-color: #f472b6;
-  box-shadow: 0 6px 24px rgba(244, 114, 182, 0.25);
+/* ---------- Cadence Virtuoso Red Square Pin Terminal Handles ---------- */
+.virtuoso-pin {
+  width: 6px !important;
+  height: 6px !important;
+  background: #ef4444 !important;
+  border: 1px solid #b91c1c !important;
+  border-radius: 0px !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 20 !important;
+  transition: all 0.12s ease !important;
 }
 
-.mosfet-pro-header {
+.virtuoso-pin:hover {
+  background: #f87171 !important;
+  box-shadow: 0 0 6px #ef4444 !important;
+  transform: translate(-50%, -50%) scale(1.3) !important;
+}
+
+/* ---------- Vector Schematic Glyphs ---------- */
+.virtuoso-symbol-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 68px;
+  height: 54px;
+  overflow: visible;
+  color: #22c55e; /* Classic EDA schematic green */
+}
+
+.symbol-wire {
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: square;
+}
+
+.symbol-wire--autobulk {
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-dasharray: 2 2;
+  opacity: 0.85;
+}
+
+.symbol-plate {
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: square;
+}
+
+.symbol-bubble {
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.symbol-arrow {
+  fill: currentColor;
+}
+
+/* ---------- Floating CDF Engineering Annotations ---------- */
+.virtuoso-annotation {
+  position: absolute;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2px;
+  flex-direction: column;
+  line-height: 1.15;
+  pointer-events: none;
 }
 
-.mosfet-pro-title {
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
-  color: #e2e8f0;
+.virtuoso-annotation--top-left {
+  top: -14px;
+  left: 4px;
 }
 
-.mosfet-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #64748b;
+.virtuoso-annotation--top-right {
+  top: -14px;
+  left: 40px;
 }
 
-.mosfet-dot--sat {
-  background: #4ade80;
-  box-shadow: 0 0 6px #4ade80;
+.virtuoso-annotation--bottom-right {
+  top: 26px;
+  left: 44px;
 }
 
-.mosfet-dot--triode {
-  background: #fbbf24;
-  box-shadow: 0 0 6px #fbbf24;
-}
-
-.mosfet-dot--cutoff {
-  background: #f87171;
-}
-
-.mosfet-pro-glyph {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 2px 0;
-  color: #38bdf8;
-}
-
-.pmos-node .mosfet-pro-glyph {
-  color: #f472b6;
-}
-
-.mosfet-pin-label {
-  font-size: 8px;
-  fill: #94a3b8;
-  font-weight: 600;
-  font-family: var(--font-mono, monospace);
-}
-
-.mosfet-pro-specs {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.58rem;
-  color: #94a3b8;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 2px;
-  margin-top: 2px;
-}
-
-.mosfet-spec-size {
-  color: #cbd5e1;
-  font-weight: 500;
-}
-
-.mosfet-spec-pdk {
-  color: #38bdf8;
-  font-weight: 600;
-}
-
-.pmos-node .mosfet-spec-pdk {
-  color: #f472b6;
-}
-
-.mosfet-handle {
-  width: 7px !important;
-  height: 7px !important;
-  background: #38bdf8 !important;
-  border: 1.5px solid #0f172a !important;
-  border-radius: 50% !important;
-  transition: transform 0.15s ease !important;
-}
-
-.mosfet-handle:hover {
-  transform: scale(1.4) !important;
-  background: #ffffff !important;
-}
-
-.pmos-node .mosfet-handle {
-  background: #f472b6 !important;
-}
-
-.mosfet-handle--b {
-  background: #a855f7 !important;
-}
-
-/* Sub-circuit node */
-.subckt-node {
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1.5px solid #818cf8;
-  border-radius: 8px;
-  padding: 8px 12px;
-  min-width: 150px;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
-  color: #f8fafc;
-  cursor: pointer;
-}
-
-.subckt-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(129, 140, 248, 0.3);
-  padding-bottom: 4px;
-  margin-bottom: 6px;
-}
-
-.subckt-title {
-  font-weight: 700;
-  font-size: 0.82rem;
-  color: #c7d2fe;
-}
-
-.subckt-cellname {
+/* Cell type: Yellow/Gold (e.g. nmos, pmos) */
+.virtuoso-cell-type {
   font-size: 0.62rem;
-  color: #818cf8;
-  font-family: var(--font-mono, monospace);
-  background: rgba(99, 102, 241, 0.15);
-  padding: 1px 4px;
-  border-radius: 3px;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.02em;
 }
 
-.subckt-btn-drill {
-  width: 100%;
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.7rem;
+/* Instance Name: Coral Red (e.g. NM0, PM0) */
+.virtuoso-instance-name {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #f87171;
+}
+
+/* Model string: Coral Red (e.g. "nmos1") */
+.virtuoso-model-name {
+  font-size: 0.52rem;
+  color: #f87171;
+  opacity: 0.9;
+}
+
+/* CDF Parameter text: Coral Red (e.g. w:1.2u, l:180n, m:1) */
+.virtuoso-cdf-param {
+  font-size: 0.52rem;
   font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  transition: all 0.15s ease;
+  color: #f87171;
+  letter-spacing: -0.02em;
 }
 
-.subckt-btn-drill:hover {
-  background: linear-gradient(135deg, #4338ca, #4f46e5);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+/* Operating Region indicator badge */
+.virtuoso-region-tag {
+  font-size: 0.48rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 3px;
+  border-radius: 2px;
+  margin-top: 1px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.virtuoso-region--saturation {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.virtuoso-region--triode {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.virtuoso-region--cutoff {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
 }

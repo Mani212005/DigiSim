@@ -17,24 +17,26 @@ describe('Mosfet & Subckt Nodes', () => {
     mockUpdateNodeData.mockReset();
   });
 
-  it('renders streamlined NmosNode with IEEE symbol, specs, and double-click trigger', () => {
+  it('renders Virtuoso NMOS symbol with red square pins and CDF annotations', () => {
     const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
 
     render(
       <ReactFlowProvider>
         <NmosNode
           id="n1"
-          data={{ label: 'M_NMOS1', value: 0, techNode: '180nm', width: 1.2, length: 0.18, region: 'Saturation' }}
+          data={{ label: 'NM0', value: 0, techNode: '180nm', width: 1.2, length: 0.18, region: 'Saturation' }}
           updateNodeData={mockUpdateNodeData}
         />
       </ReactFlowProvider>
     );
 
-    expect(screen.getByText('M_NMOS1')).toBeInTheDocument();
-    expect(screen.getByText(/1\.2μ \/ 0\.18μ/i)).toBeInTheDocument();
-    expect(screen.getByText('180nm')).toBeInTheDocument();
+    expect(screen.getByText('nmos')).toBeInTheDocument();
+    expect(screen.getByText('NM0')).toBeInTheDocument();
+    expect(screen.getByText(/w:1\.2u/i)).toBeInTheDocument();
+    expect(screen.getByText(/l:180n/i)).toBeInTheDocument();
+    expect(screen.getByText(/m:1/i)).toBeInTheDocument();
 
-    const nodeCard = screen.getByTitle(/Double-click to edit Cadence Virtuoso Object Properties/i);
+    const nodeCard = screen.getByTitle(/NMOS Transistor/i);
     fireEvent.doubleClick(nodeCard);
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -45,20 +47,22 @@ describe('Mosfet & Subckt Nodes', () => {
     dispatchSpy.mockRestore();
   });
 
-  it('renders streamlined PmosNode with IEEE inversion bubble and specs', () => {
+  it('renders Virtuoso PMOS symbol with inversion bubble and CDF annotations', () => {
     render(
       <ReactFlowProvider>
         <PmosNode
           id="p1"
-          data={{ label: 'M_PMOS1', value: 0, techNode: '90nm', width: 2.4, length: 0.09, region: 'Triode', autoBulk: true }}
+          data={{ label: 'PM0', value: 0, techNode: '90nm', width: 2.4, length: 0.09, region: 'Triode', autoBulk: true }}
           updateNodeData={mockUpdateNodeData}
         />
       </ReactFlowProvider>
     );
 
-    expect(screen.getByText('M_PMOS1')).toBeInTheDocument();
-    expect(screen.getByText(/2\.4μ \/ 0\.09μ/i)).toBeInTheDocument();
-    expect(screen.getByText('90nm')).toBeInTheDocument();
+    expect(screen.getByText('pmos')).toBeInTheDocument();
+    expect(screen.getByText('PM0')).toBeInTheDocument();
+    expect(screen.getByText(/w:2\.4u/i)).toBeInTheDocument();
+    expect(screen.getByText(/l:90n/i)).toBeInTheDocument();
+    expect(screen.getByText(/m:1/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/PMOS Schematic Symbol/i)).toBeInTheDocument();
   });
 

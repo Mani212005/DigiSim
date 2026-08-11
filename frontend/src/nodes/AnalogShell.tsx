@@ -1,10 +1,8 @@
 /**
  * @file AnalogShell.tsx
- * @description Shared visual shell for analog part nodes — renders the
- * schematic glyph, label, live readout (mA/V), overcurrent warning chip, and
- * the electrical terminals as paired target+source handles (`t:<terminal>` /
- * `s:<terminal>`) so wires can be drawn in either direction. No simulation
- * logic lives here — solving happens in src/logic/simulation/mna.ts.
+ * @description Cadence Virtuoso-grade visual shell for analog schematic parts.
+ * Renders pure vector schematic lines with red square terminal pins and floating CDF annotations.
+ * No box or card containers.
  */
 
 import React from 'react';
@@ -18,24 +16,20 @@ const POSITION_BY_SIDE: Record<TerminalSide, Position> = {
 };
 
 /**
- * One electrical terminal rendered as stacked target+source handles.
- * @param props - Terminal name and node side
- * @returns Paired ReactFlow handles
+ * Cadence Virtuoso Red Square Terminal Pin.
  */
 function TerminalHandles({ terminal, side }: AnalogTerminal): React.ReactElement {
   const position = POSITION_BY_SIDE[side];
   return (
     <>
-      <Handle type="target" id={`t:${terminal}`} position={position} className="analog-pin" />
-      <Handle type="source" id={`s:${terminal}`} position={position} className="analog-pin" />
+      <Handle type="target" id={`t:${terminal}`} position={position} className="virtuoso-pin" />
+      <Handle type="source" id={`s:${terminal}`} position={position} className="virtuoso-pin" />
     </>
   );
 }
 
 /**
- * Shared shell for all analog part nodes.
- * @param props - Glyph, terminals, readout, and optional param editor children
- * @returns Rendered analog node card
+ * Shared Virtuoso Schematic Shell for Analog components.
  */
 function AnalogShell({
   data,
@@ -46,23 +40,36 @@ function AnalogShell({
   children,
 }: AnalogShellProps): React.ReactElement {
   return (
-    <div className={`analog-node${data.simWarning ? ' analog-node--warn' : ''}`}>
+    <div
+      className={`virtuoso-schematic-symbol analog-symbol${data.simWarning ? ' analog-symbol--warn' : ''}`}
+    >
+      {/* Red Square Terminal Pins */}
       {terminals.map((t) => (
         <TerminalHandles key={t.terminal} terminal={t.terminal} side={t.side} />
       ))}
+
+      {/* Floating Instance and Cell Type Annotation */}
+      <div className="virtuoso-annotation virtuoso-annotation--top-right">
+        <span className="virtuoso-instance-name">{data.label}</span>
+      </div>
+
+      {/* Pure Vector Glyph */}
       <div
-        className={`analog-node__glyph${onGlyphClick ? ' analog-node__glyph--click' : ''}`}
+        className={`analog-glyph-wrapper${onGlyphClick ? ' analog-glyph-clickable' : ''}`}
         onClick={onGlyphClick}
         role={onGlyphClick ? 'button' : undefined}
-        aria-label={onGlyphClick ? `Toggle ${data.label}` : undefined}
       >
         {glyph}
       </div>
-      <div className="analog-node__label">{data.label}</div>
-      {children}
-      {readout && <div className="analog-node__readout">{readout}</div>}
+
+      {/* Floating Parameter Specs and Live Readouts */}
+      <div className="virtuoso-annotation virtuoso-annotation--bottom-right">
+        {children}
+        {readout && <span className="virtuoso-live-readout">{readout}</span>}
+      </div>
+
       {data.simWarning && (
-        <div className="analog-node__warning" title={data.simWarning}>
+        <div className="virtuoso-warn-tooltip" title={data.simWarning}>
           ⚠ {data.simWarning}
         </div>
       )}

@@ -1,8 +1,8 @@
 /**
  * @file NmosNode.tsx
- * @description Clean, Professional 4-Terminal NMOS Transistor Node for ReactFlow canvas (Cadence Virtuoso Style).
- * Displays a clean IEEE schematic symbol with subtle instance & geometry text.
- * Double-clicking opens the deep Virtuoso Object Properties Inspector.
+ * @description Cadence Virtuoso EDA Schematic Symbol for 4-Terminal NMOS Transistor.
+ * Direct vector schematic lines with red square terminal pins and floating CDF annotations.
+ * No card or box container. Double-click opens Virtuoso Object Properties Modal.
  */
 
 import React from 'react';
@@ -11,13 +11,13 @@ import type { AnalogNodeProps, TechNode } from '../../types';
 import './MosfetNode.css';
 
 /**
- * Stacked target+source handles for one MOSFET terminal.
+ * Cadence Virtuoso-style Red Square Terminal Pin Handle.
  */
-function MosfetHandle({ terminal, position }: { terminal: string; position: Position }): React.ReactElement {
+function VirtuosoPinHandle({ terminal, position, style }: { terminal: string; position: Position; style?: React.CSSProperties }): React.ReactElement {
   return (
     <>
-      <Handle type="target" id={`t:${terminal}`} position={position} className={`mosfet-handle mosfet-handle--${terminal}`} />
-      <Handle type="source" id={`s:${terminal}`} position={position} className={`mosfet-handle mosfet-handle--${terminal}`} />
+      <Handle type="target" id={`t:${terminal}`} position={position} className="virtuoso-pin" style={style} />
+      <Handle type="source" id={`s:${terminal}`} position={position} className="virtuoso-pin" style={style} />
     </>
   );
 }
@@ -26,77 +26,73 @@ export function NmosNode({ id, data }: AnalogNodeProps): React.ReactElement {
   const techNode: TechNode = data.techNode ?? '180nm';
   const width = data.width ?? 1.2; // um
   const length = data.length ?? 0.18; // um
-  const label = data.label || 'NMOS';
+  const label = data.label || 'NM0';
   const region = data.region;
-
-  const regionDotClass =
-    region === 'Saturation'
-      ? 'mosfet-dot--sat'
-      : region === 'Triode'
-        ? 'mosfet-dot--triode'
-        : region === 'Cutoff'
-          ? 'mosfet-dot--cutoff'
-          : '';
+  const autoBulk = data.autoBulk !== false;
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Dispatch custom event caught by App.tsx to open the Properties Modal
     window.dispatchEvent(new CustomEvent('digisim:open-node-properties', { detail: { nodeId: id } }));
   };
 
   return (
     <div
-      className="mosfet-node mosfet-node--pro nmos-node"
+      className="virtuoso-schematic-symbol nmos-symbol"
       onDoubleClick={handleDoubleClick}
-      title="Double-click to edit Cadence Virtuoso Object Properties (W, L, PDK, Bulk)"
+      title="NMOS Transistor (Double-click or press Q to edit Virtuoso Object Properties)"
     >
-      {/* 4 Standard IEEE Terminals: Drain (top), Gate (left), Source (bottom), Bulk (right) */}
-      <MosfetHandle terminal="d" position={Position.Top} />
-      <MosfetHandle terminal="g" position={Position.Left} />
-      <MosfetHandle terminal="s" position={Position.Bottom} />
-      <MosfetHandle terminal="b" position={Position.Right} />
+      {/* Red Square Terminal Pins placed precisely at wire ends */}
+      {/* Drain: Top wire end */}
+      <VirtuosoPinHandle terminal="d" position={Position.Top} style={{ top: 0, left: 34 }} />
+      {/* Gate: Left wire end */}
+      <VirtuosoPinHandle terminal="g" position={Position.Left} style={{ top: 27, left: 0 }} />
+      {/* Source: Bottom wire end */}
+      <VirtuosoPinHandle terminal="s" position={Position.Bottom} style={{ top: 54, left: 34 }} />
+      {/* Bulk: Body terminal */}
+      <VirtuosoPinHandle terminal="b" position={Position.Right} style={{ top: 27, left: 34 }} />
 
-      {/* Clean Header: Instance Tag + Status Dot */}
-      <div className="mosfet-pro-header">
-        <span className="mosfet-pro-title">{label}</span>
-        {region && <span className={`mosfet-status-dot ${regionDotClass}`} title={`Region: ${region}`} />}
+      {/* Cadence Virtuoso Floating CDF Annotations matching reference image */}
+      <div className="virtuoso-annotation virtuoso-annotation--top-left">
+        <span className="virtuoso-cell-type">nmos</span>
+      </div>
+      <div className="virtuoso-annotation virtuoso-annotation--top-right">
+        <span className="virtuoso-instance-name">{label}</span>
+        <span className="virtuoso-model-name">"nmos_{techNode}"</span>
+        <span className="virtuoso-cdf-param">w:{width}u</span>
+      </div>
+      <div className="virtuoso-annotation virtuoso-annotation--bottom-right">
+        <span className="virtuoso-cdf-param">l:{Math.round(length * 1000)}n</span>
+        <span className="virtuoso-cdf-param">m:1</span>
+        {region && <span className={`virtuoso-region-tag virtuoso-region--${region.toLowerCase()}`}>{region}</span>}
       </div>
 
-      {/* Clean IEEE Schematic SVG Glyph */}
-      <div className="mosfet-pro-glyph">
-        <svg width="68" height="54" viewBox="0 0 68 54" aria-label="NMOS Schematic Symbol">
-          {/* Gate Terminal (Left) */}
-          <line x1="0" y1="27" x2="22" y2="27" stroke="currentColor" strokeWidth="1.6" />
-          <line x1="22" y1="12" x2="22" y2="42" stroke="currentColor" strokeWidth="2.2" />
-          {/* Oxide gap */}
-          <line x1="28" y1="10" x2="28" y2="44" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      {/* Pure Vector Schematic Geometry */}
+      <svg width="68" height="54" viewBox="0 0 68 54" className="virtuoso-symbol-svg" aria-label="NMOS Schematic Symbol">
+        {/* Gate Terminal Lead and Plate */}
+        <line x1="0" y1="27" x2="16" y2="27" className="symbol-wire" />
+        <line x1="16" y1="12" x2="16" y2="42" className="symbol-plate" />
 
-          {/* Drain Line (Top) */}
-          <line x1="28" y1="15" x2="48" y2="15" stroke="currentColor" strokeWidth="1.6" />
-          <line x1="48" y1="15" x2="48" y2="0" stroke="currentColor" strokeWidth="1.6" />
+        {/* Channel Plate (Oxide Gap) */}
+        <line x1="22" y1="10" x2="22" y2="44" className="symbol-plate" />
 
-          {/* Source Line (Bottom) */}
-          <line x1="28" y1="39" x2="48" y2="39" stroke="currentColor" strokeWidth="1.6" />
-          <line x1="48" y1="39" x2="48" y2="54" stroke="currentColor" strokeWidth="1.6" />
+        {/* Drain Lead (Top) */}
+        <line x1="22" y1="15" x2="34" y2="15" className="symbol-wire" />
+        <line x1="34" y1="15" x2="34" y2="0" className="symbol-wire" />
 
-          {/* Bulk Channel Line (Middle) */}
-          <line x1="28" y1="27" x2="68" y2="27" stroke="currentColor" strokeWidth="1.6" />
-          {/* NMOS Substrate Arrow (pointing IN towards channel) */}
-          <polygon points="28,27 36,23 36,31" fill="currentColor" />
+        {/* Source Lead (Bottom) with Arrow */}
+        <line x1="22" y1="39" x2="34" y2="39" className="symbol-wire" />
+        <line x1="34" y1="39" x2="34" y2="54" className="symbol-wire" />
 
-          {/* Terminal Pin Labels */}
-          <text x="50" y="10" className="mosfet-pin-label">D</text>
-          <text x="6" y="22" className="mosfet-pin-label">G</text>
-          <text x="50" y="50" className="mosfet-pin-label">S</text>
-          <text x="58" y="24" className="mosfet-pin-label">B</text>
-        </svg>
-      </div>
+        {/* Bulk Channel Connection */}
+        <line x1="22" y1="27" x2="34" y2="27" className="symbol-wire" />
+        {/* Substrate Arrow pointing into channel */}
+        <polygon points="22,27 30,23 30,31" className="symbol-arrow" />
 
-      {/* Subtle Virtuoso-style Monospaced Size Subtitle */}
-      <div className="mosfet-pro-specs">
-        <span className="mosfet-spec-size">{width}μ / {length}μ</span>
-        <span className="mosfet-spec-pdk">{techNode}</span>
-      </div>
+        {/* Auto-Bulk Loop Wire connecting Bulk to Source if enabled */}
+        {autoBulk && (
+          <path d="M 34,27 L 44,27 L 44,45 L 34,45" fill="none" className="symbol-wire symbol-wire--autobulk" />
+        )}
+      </svg>
     </div>
   );
 }

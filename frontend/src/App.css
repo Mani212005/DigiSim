@@ -731,44 +731,45 @@
 }
 
 /* Analog part nodes (vsource, resistor, LED, switch, pot, ground) */
-.analog-node {
+.analog-node, .analog-symbol {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-width: 96px;
-  padding: 10px 12px 8px;
-  background: var(--panel-solid, #0f172a);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: #22c55e;
+  user-select: none;
 }
 
-.analog-node--warn {
-  border-color: rgba(248, 113, 113, 0.55);
-  box-shadow: 0 0 14px rgba(248, 113, 113, 0.22);
+.analog-node--warn, .analog-symbol--warn {
+  filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.6));
 }
 
-.analog-node__glyph svg {
-  stroke: var(--text);
+.analog-node__glyph svg, .analog-glyph-wrapper svg {
+  stroke: #22c55e;
   stroke-width: 1.8;
-  stroke-linecap: round;
+  stroke-linecap: square;
   overflow: visible;
 }
 
-.analog-node__glyph--click {
+.analog-node__glyph--click, .analog-glyph-clickable {
   cursor: pointer;
 }
 
-.analog-node__glyph--click:hover svg {
-  stroke: var(--accent);
+.analog-node__glyph--click:hover svg, .analog-glyph-clickable:hover svg {
+  stroke: #4ade80;
+  filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.7));
 }
 
 .analog-glyph-sign {
   font-size: 10px;
-  fill: var(--muted);
+  fill: #f87171;
   stroke: none;
+  font-weight: 700;
 }
 
 .analog-led-glow {
@@ -780,44 +781,50 @@
 
 .analog-node__label {
   font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #f87171 !important;
+  font-family: var(--font-mono, monospace);
+  margin-top: -2px;
 }
 
 .analog-node__param {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.66rem;
-  color: var(--muted);
+  gap: 3px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #f87171;
+  font-family: var(--font-mono, monospace);
 }
 
 .analog-node__param input[type='number'] {
-  width: 52px;
-  padding: 2px 4px;
-  font-size: 0.66rem;
-  color: var(--text);
-  background: rgba(148, 163, 184, 0.08);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  width: 44px;
+  padding: 1px 3px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #f87171;
+  background: transparent;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
 }
 
 .analog-node__param input[type='range'] {
-  width: 64px;
+  width: 60px;
 }
 
-.analog-node__readout {
-  font-size: 0.62rem;
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  color: var(--accent);
+.analog-node__readout, .virtuoso-live-readout {
+  font-size: 0.60rem;
+  font-family: var(--font-mono, monospace);
+  color: #38bdf8;
+  font-weight: 600;
 }
 
-.analog-node__warning {
+.analog-node__warning, .virtuoso-warn-tooltip {
   max-width: 150px;
   margin-top: 2px;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   line-height: 1.25;
   color: #f87171;
   text-align: center;
