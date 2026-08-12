@@ -4,7 +4,7 @@
  * parameters, CDF parameter calculations, and operating region states.
  */
 
-export type TechNode = '180nm' | '90nm' | '28nm';
+export type TechNode = '350nm' | '180nm' | '90nm' | '45nm' | '28nm';
 export type MosfetType = 'nmos' | 'pmos';
 export type OperatingRegion = 'Cutoff' | 'Triode' | 'Saturation';
 

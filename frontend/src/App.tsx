@@ -47,7 +47,12 @@ import XnorGateNode from './nodes/XnorGateNode';
 import NorGateNode from './nodes/NorGateNode';
 import {
   AnalogSwitchNode,
+  BjtNpnNode,
+  BjtPnpNode,
+  CapacitorNode,
+  ClockSourceNode,
   GroundNode,
+  InductorNode,
   LedNode,
   PotentiometerNode,
   ResistorNode,
@@ -153,23 +158,33 @@ const sampleImages = [
 const ANALOG_PALETTE: { type: string; label: string; name: string; hint: string }[] = [
   { type: 'vsource', label: 'Voltage Source', name: 'Source', hint: '5V DC' },
   { type: 'ground', label: 'Ground', name: 'GND', hint: '0V reference' },
+  { type: 'clockSource', label: 'Clock Generator', name: 'Clock', hint: '10 MHz Pulse' },
   { type: 'resistor', label: 'Resistor', name: 'Resistor', hint: '220Ω' },
+  { type: 'capacitor', label: 'Capacitor', name: 'Capacitor', hint: '10 pF' },
+  { type: 'inductor', label: 'Inductor', name: 'Inductor', hint: '100 nH' },
   { type: 'led', label: 'LED', name: 'LED', hint: 'glows by current' },
   { type: 'analogSwitch', label: 'Switch', name: 'Switch', hint: 'click to toggle' },
   { type: 'potentiometer', label: 'Potentiometer', name: 'Pot', hint: '10kΩ' },
   { type: 'nmos', label: 'NMOS Transistor', name: 'NMOS', hint: '4-Terminal MOSFET' },
   { type: 'pmos', label: 'PMOS Transistor', name: 'PMOS', hint: '4-Terminal MOSFET' },
+  { type: 'bjtNpn', label: 'NPN BJT', name: 'BJT NPN', hint: 'Bipolar Transistor' },
+  { type: 'bjtPnp', label: 'PNP BJT', name: 'BJT PNP', hint: 'Bipolar Transistor' },
   { type: 'subckt', label: 'Sub-Circuit Block', name: 'Subckt', hint: 'OpenAccess Subckt' },
 ];
 
 /** Initial data.param/percent/closed values per analog node type. */
 const ANALOG_DEFAULT_DATA: Record<string, Partial<NodeData>> = {
   vsource: { param: 5 },
+  clockSource: { param: 10 },
   resistor: { param: 220 },
+  capacitor: { param: 10 },
+  inductor: { param: 100 },
   potentiometer: { param: 10000, percent: 50 },
   analogSwitch: { closed: false },
   nmos: { techNode: '180nm', width: 1.2, length: 0.18, nf: 1, autoBulk: true },
   pmos: { techNode: '180nm', width: 2.4, length: 0.18, nf: 1, autoBulk: true },
+  bjtNpn: { label: 'Q1', param: 100 },
+  bjtPnp: { label: 'Q2', param: 80 },
   subckt: { cellName: 'INVERTER', params: { W_p: 2.4, W_n: 1.2, L: 0.18 } },
 };
 
@@ -442,8 +457,17 @@ function App(): React.ReactElement {
       <VSourceNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
     ),
     ground: GroundNode,
+    clockSource: (props: NodeProps<NodeData>) => (
+      <ClockSourceNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
     resistor: (props: NodeProps<NodeData>) => (
       <ResistorNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    capacitor: (props: NodeProps<NodeData>) => (
+      <CapacitorNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    inductor: (props: NodeProps<NodeData>) => (
+      <InductorNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
     ),
     led: LedNode,
     analogSwitch: (props: NodeProps<NodeData>) => (
@@ -457,6 +481,12 @@ function App(): React.ReactElement {
     ),
     pmos: (props: NodeProps<NodeData>) => (
       <PmosNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    bjtNpn: (props: NodeProps<NodeData>) => (
+      <BjtNpnNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
+    ),
+    bjtPnp: (props: NodeProps<NodeData>) => (
+      <BjtPnpNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
     ),
     subckt: (props: NodeProps<NodeData>) => (
       <SubcktNode id={props.id} data={props.data} updateNodeData={updateNodeData} />
@@ -1783,12 +1813,6 @@ function App(): React.ReactElement {
           addNode={addNode}
           analogPalette={ANALOG_PALETTE}
           gatePalette={GATE_PALETTE}
-          libraryComponents={libraryComponents}
-          filteredLibrary={filteredLibrary}
-          librarySearch={librarySearch}
-          setLibrarySearch={setLibrarySearch}
-          onLibraryDragStart={onLibraryDragStart}
-          addHardwareNode={addHardwareNode}
           handleImageUpload={handleImageUpload}
           setCameraOpen={setCameraOpen}
           sampleImages={sampleImages}

@@ -217,3 +217,173 @@ export function PotentiometerNode({
     </AnalogShell>
   );
 }
+
+/**
+ * Capacitor Node (parallel plate silicon capacitor).
+ */
+export function CapacitorNode({ id, data, updateNodeData }: AnalogNodeProps): React.ReactElement {
+  const cap = data.param ?? 10; // pF
+  return (
+    <AnalogShell
+      data={data}
+      terminals={[
+        { terminal: 'a', side: 'left' },
+        { terminal: 'b', side: 'right' },
+      ]}
+      readout={`${cap} pF`}
+      glyph={
+        <svg width="48" height="30" viewBox="0 0 48 30" aria-hidden="true">
+          <line x1="0" y1="15" x2="20" y2="15" />
+          <line x1="20" y1="5" x2="20" y2="25" strokeWidth="2.4" />
+          <line x1="28" y1="5" x2="28" y2="25" strokeWidth="2.4" />
+          <line x1="28" y1="15" x2="48" y2="15" />
+        </svg>
+      }
+    >
+      <label className="analog-node__param nodrag">
+        <input
+          type="number"
+          min={0.1}
+          step={1}
+          value={cap}
+          aria-label={`Capacitance for ${data.label}`}
+          onChange={(e) => updateNodeData(id, { param: Number(e.target.value) })}
+        />
+        pF
+      </label>
+    </AnalogShell>
+  );
+}
+
+/**
+ * Inductor Node (silicon spiral / on-chip inductor).
+ */
+export function InductorNode({ id, data, updateNodeData }: AnalogNodeProps): React.ReactElement {
+  const ind = data.param ?? 100; // nH
+  return (
+    <AnalogShell
+      data={data}
+      terminals={[
+        { terminal: 'a', side: 'left' },
+        { terminal: 'b', side: 'right' },
+      ]}
+      readout={`${ind} nH`}
+      glyph={
+        <svg width="48" height="30" viewBox="0 0 48 30" aria-hidden="true">
+          <line x1="0" y1="18" x2="10" y2="18" />
+          <path d="M10 18 A 5 5 0 0 1 18 18 A 5 5 0 0 1 26 18 A 5 5 0 0 1 34 18 A 5 5 0 0 1 42 18" fill="none" />
+          <line x1="42" y1="18" x2="48" y2="18" />
+        </svg>
+      }
+    >
+      <label className="analog-node__param nodrag">
+        <input
+          type="number"
+          min={1}
+          step={10}
+          value={ind}
+          aria-label={`Inductance for ${data.label}`}
+          onChange={(e) => updateNodeData(id, { param: Number(e.target.value) })}
+        />
+        nH
+      </label>
+    </AnalogShell>
+  );
+}
+
+/**
+ * NPN Bipolar Junction Transistor Node (for Bandgap references and Analog IC front-ends).
+ */
+export function BjtNpnNode({ data }: AnalogNodeProps): React.ReactElement {
+  return (
+    <AnalogShell
+      data={data}
+      terminals={[
+        { terminal: 'b', side: 'left' },
+        { terminal: 'c', side: 'top' },
+        { terminal: 'e', side: 'right' },
+      ]}
+      readout="β: 100"
+      glyph={
+        <svg width="48" height="42" viewBox="0 0 48 42" aria-hidden="true">
+          <line x1="0" y1="21" x2="16" y2="21" />
+          <line x1="16" y1="8" x2="16" y2="34" strokeWidth="2.8" />
+          {/* Collector */}
+          <line x1="16" y1="14" x2="34" y2="4" />
+          <line x1="34" y1="4" x2="34" y2="0" />
+          {/* Emitter with outward arrow */}
+          <line x1="16" y1="28" x2="34" y2="38" />
+          <line x1="34" y1="38" x2="48" y2="38" />
+          <polygon points="28,34 35,39 27,41" fill="currentColor" />
+        </svg>
+      }
+    />
+  );
+}
+
+/**
+ * PNP Bipolar Junction Transistor Node.
+ */
+export function BjtPnpNode({ data }: AnalogNodeProps): React.ReactElement {
+  return (
+    <AnalogShell
+      data={data}
+      terminals={[
+        { terminal: 'b', side: 'left' },
+        { terminal: 'c', side: 'right' },
+        { terminal: 'e', side: 'top' },
+      ]}
+      readout="β: 80"
+      glyph={
+        <svg width="48" height="42" viewBox="0 0 48 42" aria-hidden="true">
+          <line x1="0" y1="21" x2="16" y2="21" />
+          <line x1="16" y1="8" x2="16" y2="34" strokeWidth="2.8" />
+          {/* Emitter with inward arrow */}
+          <line x1="34" y1="4" x2="16" y2="14" />
+          <line x1="34" y1="4" x2="34" y2="0" />
+          <polygon points="23,19 16,14 26,11" fill="currentColor" />
+          {/* Collector */}
+          <line x1="16" y1="28" x2="34" y2="38" />
+          <line x1="34" y1="38" x2="48" y2="38" />
+        </svg>
+      }
+    />
+  );
+}
+
+/**
+ * Pulse / Square Wave Clock Generator for digital synchronous circuits & MCU cores.
+ */
+export function ClockSourceNode({ id, data, updateNodeData }: AnalogNodeProps): React.ReactElement {
+  const freq = data.param ?? 10; // MHz
+  return (
+    <AnalogShell
+      data={data}
+      terminals={[
+        { terminal: 'clk', side: 'right' },
+        { terminal: 'gnd', side: 'left' },
+      ]}
+      readout={`${freq} MHz`}
+      glyph={
+        <svg width="48" height="30" viewBox="0 0 48 30" aria-hidden="true">
+          <circle cx="24" cy="15" r="12" fill="none" />
+          <path d="M16 19 L16 11 L24 11 L24 19 L32 19 L32 11" fill="none" strokeWidth="1.6" />
+          <line x1="36" y1="15" x2="48" y2="15" />
+        </svg>
+      }
+    >
+      <label className="analog-node__param nodrag">
+        <input
+          type="number"
+          min={1}
+          max={500}
+          value={freq}
+          aria-label={`Frequency for ${data.label}`}
+          onChange={(e) => updateNodeData(id, { param: Number(e.target.value) })}
+        />
+        MHz
+      </label>
+    </AnalogShell>
+  );
+}
+

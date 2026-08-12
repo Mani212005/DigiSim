@@ -151,6 +151,46 @@ export const COMPONENT_TOOLTIP_DATA: Record<string, ComponentTooltipInfo> = {
     formula: 'I_D = ½ · μ_p·C_ox · (W/L) · (V_SG - |V_th|)² · (1 + λ·V_SD)',
     hint: '180nm / 90nm / 28nm PDK models',
   },
+  capacitor: {
+    name: 'Silicon Capacitor',
+    category: 'ANALOG PASSIVE',
+    description: 'Parallel plate integrated capacitor for frequency filtering and charge storage.',
+    pins: '2 Pins: [Lead A, Lead B]',
+    formula: 'i(t) = C · (dv/dt)  |  Q = C · V',
+    hint: 'Editable capacitance value (pF / fF)',
+  },
+  inductor: {
+    name: 'Integrated Inductor',
+    category: 'ANALOG PASSIVE',
+    description: 'Silicon spiral on-chip inductor for RF resonators and LC tanks.',
+    pins: '2 Pins: [Lead A, Lead B]',
+    formula: 'v(t) = L · (di/dt)',
+    hint: 'Editable inductance value (nH)',
+  },
+  bjtNpn: {
+    name: 'NPN BJT Transistor',
+    category: 'BIPOLAR JUNCTION',
+    description: 'Bipolar junction transistor for bandgap reference cores and low-noise analog stages.',
+    pins: '3 Pins: [Collector (C), Base (B), Emitter (E)]',
+    formula: 'I_C = I_S · e^(V_BE / V_T)  |  I_C = β · I_B',
+    hint: 'Current-controlled silicon device',
+  },
+  bjtPnp: {
+    name: 'PNP BJT Transistor',
+    category: 'BIPOLAR JUNCTION',
+    description: 'PNP bipolar transistor for high-side current mirrors and analog biasing.',
+    pins: '3 Pins: [Emitter (E), Base (B), Collector (C)]',
+    formula: 'I_C = I_S · e^(V_EB / V_T)  |  I_C = β · I_B',
+    hint: 'Complementary bipolar transistor',
+  },
+  clockSource: {
+    name: 'Pulse Clock Generator',
+    category: 'SIGNAL & CLOCK',
+    description: 'Square wave digital clock source for driving synchronous logic and MCU cores.',
+    pins: '2 Pins: [CLK Out, GND]',
+    formula: 'f_clk = 1 / T_period  (Default: 10 MHz)',
+    hint: 'Clock pulses for sequential circuits',
+  },
   subckt: {
     name: 'Sub-Circuit Block',
     category: 'HIERARCHY & CELLS',
@@ -160,3 +200,4 @@ export const COMPONENT_TOOLTIP_DATA: Record<string, ComponentTooltipInfo> = {
     hint: 'Shift + Double Click to drill down',
   },
 };
+

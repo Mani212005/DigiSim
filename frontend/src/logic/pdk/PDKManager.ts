@@ -20,6 +20,32 @@ const EPSILON_HK = 20.0 * EPSILON_0; // High-k dielectric F/m for 28nm HKMG
 
 /** Pre-configured BSIM model cards for standard process nodes. */
 const DEFAULT_MODEL_CARDS: Record<string, BSIMModelCard> = {
+  '350nm_nmos': {
+    name: 'BSIM3v3_350nm_NMOS',
+    techNode: '350nm',
+    type: 'nmos',
+    Vth0: 0.68,
+    mu0: 520, // cm^2 / V·s
+    Tox: 7.5e-9, // 7.5 nm
+    gamma: 0.5,
+    lambda: 0.03,
+    S: 75, // mV/dec
+    Cox: EPSILON_SIO2 / 7.5e-9, // ~4.60 e-3 F/m^2
+    Vdd: 3.3,
+  },
+  '350nm_pmos': {
+    name: 'BSIM3v3_350nm_PMOS',
+    techNode: '350nm',
+    type: 'pmos',
+    Vth0: -0.68,
+    mu0: 160, // cm^2 / V·s
+    Tox: 7.5e-9,
+    gamma: 0.5,
+    lambda: 0.04,
+    S: 78,
+    Cox: EPSILON_SIO2 / 7.5e-9,
+    Vdd: 3.3,
+  },
   '180nm_nmos': {
     name: 'BSIM3v3_180nm_NMOS',
     techNode: '180nm',
@@ -72,6 +98,32 @@ const DEFAULT_MODEL_CARDS: Record<string, BSIMModelCard> = {
     Cox: EPSILON_SIO2 / 2.2e-9,
     Vdd: 1.2,
   },
+  '45nm_nmos': {
+    name: 'BSIM4_45nm_HighK_NMOS',
+    techNode: '45nm',
+    type: 'nmos',
+    Vth0: 0.32,
+    mu0: 300,
+    Tox: 1.4e-9, // 1.4 nm
+    gamma: 0.25,
+    lambda: 0.14,
+    S: 88,
+    Cox: EPSILON_HK / 1.4e-9,
+    Vdd: 1.0,
+  },
+  '45nm_pmos': {
+    name: 'BSIM4_45nm_HighK_PMOS',
+    techNode: '45nm',
+    type: 'pmos',
+    Vth0: -0.32,
+    mu0: 75,
+    Tox: 1.4e-9,
+    gamma: 0.25,
+    lambda: 0.16,
+    S: 90,
+    Cox: EPSILON_HK / 1.4e-9,
+    Vdd: 1.0,
+  },
   '28nm_nmos': {
     name: 'BSIMIMG_28nm_HKMG_NMOS',
     techNode: '28nm',
@@ -102,8 +154,10 @@ const DEFAULT_MODEL_CARDS: Record<string, BSIMModelCard> = {
 
 /** Minimum diffusion contact length per process node in micrometers (um). */
 const L_DIFF_BY_TECH: Record<TechNode, number> = {
+  '350nm': 0.65,
   '180nm': 0.36,
   '90nm': 0.2,
+  '45nm': 0.14,
   '28nm': 0.1,
 };
 

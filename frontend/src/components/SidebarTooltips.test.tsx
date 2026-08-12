@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import Sidebar, { ComponentTooltipCard } from './Sidebar';
 import { COMPONENT_TOOLTIP_DATA } from './palette/componentTooltipData';
 import type { PaletteEntry } from '../types';
@@ -79,11 +79,18 @@ describe('Sidebar and ComponentTooltipCard', () => {
     expect(screen.getByText(/I_D = ½ · μ_n·C_ox/i)).toBeInTheDocument();
   });
 
-  it('renders digital and analog component chips with attached tooltips in Sidebar', () => {
-    render(<Sidebar {...mockProps} />);
-    // Check digital chips
-    expect(screen.getByRole('button', { name: 'Add Input' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add Output' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add AND Gate' })).toBeInTheDocument();
+  it('renders silicon transistors and logic gate chips with attached tooltips in Sidebar', () => {
+    const { getByRole, getByText } = render(<Sidebar {...mockProps} />);
+    // Initial active tab is 'silicon'
+    expect(getByRole('button', { name: 'Add NMOS Transistor' })).toBeInTheDocument();
+    expect(getByRole('button', { name: 'Add PMOS Transistor' })).toBeInTheDocument();
+
+    // Switch to 'Logic Gates' tab
+    const logicTab = getByText('Logic Gates');
+    fireEvent.click(logicTab);
+
+    expect(getByRole('button', { name: 'Add Input' })).toBeInTheDocument();
+    expect(getByRole('button', { name: 'Add Output' })).toBeInTheDocument();
+    expect(getByRole('button', { name: 'Add AND Gate' })).toBeInTheDocument();
   });
 });
