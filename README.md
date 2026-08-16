@@ -64,6 +64,39 @@ The Flask server will launch on `http://localhost:5001`.
 
 ---
 
+## 🔌 DigiSim Model Context Protocol (MCP) Server
+
+DigiSim includes a stdio Model Context Protocol (MCP) server allowing AI agents (like Claude Desktop, Antigravity, and Cursor) to generate circuits, run MNA simulations, detect breadboard/schematic photos, and export SPICE netlists.
+
+### Available MCP Tools
+- `digisim_create_circuit`: JSON netlist to schematic generator.
+- `digisim_simulate_mna`: Execute MNA / SPICE simulation and return node voltages & waveforms.
+- `digisim_detect_circuit_photo`: Run YOLO detection on base64 image input.
+- `digisim_export_spice`: Generate SPICE netlist text from canvas JSON.
+
+### Registration Instructions
+To register DigiSim's MCP server with Claude Desktop or Antigravity, add the following to your `claude_desktop_config.json` or MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "digisim": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/absolute/path/to/DigiSim/backend",
+        "python",
+        "mcp_server.py"
+      ]
+    }
+  }
+}
+```
+
+---
+
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for details.
+

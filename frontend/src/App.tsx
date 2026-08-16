@@ -85,6 +85,7 @@ import InteractiveTourModal from './components/onboarding/InteractiveTourModal';
 import CommandPaletteModal from './components/palette/CommandPaletteModal';
 import HotkeyCheatsheetModal, { HotkeyFloatingTrigger } from './components/hud/HotkeyCheatsheetModal';
 import ComponentPropertiesModal from './components/hud/ComponentPropertiesModal';
+import PhotoToSchematicModal from './components/PhotoToSchematicModal';
 import { exportNetlist } from './logic/netlistIO';
 import { downloadGerberFile } from './logic/gerberExport';
 import { downloadSpiceNetlist, downloadSpectreNetlist } from './logic/simulation/netlistSpice';
@@ -225,6 +226,7 @@ function App(): React.ReactElement {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [hotkeyCheatsheetOpen, setHotkeyCheatsheetOpen] = useState(false);
@@ -1601,6 +1603,15 @@ function App(): React.ReactElement {
         <div className="navbar-right">
           <button
             type="button"
+            className="nav-tool-btn nav-tool-btn--ai"
+            onClick={() => setPhotoModalOpen(true)}
+            title="Snap-to-Simulate YOLO Circuit Vision"
+          >
+            📷 Camera / Photo Circuit AI
+          </button>
+
+          <button
+            type="button"
             className="nav-tool-btn nav-tool-btn--showcase"
             onClick={() => setGalleryOpen(true)}
             title="Explore 1-click playable example circuits"
@@ -1712,7 +1723,21 @@ function App(): React.ReactElement {
             style={{ display: 'none' }}
           />
         </div>
-      </header>      {cameraOpen && (
+      </header>
+      {photoModalOpen && (
+        <PhotoToSchematicModal
+          onClose={() => setPhotoModalOpen(false)}
+          onApplySchematic={({ nodes: newNodes, edges: newEdges }) => {
+            if (newNodes.length > 0) {
+              bumpIdCounter(newNodes);
+              setNodes(newNodes);
+              setEdges(newEdges);
+              setIsSimulating(true);
+            }
+          }}
+        />
+      )}
+      {cameraOpen && (
         <CameraCapture
           onCapture={handleCameraCapture}
           onClose={() => setCameraOpen(false)}

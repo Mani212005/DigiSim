@@ -16,10 +16,14 @@ dependencies = [
     "pyjwt>=2.13.0",
     "rapidfuzz>=3.14.5",
     "rapidocr-onnxruntime>=1.4.4",
+    "onnx>=1.22.0",
+    "onnxslim>=0.1.96",
+    "mcp>=2.0.0",
 ]
 
 [dependency-groups]
 dev = [
+    "pytest>=9.1.1",
     "ruff>=0.4",
 ]
 
