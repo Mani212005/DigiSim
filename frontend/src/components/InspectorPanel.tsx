@@ -4,7 +4,7 @@
  * signal telemetry, hardware constraint warnings, and quick fix actions.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { DigiNode, UpdateNodeData } from '../types';
 import './InspectorPanel.css';
 
@@ -15,6 +15,25 @@ export interface InspectorPanelProps {
   onClose?: () => void;
   onInsertAdcBuffer?: (nodeId: string) => void;
 }
+
+const ALL_ANALOG_TYPES: ReadonlySet<string> = new Set([
+  'analog',
+  'vsource',
+  'ground',
+  'resistor',
+  'capacitor',
+  'inductor',
+  'led',
+  'analogSwitch',
+  'potentiometer',
+  'nmos',
+  'pmos',
+  'subckt',
+  'bjt_npn',
+  'bjt_pnp',
+  'clockSource',
+  'clock',
+]);
 
 /** Deterministic pin binding generator based on node ID hash */
 const getPinBinding = (id: string, customPin?: string): string => {
@@ -38,6 +57,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const [isDocked, setIsDocked] = useState(true);
   const [bufferInsertedState, setBufferInsertedState] = useState(false);
 
+  useEffect(() => {
+    setBufferInsertedState(false);
+  }, [node.id]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     updateNodeData(node.id, { label: e.target.value });
   };
@@ -56,11 +79,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     }
   };
 
-  const isAnalog =
-    node.type === 'analog' ||
-    node.type === 'vsource' ||
-    node.type === 'resistor' ||
-    node.type === 'potentiometer';
+  const isAnalog = ALL_ANALOG_TYPES.has(node.type ?? '');
 
   const handleAutoInsertAdc = () => {
     setBufferInsertedState(true);
@@ -70,13 +89,23 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     }
   };
 
-  const isBufferInserted = bufferInsertedState || Boolean(node.data?.hasAdcBuffer);
+  const isBufferInserted = Boolean(node.data?.hasAdcBuffer) || bufferInsertedState;
 
   const getLiveVoltage = () => {
+    if (typeof node.data?.voltageDrop === 'number' && !isNaN(node.data.voltageDrop)) {
+      const v = Math.abs(node.data.voltageDrop);
+      const state = v >= 2.0 ? 'Logic HIGH' : 'Logic LOW';
+      return `${v.toFixed(2)}V ${state}`;
+    }
+    if (node.type === 'vsource' || node.type === 'clockSource') {
+      const v = typeof node.data?.param === 'number' ? node.data.param : 5.0;
+      const state = v >= 2.0 ? 'Logic HIGH' : 'Logic LOW';
+      return `${v.toFixed(2)}V ${state}`;
+    }
     if (node.data?.value === 1) return '5.00V Logic HIGH';
     if (node.data?.value === 0) return '0.00V Logic LOW';
-    if (typeof node.data?.param === 'number') {
-      const v = node.data.param;
+    if (typeof node.data?.value === 'number') {
+      const v = node.data.value;
       const state = v >= 2.0 ? 'Logic HIGH' : 'Logic LOW';
       return `${v.toFixed(2)}V ${state}`;
     }
@@ -86,7 +115,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const pinBinding = getPinBinding(node.id, node.data?.pin);
 
   return (
-    <aside className={`inspector-hud glass${isDocked ? ' docked' : ''}`} aria-label="HUD Inspector">
+    <aside
+      className={`inspector-hud glass ${isDocked ? 'docked' : 'undocked'}`}
+      aria-label="HUD Inspector"
+    >
       <div className="inspector-header">
         <div className="header-title-group">
           <span className="hud-status-dot" />

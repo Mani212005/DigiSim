@@ -1161,36 +1161,40 @@ function App(): React.ReactElement {
     );
   }, [selectedNodes, setNodes, setEdges]);
 
-  /** Insert an ADC Buffer node connected to the given analog node. */
+  /** Insert an ADC Buffer node connected to the given analog node, rewiring outgoing edges cleanly. */
   const handleInsertAdcBuffer = useCallback(
     (nodeId: string) => {
-      setNodes((nds) => {
-        const target = nds.find((n) => n.id === nodeId);
-        if (!target) return nds;
+      const target = nodes.find((n) => n.id === nodeId);
+      if (!target) return;
 
-        const bufferNodeId = `adc_buf_${Date.now()}`;
-        const bufferNode: DigiNode = {
-          id: bufferNodeId,
-          type: 'analog',
-          position: { x: target.position.x + 180, y: target.position.y },
-          data: { label: 'ADC Buffer', value: 1, param: 5, hasAdcBuffer: true },
-        };
+      const bufferNodeId = `adc_buf_${Date.now()}`;
+      const bufferNode: DigiNode = {
+        id: bufferNodeId,
+        type: 'input',
+        position: { x: target.position.x + 180, y: target.position.y },
+        data: { label: 'ADC Buffer', value: 1, hasAdcBuffer: true },
+      };
 
-        const newEdge: DigiEdge = {
-          id: `e-${nodeId}-${bufferNodeId}`,
-          source: nodeId,
-          target: bufferNodeId,
-          animated: true,
-          className: 'edge-on',
-        };
+      const bufferInputEdge: DigiEdge = {
+        id: `e-${nodeId}-${bufferNodeId}`,
+        source: nodeId,
+        target: bufferNodeId,
+        animated: true,
+        className: 'edge-on',
+      };
 
-        setEdges((eds) => eds.concat(newEdge));
-        return nds
-          .map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, hasAdcBuffer: true } } : n))
-          .concat(bufferNode);
-      });
+      const nextNodes = nodes
+        .map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, hasAdcBuffer: true } } : n))
+        .concat(bufferNode);
+
+      const nextEdges = edges
+        .map((e) => (e.source === nodeId ? { ...e, source: bufferNodeId } : e))
+        .concat(bufferInputEdge);
+
+      setNodes(nextNodes);
+      setEdges(nextEdges);
     },
-    [setNodes, setEdges]
+    [nodes, edges, setNodes, setEdges]
   );
 
 
