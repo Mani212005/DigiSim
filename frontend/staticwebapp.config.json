@@ -1,16 +1,10 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": [
-      "/static/*",
-      "/models/*",
-      "/*.{png,jpg,jpeg,gif,ico,json,svg,onnx,wasm}"
-    ]
+    "exclude": ["/images/*.{png,jpg,gif,svg}", "/css/*", "/js/*", "/models/*.onnx"]
   },
   "mimeTypes": {
-    ".onnx": "application/octet-stream",
-    ".wasm": "application/wasm",
-    ".json": "application/json"
+    ".onnx": "application/octet-stream"
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",

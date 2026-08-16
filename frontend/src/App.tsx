@@ -69,6 +69,7 @@ import { useLibrary } from './hooks/useLibrary';
 import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
 import PhotoReview from './components/PhotoReview';
+import { PhotoToSchematicModal } from './components/PhotoToSchematicModal';
 import TerminalPanel from './components/TerminalPanel';
 import NetlistPanel from './components/NetlistPanel';
 import NetlistImportDialog from './components/NetlistImportDialog';
@@ -85,7 +86,6 @@ import InteractiveTourModal from './components/onboarding/InteractiveTourModal';
 import CommandPaletteModal from './components/palette/CommandPaletteModal';
 import HotkeyCheatsheetModal, { HotkeyFloatingTrigger } from './components/hud/HotkeyCheatsheetModal';
 import ComponentPropertiesModal from './components/hud/ComponentPropertiesModal';
-import PhotoToSchematicModal from './components/PhotoToSchematicModal';
 import { exportNetlist } from './logic/netlistIO';
 import { downloadGerberFile } from './logic/gerberExport';
 import { downloadSpiceNetlist, downloadSpectreNetlist } from './logic/simulation/netlistSpice';
@@ -226,11 +226,11 @@ function App(): React.ReactElement {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [hotkeyCheatsheetOpen, setHotkeyCheatsheetOpen] = useState(false);
   const [propModalOpen, setPropModalOpen] = useState(false);
+  const [snapModalOpen, setSnapModalOpen] = useState(false);
   const [selectedPropNode, setSelectedPropNode] = useState<DigiNode | null>(null);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<'file' | 'simulate' | 'tools' | 'help' | null>(null);
@@ -1603,9 +1603,16 @@ function App(): React.ReactElement {
         <div className="navbar-right">
           <button
             type="button"
-            className="nav-tool-btn nav-tool-btn--ai"
-            onClick={() => setPhotoModalOpen(true)}
-            title="Snap-to-Simulate YOLO Circuit Vision"
+            className="nav-tool-btn nav-tool-btn--snap"
+            onClick={() => setSnapModalOpen(true)}
+            title="Snap-to-Simulate YOLO Circuit Vision AI"
+            style={{
+              background: 'linear-gradient(135deg, #1f6beb 0%, #238636 100%)',
+              color: '#ffffff',
+              fontWeight: 600,
+              border: 'none',
+              borderRadius: '6px',
+            }}
           >
             📷 Camera / Photo Circuit AI
           </button>
@@ -1723,21 +1730,7 @@ function App(): React.ReactElement {
             style={{ display: 'none' }}
           />
         </div>
-      </header>
-      {photoModalOpen && (
-        <PhotoToSchematicModal
-          onClose={() => setPhotoModalOpen(false)}
-          onApplySchematic={({ nodes: newNodes, edges: newEdges }) => {
-            if (newNodes.length > 0) {
-              bumpIdCounter(newNodes);
-              setNodes(newNodes);
-              setEdges(newEdges);
-              setIsSimulating(true);
-            }
-          }}
-        />
-      )}
-      {cameraOpen && (
+      </header>      {cameraOpen && (
         <CameraCapture
           onCapture={handleCameraCapture}
           onClose={() => setCameraOpen(false)}
@@ -1782,6 +1775,17 @@ function App(): React.ReactElement {
           onCancel={() => setPhotoReview(null)}
         />
       )}
+      <PhotoToSchematicModal
+        isOpen={snapModalOpen}
+        onClose={() => setSnapModalOpen(false)}
+        onConvert={(newNodes, newEdges) => {
+          bumpIdCounter(newNodes);
+          setNodes(newNodes);
+          setEdges(newEdges);
+          setIsSimulating(true);
+          setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
+        }}
+      />
       {galleryOpen && (
         <CircuitGalleryModal
           open={galleryOpen}

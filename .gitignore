@@ -52,4 +52,5 @@ runs/
 backend/data/*
 !backend/data/seed_components.json
 backend/*.pt
+backend/*.onnx
 backend/*.ts
