@@ -85,6 +85,7 @@ import InteractiveTourModal from './components/onboarding/InteractiveTourModal';
 import CommandPaletteModal from './components/palette/CommandPaletteModal';
 import HotkeyCheatsheetModal, { HotkeyFloatingTrigger } from './components/hud/HotkeyCheatsheetModal';
 import ComponentPropertiesModal from './components/hud/ComponentPropertiesModal';
+import PhotoToSchematicModal from './components/PhotoToSchematicModal';
 import { exportNetlist } from './logic/netlistIO';
 import { downloadGerberFile } from './logic/gerberExport';
 import { downloadSpiceNetlist, downloadSpectreNetlist } from './logic/simulation/netlistSpice';
@@ -225,6 +226,7 @@ function App(): React.ReactElement {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [hotkeyCheatsheetOpen, setHotkeyCheatsheetOpen] = useState(false);
@@ -1161,6 +1163,43 @@ function App(): React.ReactElement {
     );
   }, [selectedNodes, setNodes, setEdges]);
 
+  /** Insert an ADC Buffer node connected to the given analog node, rewiring outgoing edges cleanly. */
+  const handleInsertAdcBuffer = useCallback(
+    (nodeId: string) => {
+      const target = nodes.find((n) => n.id === nodeId);
+      if (!target) return;
+
+      const bufferNodeId = `adc_buf_${Date.now()}`;
+      const bufferNode: DigiNode = {
+        id: bufferNodeId,
+        type: 'input',
+        position: { x: target.position.x + 180, y: target.position.y },
+        data: { label: 'ADC Buffer', value: 1, hasAdcBuffer: true },
+      };
+
+      const bufferInputEdge: DigiEdge = {
+        id: `e-${nodeId}-${bufferNodeId}`,
+        source: nodeId,
+        target: bufferNodeId,
+        animated: true,
+        className: 'edge-on',
+      };
+
+      const nextNodes = nodes
+        .map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, hasAdcBuffer: true } } : n))
+        .concat(bufferNode);
+
+      const nextEdges = edges
+        .map((e) => (e.source === nodeId ? { ...e, source: bufferNodeId } : e))
+        .concat(bufferInputEdge);
+
+      setNodes(nextNodes);
+      setEdges(nextEdges);
+    },
+    [nodes, edges, setNodes, setEdges]
+  );
+
+
   /** Keep the hover-peeked toolbox open (cancel any scheduled close). */
   const holdSidebarPeek = useCallback(() => {
     if (sidebarPeekTimer.current) clearTimeout(sidebarPeekTimer.current);
@@ -1564,6 +1603,15 @@ function App(): React.ReactElement {
         <div className="navbar-right">
           <button
             type="button"
+            className="nav-tool-btn nav-tool-btn--ai"
+            onClick={() => setPhotoModalOpen(true)}
+            title="Snap-to-Simulate YOLO Circuit Vision"
+          >
+            📷 Camera / Photo Circuit AI
+          </button>
+
+          <button
+            type="button"
             className="nav-tool-btn nav-tool-btn--showcase"
             onClick={() => setGalleryOpen(true)}
             title="Explore 1-click playable example circuits"
@@ -1675,7 +1723,21 @@ function App(): React.ReactElement {
             style={{ display: 'none' }}
           />
         </div>
-      </header>      {cameraOpen && (
+      </header>
+      {photoModalOpen && (
+        <PhotoToSchematicModal
+          onClose={() => setPhotoModalOpen(false)}
+          onApplySchematic={({ nodes: newNodes, edges: newEdges }) => {
+            if (newNodes.length > 0) {
+              bumpIdCounter(newNodes);
+              setNodes(newNodes);
+              setEdges(newEdges);
+              setIsSimulating(true);
+            }
+          }}
+        />
+      )}
+      {cameraOpen && (
         <CameraCapture
           onCapture={handleCameraCapture}
           onClose={() => setCameraOpen(false)}
@@ -1915,6 +1977,7 @@ function App(): React.ReactElement {
               node={selectedNodes[0]}
               updateNodeData={updateNodeData}
               onDelete={deleteSelection}
+              onInsertAdcBuffer={handleInsertAdcBuffer}
             />
           )}
           {isDetecting && (

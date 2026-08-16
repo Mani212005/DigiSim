@@ -56,6 +56,16 @@ export const runSimulation: SimulateCircuit = (currentNodes, currentEdges, timeS
         return src && src.data.value !== undefined ? src.data.value : 'Z';
       });
 
+      // Update input port indicators for gate visual shell
+      const edgeA = incomingEdges.find((e) => e.targetHandle === 'a') || incomingEdges[0];
+      const edgeB = incomingEdges.find((e) => e.targetHandle === 'b') || incomingEdges[1];
+      const valA = edgeA && nodeMap.get(edgeA.source) ? nodeMap.get(edgeA.source)!.data.value : 0;
+      const valB = edgeB && nodeMap.get(edgeB.source) ? nodeMap.get(edgeB.source)!.data.value : 0;
+      node.data.inputA = valA === 1 ? 1 : 0;
+      node.data.a = valA === 1 ? 1 : 0;
+      node.data.inputB = valB === 1 ? 1 : 0;
+      node.data.b = valB === 1 ? 1 : 0;
+
       const oldVal = node.data.value;
       let newVal: number | string = 0;
 
