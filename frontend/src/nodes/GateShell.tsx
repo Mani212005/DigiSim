@@ -1,14 +1,24 @@
 /**
  * @file GateShell.tsx
- * @description Shared visual shell for all logic-gate nodes — renders the ANSI
- * schematic symbol as SVG, the gate label, and the input/output handles. The
- * output state (data.value) drives a neon glow via the `gate-node--on` class.
+ * @description Shared visual shell for all logic-gate nodes — renders the ANSI/74xx
+ * schematic symbol as SVG, gate series badge, port status indicators, and handles.
  * No gate logic lives here — evaluation stays in src/logic/simulation/.
  */
 
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 import type { GateGlyphProps, GateShellProps, GlyphType } from '../types';
+
+/** Standard 74xx IC chip numbers for logic gates */
+const GATE_74XX_MAP: Record<GlyphType, string> = {
+  and: '7408',
+  nand: '7400',
+  or: '7432',
+  nor: '7402',
+  xor: '7486',
+  xnor: '74266',
+  not: '7404',
+};
 
 /** SVG stroke geometry per gate type, drawn in a 110x70 viewBox. */
 const SYMBOLS: Record<GlyphType, React.ReactElement> = {
@@ -82,49 +92,108 @@ const SYMBOLS: Record<GlyphType, React.ReactElement> = {
  */
 export function GateGlyph({ type, className }: GateGlyphProps): React.ReactElement {
   return (
-    <svg viewBox="0 0 110 70" className={`gate-glyph ${className || ''}`} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter">
+    <svg
+      viewBox="0 0 110 70"
+      className={`gate-glyph ${className || ''}`}
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
+    >
       {SYMBOLS[type]}
     </svg>
   );
 }
 
 /**
- * Visual shell shared by every gate node: symbol + label + handles.
+ * Visual shell shared by every gate node: 74xx symbol + label + port indicators + handles.
  * @param props - Gate type, node data, input handle count (1 or 2)
  * @returns Rendered gate node
  */
 function GateShell({ type, data, inputs = 2 }: GateShellProps): React.ReactElement {
   const active = data.value === 1;
-  const is74xx = data.label && data.label.includes('74');
+  const chipSeries = GATE_74XX_MAP[type] || '74xx';
+  const label = data.label || `${type.toUpperCase()} Gate`;
+  const inputAActive = data.inputA === 1 || data.a === 1;
+  const inputBActive = data.inputB === 1 || data.b === 1;
 
   return (
     <div className={`node-card glass cad-node${active ? ' active cad-glow' : ''}`}>
-      <div className="node-header cad-header">{data.label || `${type.toUpperCase()} Gate`} {is74xx && <span className="cad-badge">74xx</span>}</div>
+      <div className="node-header cad-header">
+        {label} <span className="cad-badge">{chipSeries}</span>
+      </div>
       <div className="node-body cad-body">
-        <svg viewBox="0 0 110 70" className="node-gate cad-symbol" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter">
+        <svg
+          viewBox="0 0 110 70"
+          className="node-gate cad-symbol"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        >
           {SYMBOLS[type]}
         </svg>
-        
-        {/* Port Status Indicators */}
-        <div className={`port-indicator port-out ${active ? 'port-out-high' : ''}`} style={{ top: '50%', right: '8px' }}></div>
+
+        {/* Output Port Status Indicator */}
+        <div
+          className={`port-indicator port-out ${active ? 'port-out-high' : ''}`}
+          style={{ top: '50%', right: '8px' }}
+        />
       </div>
       {inputs === 1 ? (
         <>
-          <div className="port-indicator port-in" style={{ top: '50%', left: '8px' }}></div>
-          <Handle type="target" position={Position.Left} id="a" className="handle handle-left cad-handle" style={{ top: '50%' }} />
+          <div
+            className={`port-indicator port-in ${inputAActive ? 'port-in-high' : ''}`}
+            style={{ top: '50%', left: '8px' }}
+          />
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="a"
+            className="handle handle-left cad-handle"
+            style={{ top: '50%' }}
+          />
         </>
       ) : (
         <>
-          <div className="port-indicator port-in" style={{ top: '31%', left: '8px' }}></div>
-          <Handle type="target" position={Position.Left} id="a" className="handle handle-left cad-handle" style={{ top: '31%' }} />
-          
-          <div className="port-indicator port-in" style={{ top: '69%', left: '8px' }}></div>
-          <Handle type="target" position={Position.Left} id="b" className="handle handle-left cad-handle" style={{ top: '69%' }} />
+          <div
+            className={`port-indicator port-in ${inputAActive ? 'port-in-high' : ''}`}
+            style={{ top: '31%', left: '8px' }}
+          />
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="a"
+            className="handle handle-left cad-handle"
+            style={{ top: '31%' }}
+          />
+
+          <div
+            className={`port-indicator port-in ${inputBActive ? 'port-in-high' : ''}`}
+            style={{ top: '69%', left: '8px' }}
+          />
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="b"
+            className="handle handle-left cad-handle"
+            style={{ top: '69%' }}
+          />
         </>
       )}
-      <Handle type="source" position={Position.Right} className="handle handle-right cad-handle" style={{ top: '50%' }} />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="handle handle-right cad-handle"
+        style={{ top: '50%' }}
+      />
     </div>
   );
 }
 
 export default GateShell;
+

@@ -486,6 +486,11 @@ textarea::placeholder {
   box-shadow: 0 0 8px #00F0FF;
 }
 
+.port-in-high {
+  background: #00F0FF;
+  box-shadow: 0 0 6px #00F0FF;
+}
+
 /* Node Components */
 .node-card {
   position: absolute;
@@ -553,3 +558,4 @@ textarea::placeholder {
   background: var(--danger);
   box-shadow: 0 0 15px var(--danger);
 }
+

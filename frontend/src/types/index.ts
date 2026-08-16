@@ -87,6 +87,15 @@ export interface NodeData {
   libraryName?: string;
   /** Subckt nodes: Instance parameter overrides. */
   params?: Record<string, number | string>;
+  /** Pin binding string (e.g. GPIO 4). */
+  pin?: string;
+  /** ADC buffer inserted flag for analog hardware constraints. */
+  hasAdcBuffer?: boolean;
+  /** Input pin states for gate status indicators. */
+  inputA?: number | string;
+  inputB?: number | string;
+  a?: number | string;
+  b?: number | string;
 }
 
 /** Analog solver outputs for one component (subset of NodeData fields). */

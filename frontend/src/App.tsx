@@ -1161,6 +1161,43 @@ function App(): React.ReactElement {
     );
   }, [selectedNodes, setNodes, setEdges]);
 
+  /** Insert an ADC Buffer node connected to the given analog node, rewiring outgoing edges cleanly. */
+  const handleInsertAdcBuffer = useCallback(
+    (nodeId: string) => {
+      const target = nodes.find((n) => n.id === nodeId);
+      if (!target) return;
+
+      const bufferNodeId = `adc_buf_${Date.now()}`;
+      const bufferNode: DigiNode = {
+        id: bufferNodeId,
+        type: 'input',
+        position: { x: target.position.x + 180, y: target.position.y },
+        data: { label: 'ADC Buffer', value: 1, hasAdcBuffer: true },
+      };
+
+      const bufferInputEdge: DigiEdge = {
+        id: `e-${nodeId}-${bufferNodeId}`,
+        source: nodeId,
+        target: bufferNodeId,
+        animated: true,
+        className: 'edge-on',
+      };
+
+      const nextNodes = nodes
+        .map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, hasAdcBuffer: true } } : n))
+        .concat(bufferNode);
+
+      const nextEdges = edges
+        .map((e) => (e.source === nodeId ? { ...e, source: bufferNodeId } : e))
+        .concat(bufferInputEdge);
+
+      setNodes(nextNodes);
+      setEdges(nextEdges);
+    },
+    [nodes, edges, setNodes, setEdges]
+  );
+
+
   /** Keep the hover-peeked toolbox open (cancel any scheduled close). */
   const holdSidebarPeek = useCallback(() => {
     if (sidebarPeekTimer.current) clearTimeout(sidebarPeekTimer.current);
@@ -1915,6 +1952,7 @@ function App(): React.ReactElement {
               node={selectedNodes[0]}
               updateNodeData={updateNodeData}
               onDelete={deleteSelection}
+              onInsertAdcBuffer={handleInsertAdcBuffer}
             />
           )}
           {isDetecting && (
