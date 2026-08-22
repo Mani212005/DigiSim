@@ -14,15 +14,19 @@ import type { NodeData } from '../types';
 import './PhotoToSchematicModal.css';
 
 export interface PhotoToSchematicModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
-  onConvert: (nodes: Node<NodeData>[], edges: Edge[]) => void;
+  onConvert?: (nodes: Node<NodeData>[], edges: Edge[]) => void;
+  onApplySchematic?: (nodes: Node<NodeData>[], edges: Edge[]) => void;
 }
 
 export const PhotoToSchematicModal: React.FC<PhotoToSchematicModalProps> = ({
-  isOpen,
+  isOpen = true,
+  open = true,
   onClose,
   onConvert,
+  onApplySchematic,
 }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'camera'>('upload');
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.50);
@@ -210,11 +214,13 @@ export const PhotoToSchematicModal: React.FC<PhotoToSchematicModalProps> = ({
   // Convert detections to DigiSim schematic and close modal
   const handleConvert = () => {
     const { nodes, edges } = generateNetlistFromDetections(filteredDetections);
-    onConvert(nodes, edges);
+    if (onConvert) onConvert(nodes, edges);
+    if (onApplySchematic) onApplySchematic(nodes, edges);
     onClose();
   };
 
-  if (!isOpen) return null;
+  const isModalVisible = isOpen !== false && open !== false;
+  if (!isModalVisible) return null;
 
   return (
     <div className="photo-to-schematic-backdrop" role="dialog" aria-label="Snap-to-Simulate AI Modal">
@@ -222,10 +228,10 @@ export const PhotoToSchematicModal: React.FC<PhotoToSchematicModalProps> = ({
         <div className="photo-to-schematic-header">
           <div className="photo-to-schematic-title">
             <span>📷</span>
-            <span>Snap-to-Simulate YOLO Circuit Vision</span>
+            <span>"Snap-to-Simulate" YOLO Circuit Vision</span>
           </div>
           <button className="photo-to-schematic-close" onClick={onClose} aria-label="Close modal">
-            &times;
+            Cancel
           </button>
         </div>
 
@@ -237,13 +243,13 @@ export const PhotoToSchematicModal: React.FC<PhotoToSchematicModalProps> = ({
                   className={`photo-tab-btn ${activeTab === 'upload' ? 'active' : ''}`}
                   onClick={() => setActiveTab('upload')}
                 >
-                  📁 Upload Circuit Photo
+                  📁 Photo Upload & Drag/Drop
                 </button>
                 <button
                   className={`photo-tab-btn ${activeTab === 'camera' ? 'active' : ''}`}
                   onClick={() => setActiveTab('camera')}
                 >
-                  📷 Webcam Live Capture
+                  📷 Live Webcam Capture
                 </button>
               </div>
 
@@ -348,3 +354,5 @@ export const PhotoToSchematicModal: React.FC<PhotoToSchematicModalProps> = ({
     </div>
   );
 };
+
+export default PhotoToSchematicModal;
