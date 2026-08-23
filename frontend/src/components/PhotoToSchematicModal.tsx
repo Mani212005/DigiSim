@@ -1,434 +1,354 @@
 /**
  * @file PhotoToSchematicModal.tsx
- * @description "Snap-to-Simulate" modal with live webcam capture, drag & drop photo upload,
- * real-time WASM YOLO circuit vision bounding box overlays, confidence threshold slider,
- * and one-click conversion to live DigiSim schematics.
+ * @description Snap-to-Simulate Camera & Photo Upload Modal.
+ * Integrates client-side WASM YOLO circuit vision inference, interactive confidence
+ * threshold filtering, bounding-box overlay canvas rendering, and one-click conversion
+ * to a live DigiSim schematic canvas.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { DigiEdge, DigiNode } from '../types';
-import {
-  detectCircuitComponents,
-  getOrLoadYoloSession,
-  type YoloDetection,
-} from '../logic/vision/yoloDetector';
+import type { Edge, Node } from 'reactflow';
 import { generateNetlistFromDetections } from '../logic/vision/netlistGenerator';
+import { getDetector, YoloDetection } from '../logic/vision/yoloDetector';
+import type { NodeData } from '../types';
 import './PhotoToSchematicModal.css';
 
 export interface PhotoToSchematicModalProps {
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
-  onApplySchematic: (blueprint: { nodes: DigiNode[]; edges: DigiEdge[] }) => void;
+  onConvert?: (nodes: Node<NodeData>[], edges: Edge[]) => void;
+  onApplySchematic?: (nodes: Node<NodeData>[], edges: Edge[]) => void;
 }
 
-const BOX_COLORS: Record<string, string> = {
-  andGate: '#00f3ff',
-  orGate: '#00ff66',
-  notGate: '#ffaa00',
-  nandGate: '#ff0055',
-  norGate: '#aa00ff',
-  xorGate: '#0099ff',
-  xnorGate: '#ff6600',
-  input: '#38bdf8',
-  output: '#f43f5e',
-  junction: '#a855f7',
-};
-
 export const PhotoToSchematicModal: React.FC<PhotoToSchematicModalProps> = ({
+  isOpen = true,
+  open = true,
   onClose,
+  onConvert,
   onApplySchematic,
 }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'camera'>('upload');
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.5);
-  const [isDetecting, setIsDetecting] = useState<boolean>(false);
-  const [isModelLoading, setIsModelLoading] = useState<boolean>(false);
-  const [modelReady, setModelReady] = useState<boolean>(false);
-  const [rawDetections, setRawDetections] = useState<YoloDetection[]>([]);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.50);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [allDetections, setAllDetections] = useState<YoloDetection[]>([]);
+  const [filteredDetections, setFilteredDetections] = useState<YoloDetection[]>([]);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isDragActive, setIsDragActive] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // Pre-load YOLO model session on modal mount
-  useEffect(() => {
-    let mounted = true;
-    setIsModelLoading(true);
-    getOrLoadYoloSession()
-      .then((session) => {
-        if (mounted) {
-          setModelReady(!!session);
-          setIsModelLoading(false);
-        }
-      })
-      .catch(() => {
-        if (mounted) {
-          setModelReady(false);
-          setIsModelLoading(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
+  // Stop active webcam stream
+  const stopWebcam = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
   }, []);
 
-  // Stop camera stream when tab changes or unmounts
-  const stopCamera = useCallback(() => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
-      setCameraStream(null);
-    }
-  }, [cameraStream]);
-
+  // Start camera stream when tab switches to camera
   useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, [stopCamera]);
-
-  // Start camera feed when camera tab is selected
-  useEffect(() => {
-    if (activeTab === 'camera') {
+    if (isOpen && activeTab === 'camera' && !capturedImage) {
       setCameraError(null);
-      navigator.mediaDevices
-        ?.getUserMedia({ video: { facingMode: 'environment' } })
-        .then((stream) => {
-          setCameraStream(stream);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        })
-        .catch((err) => {
-          console.warn('Webcam access error:', err);
-          setCameraError('Unable to access camera. Please check browser permissions.');
-        });
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices
+          .getUserMedia({ video: { facingMode: 'environment' } })
+          .then((stream) => {
+            streamRef.current = stream;
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+            }
+          })
+          .catch((err) => {
+            console.warn('Webcam permission or access error:', err);
+            setCameraError('Camera access denied or unavailable.');
+          });
+      } else {
+        setCameraError('Webcam API is not supported in this browser.');
+      }
     } else {
-      stopCamera();
+      stopWebcam();
     }
-  }, [activeTab, stopCamera]);
+    return () => {
+      stopWebcam();
+    };
+  }, [isOpen, activeTab, capturedImage, stopWebcam]);
 
-  // Filter raw detections by user confidence slider
-  const activeDetections = rawDetections.filter(
-    (d) => d.confidence >= confidenceThreshold
-  );
+  // Run YOLO detection on newly loaded image
+  const processImage = useCallback(
+    async (imageSrc: string) => {
+      setIsProcessing(true);
+      setCapturedImage(imageSrc);
 
-  // Redraw canvas with photo and bounding box overlays
-  const drawCanvasOverlay = useCallback(() => {
-    const canvas = canvasRef.current;
-    const img = imgRef.current;
-    if (!canvas || !img || !img.complete) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = img.naturalWidth || 800;
-    canvas.height = img.naturalHeight || 600;
-
-    // Draw background image
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    // Draw bounding boxes for active detections
-    activeDetections.forEach((det) => {
-      const color = BOX_COLORS[det.nodeType] || '#00f3ff';
-
-      ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(3, Math.round(canvas.width / 300));
-      ctx.strokeRect(det.x1, det.y1, det.width, det.height);
-
-      // Label background pill
-      const labelText = `${det.label} ${(det.confidence * 100).toFixed(0)}%`;
-      ctx.font = `bold ${Math.max(14, Math.round(canvas.width / 50))}px sans-serif`;
-      const textMetrics = ctx.measureText(labelText);
-      const textWidth = textMetrics.width;
-      const textHeight = Math.max(18, Math.round(canvas.width / 45));
-
-      const pillX = Math.max(0, det.x1);
-      const pillY = Math.max(textHeight, det.y1 - 6);
-
-      ctx.fillStyle = color;
-      ctx.fillRect(pillX, pillY - textHeight, textWidth + 12, textHeight + 4);
-
-      ctx.fillStyle = '#0f172a';
-      ctx.fillText(labelText, pillX + 6, pillY - 4);
-    });
-  }, [activeDetections]);
-
-  useEffect(() => {
-    drawCanvasOverlay();
-  }, [drawCanvasOverlay]);
-
-  // Run vision detection pipeline on selected image
-  const processImageForDetection = useCallback(
-    async (src: string) => {
-      setImageSrc(src);
-      setIsDetecting(true);
-      setRawDetections([]);
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = src;
-
-      img.onload = async () => {
-        imgRef.current = img;
-        try {
-          // Detect with low baseline confidence threshold to collect all candidate boxes
-          const result = await detectCircuitComponents(img, 0.1);
-          setRawDetections(result.detections);
-        } catch (err) {
-          console.error('YOLO Circuit Vision Detection Error:', err);
-        } finally {
-          setIsDetecting(false);
-        }
-      };
+      try {
+        const detector = await getDetector();
+        // Detect with a low base threshold to capture all potential detections, then filter dynamically
+        const detections = await detector.detect(imageSrc, 0.05);
+        setAllDetections(detections);
+      } catch (err) {
+        console.error('YOLO detection failed:', err);
+        setAllDetections([]);
+      } finally {
+        setIsProcessing(false);
+      }
     },
     []
   );
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  // Filter detections when threshold slider changes
+  useEffect(() => {
+    const filtered = allDetections.filter((det) => det.confidence >= confidenceThreshold);
+    setFilteredDetections(filtered);
+  }, [allDetections, confidenceThreshold]);
+
+  // Render bounding box canvas overlay
+  useEffect(() => {
+    if (!capturedImage || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.src = capturedImage;
+    img.onload = () => {
+      canvas.width = img.width || 640;
+      canvas.height = img.height || 640;
+
+      // Draw original image
+      ctx.drawImage(img, 0, 0);
+
+      // Draw bounding boxes for filtered detections
+      filteredDetections.forEach((det) => {
+        const { x1, y1, width, height, className, confidence } = det;
+
+        // Box stroke
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = Math.max(2, Math.round(canvas.width / 300));
+        ctx.strokeRect(x1, y1, width, height);
+
+        // Label background badge
+        const confPercent = Math.round(confidence * 100);
+        const labelText = `${className} (${confPercent}%)`;
+        ctx.font = 'bold 14px monospace';
+        const textMetrics = ctx.measureText(labelText);
+        const badgeWidth = textMetrics.width + 12;
+        const badgeHeight = 22;
+
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.85)';
+        ctx.fillRect(x1, Math.max(0, y1 - badgeHeight), badgeWidth, badgeHeight);
+
+        // Label text
+        ctx.fillStyle = '#0a0f19';
+        ctx.fillText(labelText, x1 + 6, Math.max(15, y1 - 6));
+      });
+    };
+  }, [capturedImage, filteredDetections]);
+
+  // Handle file upload selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       const reader = new FileReader();
-      reader.onload = (evt) => {
-        if (evt.target?.result) {
-          processImageForDetection(evt.target.result as string);
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          processImage(event.target.result as string);
         }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
+    setIsDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
       const reader = new FileReader();
-      reader.onload = (evt) => {
-        if (evt.target?.result) {
-          processImageForDetection(evt.target.result as string);
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          processImage(event.target.result as string);
         }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const captureCameraFrame = () => {
-    if (videoRef.current) {
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        processImageForDetection(dataUrl);
-      }
+  // Webcam snap frame
+  const handleCaptureWebcam = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      stopWebcam();
+      processImage(dataUrl);
     }
   };
 
-  const handleConvertSchematic = () => {
-    const img = imgRef.current;
-    const w = img?.naturalWidth || 1000;
-    const h = img?.naturalHeight || 800;
+  // Reset captured image and return to camera/upload picker
+  const handleRetake = () => {
+    setCapturedImage(null);
+    setAllDetections([]);
+    setFilteredDetections([]);
+  };
 
-    const blueprint = generateNetlistFromDetections(activeDetections, w, h);
-    onApplySchematic(blueprint);
+  // Convert detections to DigiSim schematic and close modal
+  const handleConvert = () => {
+    const { nodes, edges } = generateNetlistFromDetections(filteredDetections);
+    if (onConvert) onConvert(nodes, edges);
+    if (onApplySchematic) onApplySchematic(nodes, edges);
     onClose();
   };
 
-  // Group detected counts for summary badge
-  const detSummary = activeDetections.reduce((acc, d) => {
-    acc[d.label] = (acc[d.label] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const isModalVisible = isOpen !== false && open !== false;
+  if (!isModalVisible) return null;
 
   return (
-    <div className="pts-modal-overlay" onClick={onClose}>
-      <div className="pts-modal-container" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="pts-modal-header">
-          <div className="pts-modal-title">
-            <span>📷 "Snap-to-Simulate" YOLO Circuit Vision</span>
-            <span className="pts-badge">
-              {isModelLoading
-                ? '⏳ Loading WASM Engine...'
-                : modelReady
-                ? '⚡ WASM Engine Ready ($0 Azure)'
-                : 'Client WASM Inference'}
-            </span>
+    <div className="photo-to-schematic-backdrop" role="dialog" aria-label="Snap-to-Simulate AI Modal">
+      <div className="photo-to-schematic-modal">
+        <div className="photo-to-schematic-header">
+          <div className="photo-to-schematic-title">
+            <span>📷</span>
+            <span>"Snap-to-Simulate" YOLO Circuit Vision</span>
           </div>
-          <button className="pts-close-btn" onClick={onClose} title="Close">
-            ✕
+          <button className="photo-to-schematic-close" onClick={onClose} aria-label="Close modal">
+            Cancel
           </button>
         </div>
 
-        {/* Tab Selection */}
-        <div className="pts-modal-tabs">
-          <button
-            className={`pts-tab-btn ${activeTab === 'upload' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('upload');
-              stopCamera();
-            }}
-          >
-            📁 Photo Upload & Drag/Drop
-          </button>
-          <button
-            className={`pts-tab-btn ${activeTab === 'camera' ? 'active' : ''}`}
-            onClick={() => setActiveTab('camera')}
-          >
-            📹 Live Webcam Capture
-          </button>
-        </div>
+        <div className="photo-to-schematic-body">
+          {!capturedImage && (
+            <>
+              <div className="photo-to-schematic-tabs">
+                <button
+                  className={`photo-tab-btn ${activeTab === 'upload' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('upload')}
+                >
+                  📁 Photo Upload & Drag/Drop
+                </button>
+                <button
+                  className={`photo-tab-btn ${activeTab === 'camera' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('camera')}
+                >
+                  📷 Live Webcam Capture
+                </button>
+              </div>
 
-        {/* Modal Body */}
-        <div className="pts-modal-body">
-          {/* Main Display / Preview Area */}
-          <div
-            className="pts-view-area"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-          >
-            {imageSrc ? (
-              <>
-                <canvas ref={canvasRef} className="pts-canvas-overlay" />
-                <img
-                  ref={imgRef}
-                  src={imageSrc}
-                  alt="Source Circuit"
-                  style={{ display: 'none' }}
-                  onLoad={drawCanvasOverlay}
-                />
-              </>
-            ) : activeTab === 'camera' ? (
-              cameraError ? (
-                <div style={{ color: '#f43f5e', textAlign: 'center', padding: '2rem' }}>
-                  ⚠️ {cameraError}
+              {activeTab === 'upload' ? (
+                <div
+                  className={`dropzone-container ${isDragActive ? 'active' : ''}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                  />
+                  <div className="dropzone-icon">🖼️</div>
+                  <div className="dropzone-text">Drop your circuit schematic photo here or click to browse</div>
+                  <div className="dropzone-subtext">Supports PNG, JPG, JPEG, WEBP</div>
                 </div>
               ) : (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="pts-webcam-feed"
-                />
-              )
-            ) : (
-              <div
-                className="pts-drop-zone"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="pts-drop-icon">📷</div>
-                <div className="pts-drop-title">
-                  Drop circuit photo here or click to browse
+                <div className="webcam-container">
+                  {cameraError ? (
+                    <div style={{ color: '#f85149', padding: '2rem', textAlign: 'center' }}>
+                      {cameraError}
+                    </div>
+                  ) : (
+                    <>
+                      <video ref={videoRef} autoPlay playsInline muted className="webcam-video" />
+                      <button className="capture-btn" onClick={handleCaptureWebcam}>
+                        📸 Snap Circuit Photo
+                      </button>
+                    </>
+                  )}
                 </div>
-                <div className="pts-drop-sub">
-                  Supports JPG, PNG, WEBP schematic photos & breadboard captures
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Action / Capture Controls for Camera */}
-          {activeTab === 'camera' && !imageSrc && (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button
-                className="pts-btn-primary"
-                onClick={captureCameraFrame}
-                disabled={!cameraStream}
-              >
-                📸 Capture Photo for AI Analysis
-              </button>
-            </div>
-          )}
-
-          {/* Controls & Confidence Slider when Image is Present */}
-          {imageSrc && (
-            <div className="pts-controls-panel">
-              <div className="pts-slider-row">
-                <label className="pts-slider-label">
-                  ⚡ Detection Confidence Threshold:
-                  <span className="pts-slider-value">
-                    {(confidenceThreshold * 100).toFixed(0)}%
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  min="0.10"
-                  max="0.95"
-                  step="0.05"
-                  value={confidenceThreshold}
-                  onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
-                  className="pts-slider"
-                />
-              </div>
-
-              {/* Detections Summary Pills */}
-              <div className="pts-detections-summary">
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>
-                  Detected Parts ({activeDetections.length}):
-                </span>
-                {Object.keys(detSummary).length > 0 ? (
-                  Object.entries(detSummary).map(([label, count]) => (
-                    <span key={label} className="pts-det-pill">
-                      {label} <span className="pts-det-count">×{count}</span>
-                    </span>
-                  ))
-                ) : (
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
-                    No components detected above {(confidenceThreshold * 100).toFixed(0)}% confidence
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Modal Footer */}
-        <div className="pts-modal-footer">
-          <div>
-            {imageSrc && (
-              <button
-                className="pts-btn-secondary"
-                onClick={() => {
-                  setImageSrc(null);
-                  setRawDetections([]);
-                }}
-              >
-                🔄 Choose / Retake Photo
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <button className="pts-btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button
-              className="pts-btn-primary"
-              onClick={handleConvertSchematic}
-              disabled={!imageSrc || isDetecting || activeDetections.length === 0}
-            >
-              {isDetecting ? (
-                <>
-                  <span className="pts-spinner" /> Running WASM YOLO...
-                </>
-              ) : (
-                <>⚡ Convert to Live DigiSim Schematic</>
               )}
-            </button>
+            </>
+          )}
+
+          {capturedImage && (
+            <>
+              <div className="preview-container">
+                <canvas ref={canvasRef} className="preview-canvas" />
+              </div>
+
+              <div className="threshold-control">
+                <span className="threshold-label">Confidence Threshold:</span>
+                <div className="threshold-slider-group">
+                  <input
+                    type="range"
+                    min="0.05"
+                    max="0.95"
+                    step="0.05"
+                    value={confidenceThreshold}
+                    onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
+                    className="threshold-slider"
+                  />
+                  <span className="threshold-value">{Math.round(confidenceThreshold * 100)}%</span>
+                </div>
+                <button
+                  onClick={handleRetake}
+                  style={{
+                    background: '#21262d',
+                    color: '#c9d1d9',
+                    border: '1px solid #30363d',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🔄 Retake
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="photo-to-schematic-footer">
+          <div className="detection-count">
+            {isProcessing ? (
+              <span>⚡ Processing ONNX YOLO inference...</span>
+            ) : capturedImage ? (
+              <span>
+                Found <strong>{filteredDetections.length}</strong> component(s)
+              </span>
+            ) : (
+              <span>Select or capture a photo to begin vision inference</span>
+            )}
           </div>
+
+          <button
+            className="convert-action-btn"
+            disabled={!capturedImage || isProcessing || filteredDetections.length === 0}
+            onClick={handleConvert}
+          >
+            ⚡ Convert to Live DigiSim Schematic
+          </button>
         </div>
       </div>
     </div>
