@@ -4,41 +4,42 @@ on:
   push:
     branches:
       - main
-      - feature/*
+      - master
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
+      - master
 
 jobs:
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    name: Build and Deploy Job
+    name: Build and Deploy DigiSim to Azure Static Web Apps ($0 Tier)
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
           lfs: false
 
-      - name: Setup Node.js
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: frontend/package.json
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install Frontend Dependencies
         run: |
           cd frontend
-          npm install --legacy-peer-deps
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
-      - name: Build Frontend Production App
+      - name: Build Frontend Application
         run: |
           cd frontend
           npm run build
 
-      - name: Build And Deploy to Azure Static Web Apps
+      - name: Build and Deploy to Azure Static Web Apps
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
