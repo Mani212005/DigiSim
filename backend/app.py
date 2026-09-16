@@ -14,6 +14,7 @@ from flask_cors import CORS
 from inference_sdk import InferenceHTTPClient
 
 from auth import auth_bp, require_auth
+from circuit_ai import circuit_ai_bp
 from library import library_bp
 from pipeline.circuit_exporter import CircuitExporter
 from pipeline.detector import GateDetector
@@ -35,6 +36,8 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(projects_bp)
 app.register_blueprint(library_bp)
 app.register_blueprint(recognition_bp)
+app.register_blueprint(circuit_ai_bp)
+
 
 _CLIENT = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",

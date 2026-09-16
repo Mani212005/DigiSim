@@ -10,14 +10,14 @@ import json
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 # Try importing backend pipeline dependencies
 _BACKEND_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_BACKEND_DIR))
 
 try:
-    from pipeline.detector import GateDetector, CLASS_TO_NODE_TYPE
+    from pipeline.detector import CLASS_TO_NODE_TYPE, GateDetector
     _DETECTOR_AVAILABLE = True
 except ImportError:
     _DETECTOR_AVAILABLE = False

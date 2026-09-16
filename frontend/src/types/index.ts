@@ -34,6 +34,9 @@ export * from './hierarchy';
 
 /** Data payload attached to every ReactFlow node in DigiSim. */
 export interface NodeData {
+  /** Hierarchical reference ID to a CustomComponentDefinition */
+  subcircuitRef?: string;
+
   label: string;
   /** Logic level: 0 (LOW), 1 (HIGH), 'Z' (High-Z), or 'X' (Undefined). */
   value?: number | string;
@@ -150,7 +153,7 @@ export interface PaletteEntry {
 
 /** Drag payload carried from a sidebar chip to the canvas drop handler. */
 export type CanvasDropPayload =
-  | { kind: 'palette'; type: string; label: string }
+  | { kind: 'palette'; type: string; label: string; subcircuitRef?: string }
   | { kind: 'library'; component: LibraryComponent };
 
 /** Merge new fields into a node's data, keyed by node id. */
@@ -241,6 +244,8 @@ export interface SelectionToolbarProps {
   viewport: Viewport;
   onDelete: () => void;
   onDuplicate: () => void;
+  onPackage?: () => void;
+
 }
 
 /** Props for the full-screen camera capture modal. */
@@ -828,3 +833,25 @@ export interface CircuitHealthBarProps {
 }
 
 
+
+/** Definition for user-created custom hierarchical components. */
+export interface CustomComponentDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  pins: {
+    id: string;
+    label: string;
+    type: 'INPUT' | 'OUTPUT' | 'BIDIRECTIONAL';
+    side: 'LEFT' | 'RIGHT' | 'TOP' | 'BOTTOM';
+    bitWidth?: number;
+  }[];
+  subcircuit: {
+    nodes: Node[];
+    edges: Edge[];
+  };
+  symbolShape?: 'RECTANGLE' | 'DIP_CHIP' | 'QFP' | 'GATE_CUSTOM';
+  createdAt: string;
+  updatedAt: string;
+}

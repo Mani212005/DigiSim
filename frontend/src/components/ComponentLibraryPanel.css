@@ -1,0 +1,56 @@
+.component-library-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+.library-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.library-search {
+  background: #333;
+  border: 1px solid #555;
+  color: white;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+.library-actions {
+  display: flex;
+  gap: 8px;
+}
+.library-actions button, .import-btn {
+  background: #444;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+.library-category {
+  margin-bottom: 12px;
+}
+.category-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 6px;
+}
+.category-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.custom-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.library-empty {
+  color: #888;
+  font-size: 12px;
+  padding: 12px 0;
+  text-align: center;
+}

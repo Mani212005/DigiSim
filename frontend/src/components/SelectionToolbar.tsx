@@ -19,7 +19,7 @@ function SelectionToolbar({
   selectedNodes,
   viewport,
   onDelete,
-  onDuplicate,
+  onDuplicate, onPackage,
 }: SelectionToolbarProps): React.ReactElement | null {
   if (selectedNodes.length < 1) return null;
 
@@ -36,6 +36,8 @@ function SelectionToolbar({
       style={{ left: screenX, top: Math.max(8, screenY - 52) }}
     >
       <span className="selection-toolbar__count" style={{ display: 'none' }}>{selectedNodes.length}</span>
+      {onPackage && <button className="toolbar-btn" title="Package as Component" onClick={onPackage}>📦</button>}
+
       <button className="toolbar-btn" title="Duplicate" onClick={onDuplicate}>
         ⧉
       </button>

@@ -61,6 +61,8 @@ import {
 import NmosNode from './components/nodes/NmosNode';
 import PmosNode from './components/nodes/PmosNode';
 import SubcktNode from './components/nodes/SubcktNode';
+import CustomComponentNode from './components/nodes/CustomComponentNode';
+
 import { CellRegistry } from './logic/hierarchy/CellRegistry';
 
 import { useLogicSimulation } from './hooks/useLogicSimulation';
@@ -70,6 +72,10 @@ import CameraCapture from './components/CameraCapture';
 import DetectionReview from './components/DetectionReview';
 import PhotoReview from './components/PhotoReview';
 import { PhotoToSchematicModal } from './components/PhotoToSchematicModal';
+import { PackageSubcircuitModal } from './components/PackageSubcircuitModal';
+import { AIVisionIntakeModal } from './components/AIVisionIntakeModal';
+
+
 import TerminalPanel from './components/TerminalPanel';
 import NetlistPanel from './components/NetlistPanel';
 import NetlistImportDialog from './components/NetlistImportDialog';
@@ -204,6 +210,7 @@ function App(): React.ReactElement {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectError, setDetectError] = useState<string | null>(null);
+
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [reviewPayload, setReviewPayload] = useState<CircuitExportJSON | null>(null);
@@ -230,6 +237,12 @@ function App(): React.ReactElement {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [hotkeyCheatsheetOpen, setHotkeyCheatsheetOpen] = useState(false);
   const [propModalOpen, setPropModalOpen] = useState(false);
+  const [packageNodes, setPackageNodes] = useState<DigiNode[] | null>(null);
+  const [aiIntakeOpen, setAiIntakeOpen] = useState(false);
+
+  
+
+
   const [snapModalOpen, setSnapModalOpen] = useState(false);
   const [selectedPropNode, setSelectedPropNode] = useState<DigiNode | null>(null);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
@@ -294,6 +307,38 @@ function App(): React.ReactElement {
 
   // Listener for double-clicking nodes / digisim:open-node-properties
   useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
+  useEffect(() => {
+    const handleDrilldown = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { componentId, nodeId } = customEvent.detail;
+      
+      const raw = localStorage.getItem('customComponents');
+      if (raw) {
+        const comps = JSON.parse(raw);
+        const def = comps.find((c: {id: string; name: string; subcircuit: {nodes: DigiNode[]; edges: DigiEdge[]}}) => c.id === componentId);
+        if (def) {
+          setHierarchyStack(s => [...s, { label: def.name, cellName: def.name, nodes, edges }]);
+          setNodes(def.subcircuit.nodes);
+          setEdges(def.subcircuit.edges);
+        }
+      }
+    };
+    window.addEventListener('digisim:drilldown_digital', handleDrilldown);
+    return () => window.removeEventListener('digisim:drilldown_digital', handleDrilldown);
+  }, [nodes, edges, setNodes, setEdges]);
+
+  useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
+  useEffect(() => {
     const handleOpenProps = (e: Event) => {
       const customEvent = e as CustomEvent<{ nodeId: string }>;
       const targetNode = nodes.find((n) => n.id === customEvent.detail?.nodeId);
@@ -308,6 +353,12 @@ function App(): React.ReactElement {
 
   // Close menus when clicking outside
   useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
+  useEffect(() => {
     const closeMenus = () => {
       setActiveMenu(null);
       setExportDropdownOpen(false);
@@ -317,6 +368,12 @@ function App(): React.ReactElement {
   }, []);
 
   // Check on initial mount whether the user has completed the onboarding tour
+  useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
   useEffect(() => {
     try {
       const tourSeen = localStorage.getItem('digisim_tour_completed');
@@ -387,6 +444,12 @@ function App(): React.ReactElement {
   );
 
   useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
+  useEffect(() => {
     const onCustomDrillDown = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail && detail.cellName) {
@@ -407,6 +470,12 @@ function App(): React.ReactElement {
   }, [hierarchyStack, setNodes, setEdges, rfInstance]);
 
   // Load the shared component library once for the placement palette.
+  useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
   useEffect(() => {
     libraryApi
       .list()
@@ -438,6 +507,7 @@ function App(): React.ReactElement {
     ),
     output: OutputNode,
     andGate: AndGateNode,
+    customComponent: CustomComponentNode,
     notGate: NotGateNode,
     orGate: OrGateNode,
     xorGate: XorGateNode,
@@ -508,10 +578,22 @@ function App(): React.ReactElement {
   );
   const [simTime, setSimTime] = useState(0);
   useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
+  useEffect(() => {
     if (!needsClock) return undefined;
     const timer = setInterval(() => setSimTime((Date.now() % 86400000) / 1000), 200);
     return () => clearInterval(timer);
   }, [needsClock]);
+
+  useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
 
   useEffect(() => {
     if (!isSimulating) return;
@@ -537,6 +619,12 @@ function App(): React.ReactElement {
   }, [nodes, edges, simulateCircuit, setNodes, simTime, isSimulating]);
 
   // Global Keyboard Shortcuts (Cmd+K, Cmd+J, Cmd+Z, Space, ?, W, P, Esc)
+  useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
@@ -677,13 +765,14 @@ function App(): React.ReactElement {
    * @param label - Node label
    */
   const onPaletteDragStart = useCallback(
-    (event: React.DragEvent, type: string, label: string) => {
-      const payload: CanvasDropPayload = { kind: 'palette', type, label };
+    (event: React.DragEvent, type: string, label: string, subcircuitRef?: string) => {
+      const payload: CanvasDropPayload = { kind: 'palette', type, label, subcircuitRef };
       event.dataTransfer.setData('application/digisim', JSON.stringify(payload));
       event.dataTransfer.effectAllowed = 'move';
     },
     []
   );
+
 
   /**
    * Stash a dragged library component for the canvas drop handler.
@@ -721,7 +810,7 @@ function App(): React.ReactElement {
       if (payload.kind === 'library') {
         addHardwareNode(payload.component, position);
       } else {
-        addNode(payload.type, payload.label, position);
+        addNode(payload.type, payload.label, position, { subcircuitRef: (payload as any).subcircuitRef });
       }
     },
     [rfInstance, addNode, addHardwareNode]
@@ -868,6 +957,12 @@ function App(): React.ReactElement {
   // Debounced autosave: persist the canvas AUTOSAVE_MS after the last change
   // while a project is open (skipping the render caused by loading it).
   useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
+  useEffect(() => {
     if (!activeProject) return undefined;
     if (skipNextSave.current) {
       skipNextSave.current = false;
@@ -888,6 +983,12 @@ function App(): React.ReactElement {
   }, [nodes, edges, activeProject, projectsApi]);
 
   // Best-effort flush of an unsaved project when the tab closes or reloads.
+  useEffect(() => {
+    const handleOpen = () => setAiIntakeOpen(true);
+    window.addEventListener('digisim:open_ai_intake', handleOpen);
+    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  }, []);
+
   useEffect(() => {
     const flushOnUnload = (): void => {
       if (!activeProject || saveTimer.current === null) return;
@@ -1975,6 +2076,8 @@ function App(): React.ReactElement {
             viewport={viewport}
             onDelete={deleteSelection}
             onDuplicate={duplicateSelection}
+            onPackage={() => setPackageNodes(selectedNodes)}
+
           />
           {selectedNodes.length === 1 && (
             <InspectorPanel
@@ -1997,6 +2100,30 @@ function App(): React.ReactElement {
               </button>
             </div>
           )}
+
+          {hierarchyStack.length > 0 && (
+            <div className="hierarchy-breadcrumbs">
+              <span className="breadcrumb" onClick={() => {
+                const root = hierarchyStack[0];
+                setNodes(root.nodes);
+                setEdges(root.edges);
+                setHierarchyStack([]);
+              }}>Top Level Canvas</span>
+              {hierarchyStack.map((level, i) => (
+                <React.Fragment key={level.cellName + i}>
+                  <span className="breadcrumb-separator"> {">"} </span>
+                  <span className="breadcrumb" onClick={() => {
+                    if (i === hierarchyStack.length - 1) return;
+                    const target = hierarchyStack[i + 1];
+                    setNodes(target.nodes);
+                    setEdges(target.edges);
+                    setHierarchyStack(hierarchyStack.slice(0, i + 1));
+                  }}>{level.label}</span>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+
           <ReactFlow
             nodes={nodes}
             edges={liveEdges}
@@ -2078,6 +2205,7 @@ function App(): React.ReactElement {
  */
 function AppWithProvider(): React.ReactElement {
   return (
+
     <ReactFlowProvider>
       <App />
     </ReactFlowProvider>
