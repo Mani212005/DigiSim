@@ -8,6 +8,8 @@ import React, { useState } from 'react';
 import './Sidebar.css';
 import { GateGlyph } from '../nodes/GateShell';
 import SampleImages from './SampleImages';
+import { ComponentLibraryPanel } from './ComponentLibraryPanel';
+
 import { COMPONENT_TOOLTIP_DATA, ComponentTooltipInfo } from './palette/componentTooltipData';
 import type { PaletteEntry, SidebarView } from '../types';
 
@@ -25,8 +27,8 @@ interface SidebarProps {
   holdSidebarPeek: () => void;
   releaseSidebarPeek: () => void;
 
-  onPaletteDragStart: (event: React.DragEvent, type: string, label: string) => void;
-  addNode: (type: string, label: string) => void;
+  onPaletteDragStart: (event: React.DragEvent, type: string, label: string, subcircuitRef?: string) => void;
+  addNode: (type: string, label: string, position?: {x: number, y: number}, extraData?: any) => void;
 
   analogPalette: { type: string; label: string; name: string; hint: string }[];
   gatePalette: PaletteEntry[];
@@ -226,7 +228,12 @@ export default function Sidebar({
                   className={`segment-tab ${activeTab === 'logic' ? 'active' : ''}`}
                   onClick={() => setActiveTab('logic')}
                 >
-                  Logic Gates
+                  Logic Gates</button>
+                <button
+                  className={`segment-tab ${activeTab === 'custom' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('custom')}
+                >
+                  My Library
                 </button>
               </div>
             </div>
@@ -466,6 +473,13 @@ export default function Sidebar({
               )}
 
               {/* Tab 3: Digital Standard Cells & I/O */}
+              {activeTab === 'custom' && (
+                <ComponentLibraryPanel 
+                  onPaletteDragStart={onPaletteDragStart} 
+                  addNode={(type, label, ref) => addNode(type, label, undefined, { subcircuitRef: ref })} 
+                />
+              )}
+
               {activeTab === 'logic' && (
                 <>
                   <Accordion title="Digital I/O Terminals">
@@ -505,7 +519,12 @@ export default function Sidebar({
                     </div>
                   </Accordion>
 
-                  <Accordion title="Standard Logic Gates">
+                  <Accordion title="Standard Logic Gates</button>
+                <button
+                  className={`segment-tab ${activeTab === 'custom' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('custom')}
+                >
+                  My Library">
                     {gatePalette
                       .filter((g) => ['andGate', 'orGate', 'notGate', 'nandGate', 'norGate'].includes(g.type))
                       .map((gate) => {

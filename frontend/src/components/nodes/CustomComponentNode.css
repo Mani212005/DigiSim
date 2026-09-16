@@ -1,0 +1,42 @@
+.custom-component-node {
+  background: #2a2a2a;
+  border: 2px solid #555;
+  border-radius: 4px;
+  color: white;
+  min-width: 80px;
+  min-height: 80px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.custom-component-node.missing {
+  border-color: red;
+  color: red;
+}
+.custom-component-header {
+  text-align: center;
+  pointer-events: none;
+}
+.custom-component-name {
+  font-weight: bold;
+  font-size: 14px;
+}
+.custom-pin {
+  width: 10px;
+  height: 10px;
+  background: #888;
+  border: 1px solid #333;
+}
+.pin-label {
+  position: absolute;
+  font-size: 8px;
+  color: #ccc;
+  pointer-events: none;
+}
+.pin-label-left { left: 12px; }
+.pin-label-right { right: 12px; }
+.pin-label-top { top: 12px; }
+.pin-label-bottom { bottom: 12px; }

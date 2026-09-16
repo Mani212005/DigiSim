@@ -1,9 +1,10 @@
 import json
+
 from mcp_server import (
     digisim_create_circuit,
-    digisim_simulate_mna,
     digisim_detect_circuit_photo,
     digisim_export_spice,
+    digisim_simulate_mna,
     handle_rpc_request,
 )
 

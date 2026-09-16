@@ -2047,3 +2047,30 @@
   transform: translateY(-1px);
 }
 
+.hierarchy-breadcrumbs {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(30, 30, 30, 0.8);
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(4px);
+  border: 1px solid #444;
+  color: #ccc;
+  font-size: 14px;
+}
+.breadcrumb {
+  cursor: pointer;
+  color: #88c0d0;
+}
+.breadcrumb:hover {
+  text-decoration: underline;
+}
+.breadcrumb-separator {
+  color: #888;
+}
