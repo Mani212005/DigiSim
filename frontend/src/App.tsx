@@ -102,6 +102,7 @@ import type {
   ApiErrorResponse,
   CanvasDropPayload,
   CircuitExportJSON,
+  CustomComponentDefinition,
   DetectGatesResponse,
   DetectV2PhotoResponse,
   DetectV2Response,
@@ -151,6 +152,18 @@ const bumpIdCounter = (loaded: DigiNode[]): void => {
 
 /** Autosave debounce: how long the canvas must be quiet before a save fires. */
 const AUTOSAVE_MS = 1500;
+
+/**
+ * Human-readable label for the project autosave indicator.
+ * @param status - Current autosave state
+ * @returns Short label, or empty when there is nothing to report
+ */
+const describeSaveStatus = (status: SaveStatus): string => {
+  if (status === 'saving') return 'Saving…';
+  if (status === 'saved') return 'Saved';
+  if (status === 'error') return 'Save failed';
+  return '';
+};
 
 const sampleImages = [
   'fifth_image.jpg',
@@ -308,7 +321,7 @@ function App(): React.ReactElement {
   useEffect(() => {
     const handleDrilldown = (e: Event) => {
       const customEvent = e as CustomEvent;
-      const { componentId, nodeId } = customEvent.detail;
+      const { componentId } = customEvent.detail;
       
       const raw = localStorage.getItem('customComponents');
       if (raw) {
@@ -393,7 +406,6 @@ function App(): React.ReactElement {
   const projectsApi = useProjects();
   const libraryApi = useLibrary();
   const [libraryComponents, setLibraryComponents] = useState<LibraryComponent[]>([]);
-  const [librarySearch, setLibrarySearch] = useState('');
   const isTouch = useIsTouch();
   const { simulateCircuit } = useLogicSimulation();
 
@@ -419,6 +431,9 @@ function App(): React.ReactElement {
     [nodes, edges, setNodes, setEdges, rfInstance]
   );
 
+
+
+  // Open the AI vision intake modal when requested (single global listener).
   useEffect(() => {
     const handleOpen = () => setAiIntakeOpen(true);
     window.addEventListener('digisim:open_ai_intake', handleOpen);
@@ -445,12 +460,28 @@ function App(): React.ReactElement {
     setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
   }, [hierarchyStack, setNodes, setEdges, rfInstance]);
 
-  // Load the shared component library once for the placement palette.
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
+  /**
+   * Persist a packaged or AI-synthesized component to the personal library
+   * (localStorage registry shared with the simulation solver) and notify the
+   * library panel to reload.
+   * @param def - Custom component definition to save
+   */
+  const handleSaveCustomComponent = useCallback((def: CustomComponentDefinition) => {
+    try {
+      const raw = localStorage.getItem('customComponents');
+      const existing = raw ? (JSON.parse(raw) as CustomComponentDefinition[]) : [];
+      const unique = Array.from(
+        new Map([...existing, def].map((item) => [item.id, item])).values()
+      );
+      localStorage.setItem('customComponents', JSON.stringify(unique));
+    } catch {
+      /* storage unavailable — the modal still closes */
+    }
+    window.dispatchEvent(new Event('digisim:library_updated'));
   }, []);
+
+  // Load the shared component library once for the placement palette.
+
 
   useEffect(() => {
     libraryApi
@@ -458,16 +489,6 @@ function App(): React.ReactElement {
       .then(setLibraryComponents)
       .catch(() => {} /* palette section just stays empty */);
   }, [libraryApi]);
-
-  const filteredLibrary = useMemo(() => {
-    const query = librarySearch.trim().toLowerCase();
-    if (!query) return libraryComponents;
-    return libraryComponents.filter((component) =>
-      [component.canonical_name, ...component.aliases].some((name) =>
-        name.toLowerCase().includes(query)
-      )
-    );
-  }, [libraryComponents, librarySearch]);
 
   const updateNodeData = useCallback<UpdateNodeData>((nodeId, newData) => {
     setNodes((nds) =>
@@ -553,11 +574,7 @@ function App(): React.ReactElement {
     [nodes]
   );
   const [simTime, setSimTime] = useState(0);
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
+
 
   useEffect(() => {
     if (!needsClock) return undefined;
@@ -565,11 +582,7 @@ function App(): React.ReactElement {
     return () => clearInterval(timer);
   }, [needsClock]);
 
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
+
 
   useEffect(() => {
     if (!isSimulating) return;
@@ -595,11 +608,7 @@ function App(): React.ReactElement {
   }, [nodes, edges, simulateCircuit, setNodes, simTime, isSimulating]);
 
   // Global Keyboard Shortcuts (Cmd+K, Cmd+J, Cmd+Z, Space, ?, W, P, Esc)
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
+
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -749,20 +758,6 @@ function App(): React.ReactElement {
     []
   );
 
-
-  /**
-   * Stash a dragged library component for the canvas drop handler.
-   * @param event - HTML5 drag start event
-   * @param component - Library entry being dragged
-   */
-  const onLibraryDragStart = useCallback(
-    (event: React.DragEvent, component: LibraryComponent) => {
-      const payload: CanvasDropPayload = { kind: 'library', component };
-      event.dataTransfer.setData('application/digisim', JSON.stringify(payload));
-      event.dataTransfer.effectAllowed = 'move';
-    },
-    []
-  );
 
   const onCanvasDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -932,11 +927,7 @@ function App(): React.ReactElement {
 
   // Debounced autosave: persist the canvas AUTOSAVE_MS after the last change
   // while a project is open (skipping the render caused by loading it).
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
+
 
   useEffect(() => {
     if (!activeProject) return undefined;
@@ -959,11 +950,7 @@ function App(): React.ReactElement {
   }, [nodes, edges, activeProject, projectsApi]);
 
   // Best-effort flush of an unsaved project when the tab closes or reloads.
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
+
 
   useEffect(() => {
     const flushOnUnload = (): void => {
@@ -1665,6 +1652,11 @@ function App(): React.ReactElement {
             <span className="stat-chip project-chip" title="Active Project">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
               {activeProject.name}
+              {saveStatus !== 'idle' && (
+                <span className="save-status" title="Project save status">
+                  {describeSaveStatus(saveStatus)}
+                </span>
+              )}
               <button
                 className="logout-btn"
                 onClick={closeProject}
@@ -1863,6 +1855,26 @@ function App(): React.ReactElement {
           setTimeout(() => rfInstance?.fitView({ padding: 0.15 }), 60);
         }}
       />
+      {packageNodes && (
+        <PackageSubcircuitModal
+          nodes={packageNodes}
+          edges={edges}
+          onClose={() => setPackageNodes(null)}
+          onSave={(def) => {
+            handleSaveCustomComponent(def);
+            setPackageNodes(null);
+          }}
+        />
+      )}
+      {aiIntakeOpen && (
+        <AIVisionIntakeModal
+          onClose={() => setAiIntakeOpen(false)}
+          onSave={(def) => {
+            handleSaveCustomComponent(def);
+            setAiIntakeOpen(false);
+          }}
+        />
+      )}
       {galleryOpen && (
         <CircuitGalleryModal
           open={galleryOpen}
@@ -2047,12 +2059,30 @@ function App(): React.ReactElement {
               ▣ Selection mode — tap to exit
             </button>
           )}
+          {wireMode && (
+            <button
+              className="select-mode-chip"
+              onClick={() => setWireMode(false)}
+            >
+              ✎ Wire mode — tap to exit
+            </button>
+          )}
+          {probeMode && (
+            <button
+              className="select-mode-chip"
+              onClick={() => setProbeMode(false)}
+            >
+              🔍 Probe mode — tap to exit
+            </button>
+          )}
           <SelectionToolbar
             selectedNodes={selectedNodes}
             viewport={viewport}
             onDelete={deleteSelection}
             onDuplicate={duplicateSelection}
-            onPackage={() => setPackageNodes(selectedNodes)}
+            onPackage={() => {
+              if (selectedNodes.length > 0) setPackageNodes(selectedNodes);
+            }}
 
           />
           {selectedNodes.length === 1 && (

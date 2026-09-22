@@ -519,12 +519,7 @@ export default function Sidebar({
                     </div>
                   </Accordion>
 
-                  <Accordion title="Standard Logic Gates</button>
-                <button
-                  className={`segment-tab ${activeTab === 'custom' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('custom')}
-                >
-                  My Library">
+                  <Accordion title="Standard Logic Gates">
                     {gatePalette
                       .filter((g) => ['andGate', 'orGate', 'notGate', 'nandGate', 'norGate'].includes(g.type))
                       .map((gate) => {

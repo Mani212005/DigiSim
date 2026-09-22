@@ -5,6 +5,7 @@
 
 import React, { useState, useRef } from 'react';
 import type { CustomComponentDefinition, DigiNode, DigiEdge } from '../types';
+import './AIVisionIntakeModal.css';
 
 interface AIResult {
   componentName?: string;
@@ -14,8 +15,6 @@ interface AIResult {
   pins: CustomComponentDefinition['pins'];
   subcircuit: { nodes: DigiNode[]; edges: DigiEdge[] };
 }
-
-import './AIVisionIntakeModal.css';
 
 interface Props {
   onClose: () => void;
