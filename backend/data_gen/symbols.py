@@ -118,9 +118,7 @@ def _arc(
         Nx2 float array of arc points.
     """
     ang = np.deg2rad(np.linspace(deg_start, deg_end, n))
-    return np.stack(
-        [center[0] + rx * np.cos(ang), center[1] + ry * np.sin(ang)], axis=1
-    )
+    return np.stack([center[0] + rx * np.cos(ang), center[1] + ry * np.sin(ang)], axis=1)
 
 
 def hand_stroke(
@@ -165,9 +163,7 @@ def _circle_pts(center: tuple[float, float], r: float, n: int = 20) -> np.ndarra
     return np.vstack([pts, pts[:1]])
 
 
-def _symbol_strokes(
-    class_name: str, rng: np.random.Generator
-) -> tuple[list[np.ndarray], list[tuple[float, float]], tuple[float, float] | None]:
+def _symbol_strokes(class_name: str, rng: np.random.Generator) -> tuple[list[np.ndarray], list[tuple[float, float]], tuple[float, float] | None]:
     """
     Build the stroke set for a symbol in local coordinates (roughly 100x70 box).
 
@@ -186,9 +182,7 @@ def _symbol_strokes(
 
     def and_body(x0: float) -> None:
         """Append AND-gate body strokes starting at local x offset x0."""
-        strokes.append(
-            np.array([[x0 + 55, 0], [x0, 0], [x0, h], [x0 + 55, h]], dtype=np.float64)
-        )
+        strokes.append(np.array([[x0 + 55, 0], [x0, 0], [x0, h], [x0 + 55, h]], dtype=np.float64))
         strokes.append(_arc((x0 + 55, h / 2), 45, h / 2, -90, 90))
 
     def or_body(x0: float) -> None:
@@ -229,9 +223,7 @@ def _symbol_strokes(
         else:
             out_port = (112, h / 2)
     elif class_name == "NOT":
-        strokes.append(
-            np.array([[0, 0], [0, h], [80, h / 2], [0, 0]], dtype=np.float64)
-        )
+        strokes.append(np.array([[0, 0], [0, h], [80, h / 2], [0, 0]], dtype=np.float64))
         bubble(87)
         in_ports = [(0, h / 2)]
         out_port = (94, h / 2)
@@ -244,9 +236,7 @@ def _symbol_strokes(
         in_ports = [(0, h / 2)]
         out_port = (100, h / 2)
     elif class_name == "INPUT":
-        strokes.append(
-            np.array([[0, 10], [44, 10], [44, 60], [0, 60], [0, 10]], dtype=np.float64)
-        )
+        strokes.append(np.array([[0, 10], [44, 10], [44, 60], [0, 60], [0, 10]], dtype=np.float64))
         strokes.append(np.array([[44, 35], [70, 35]], dtype=np.float64))
         out_port = (70, 35)
     elif class_name == "OUTPUT":
@@ -254,9 +244,7 @@ def _symbol_strokes(
         strokes.append(np.array([[0, 35], [12, 35]], dtype=np.float64))
         in_ports = [(0, 35)]
     elif class_name == "LED":
-        strokes.append(
-            np.array([[10, 10], [10, 60], [52, 35], [10, 10]], dtype=np.float64)
-        )
+        strokes.append(np.array([[10, 10], [10, 60], [52, 35], [10, 10]], dtype=np.float64))
         strokes.append(np.array([[52, 10], [52, 60]], dtype=np.float64))
         strokes.append(np.array([[0, 35], [10, 35]], dtype=np.float64))
         # Two small emission arrows pointing up-right.

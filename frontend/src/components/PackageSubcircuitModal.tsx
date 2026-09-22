@@ -4,13 +4,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import type { Node, Edge } from 'reactflow';
-import type { CustomComponentDefinition } from '../types';
+import type { DigiNode, DigiEdge, CustomComponentDefinition } from '../types';
 import './PackageSubcircuitModal.css';
 
 interface PackageSubcircuitModalProps {
-  nodes: Node[];
-  edges: Edge[];
+  nodes: DigiNode[];
+  edges: DigiEdge[];
   onClose: () => void;
   onSave: (def: CustomComponentDefinition) => void;
 }
@@ -87,7 +86,7 @@ export function PackageSubcircuitModal({ nodes, edges, onClose, onSave }: Packag
           </label>
           <label>
             Symbol Shape:
-            <select value={symbolShape} onChange={e => setSymbolShape(e.target.value as any)}>
+            <select value={symbolShape} onChange={e => setSymbolShape(e.target.value as 'RECTANGLE' | 'DIP_CHIP')}>
               <option value="RECTANGLE">Rectangle</option>
               <option value="DIP_CHIP">DIP Chip</option>
             </select>

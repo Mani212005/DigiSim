@@ -125,8 +125,7 @@ def list_projects() -> tuple:
     conn = _get_db()
     try:
         rows = conn.execute(
-            "SELECT id, name, description, created_at, updated_at FROM folders"
-            " WHERE user_id = ? ORDER BY updated_at DESC",
+            "SELECT id, name, description, created_at, updated_at FROM folders WHERE user_id = ? ORDER BY updated_at DESC",
             (_user_id(),),
         ).fetchall()
     finally:
@@ -153,8 +152,7 @@ def create_project() -> tuple:
     conn = _get_db()
     try:
         cur = conn.execute(
-            "INSERT INTO folders (user_id, name, description, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO folders (user_id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
             (_user_id(), name, description, now, now),
         )
         conn.commit()
@@ -182,8 +180,7 @@ def get_project(folder_id: int) -> tuple:
     conn = _get_db()
     try:
         row = conn.execute(
-            "SELECT id, name, description, created_at, updated_at, state"
-            " FROM folders WHERE id = ? AND user_id = ?",
+            "SELECT id, name, description, created_at, updated_at, state FROM folders WHERE id = ? AND user_id = ?",
             (folder_id, _user_id()),
         ).fetchone()
     finally:
@@ -236,8 +233,7 @@ def update_project(folder_id: int) -> tuple:
         if cur.rowcount == 0:
             return jsonify({"error": "Folder not found"}), 404
         row = conn.execute(
-            "SELECT id, name, description, created_at, updated_at"
-            " FROM folders WHERE id = ?",
+            "SELECT id, name, description, created_at, updated_at FROM folders WHERE id = ?",
             (folder_id,),
         ).fetchone()
     finally:

@@ -35,14 +35,7 @@ def _get_db() -> sqlite3.Connection:
     """
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(_DB_PATH)
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS users ("
-        "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "  email TEXT UNIQUE NOT NULL,"
-        "  password_hash BLOB NOT NULL,"
-        "  created_at TEXT NOT NULL"
-        ")"
-    )
+    conn.execute("CREATE TABLE IF NOT EXISTS users (  id INTEGER PRIMARY KEY AUTOINCREMENT,  email TEXT UNIQUE NOT NULL,  password_hash BLOB NOT NULL,  created_at TEXT NOT NULL)")
     return conn
 
 
@@ -71,9 +64,7 @@ def _issue_token(sub: str, email: str | None, guest: bool = False) -> str:
     )
 
 
-def _auth_response(
-    user_id: int | None, email: str | None, status: int = 200, guest: bool = False
-) -> Response:
+def _auth_response(user_id: int | None, email: str | None, status: int = 200, guest: bool = False) -> Response:
     """
     Build a JSON response carrying the auth cookie.
 
@@ -85,9 +76,7 @@ def _auth_response(
     Returns:
         Flask response with the httpOnly session cookie set.
     """
-    resp = make_response(
-        jsonify({"user": {"id": user_id, "email": email, "guest": guest}}), status
-    )
+    resp = make_response(jsonify({"user": {"id": user_id, "email": email, "guest": guest}}), status)
     resp.set_cookie(
         _COOKIE_NAME,
         _issue_token("guest" if guest else str(user_id), email, guest),
@@ -220,9 +209,7 @@ def login() -> tuple:
 
     conn = _get_db()
     try:
-        row = conn.execute(
-            "SELECT id, password_hash FROM users WHERE email = ?", (email,)
-        ).fetchone()
+        row = conn.execute("SELECT id, password_hash FROM users WHERE email = ?", (email,)).fetchone()
     finally:
         conn.close()
 
@@ -268,8 +255,6 @@ def me() -> tuple:
     is_guest = bool(claims.get("guest"))
     user_id = None if is_guest else int(claims["sub"])
     return (
-        jsonify(
-            {"user": {"id": user_id, "email": claims.get("email"), "guest": is_guest}}
-        ),
+        jsonify({"user": {"id": user_id, "email": claims.get("email"), "guest": is_guest}}),
         200,
     )

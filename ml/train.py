@@ -37,9 +37,7 @@ def train(args: argparse.Namespace) -> Path:
         FileNotFoundError: If the dataset yaml does not exist.
     """
     if not args.data.exists():
-        raise FileNotFoundError(
-            f"{args.data} not found — run backend/data_gen/screenshot_pipeline.py"
-        )
+        raise FileNotFoundError(f"{args.data} not found — run backend/data_gen/screenshot_pipeline.py")
 
     run_name = f"run_{datetime.now():%Y%m%d_%H%M}"
     run_dir = ML_DIR / "experiments" / run_name
@@ -56,9 +54,7 @@ def train(args: argparse.Namespace) -> Path:
         "seed": 0,
     }
     (run_dir / "config.yaml").write_text(yaml.safe_dump(config))
-    (run_dir / "notes.md").write_text(
-        f"# {run_name}\n\n{args.notes or 'No notes provided.'}\n"
-    )
+    (run_dir / "notes.md").write_text(f"# {run_name}\n\n{args.notes or 'No notes provided.'}\n")
 
     model = YOLO(args.model)  # transfer learning from pretrained COCO weights
     model.train(

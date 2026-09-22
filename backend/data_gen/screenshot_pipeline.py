@@ -117,16 +117,12 @@ def _pick_gate(counts: Counter, rng: np.random.Generator) -> str:
         A gate class name.
     """
     max_count = max((counts[g] for g in GATE_CLASSES), default=0) + 1
-    weights = np.array(
-        [max_count - counts[g] + 1 for g in GATE_CLASSES], dtype=np.float64
-    )
+    weights = np.array([max_count - counts[g] + 1 for g in GATE_CLASSES], dtype=np.float64)
     weights /= weights.sum()
     return str(rng.choice(GATE_CLASSES, p=weights))
 
 
-def generate_circuit_image(
-    rng: np.random.Generator, counts: Counter
-) -> tuple[np.ndarray, list[tuple[int, tuple[float, float, float, float]]]]:
+def generate_circuit_image(rng: np.random.Generator, counts: Counter) -> tuple[np.ndarray, list[tuple[int, tuple[float, float, float, float]]]]:
     """
     Render one synthetic hand-drawn circuit sketch with YOLO annotations.
 
@@ -147,9 +143,7 @@ def generate_circuit_image(
 
     def place(name: str, cx: float, cy: float, s: float) -> DrawnSymbol:
         """Draw one symbol, record its annotation, and return it."""
-        sym = draw_symbol(
-            img, name, cx, cy, s * rng.uniform(0.88, 1.12), color, thickness, rng
-        )
+        sym = draw_symbol(img, name, cx, cy, s * rng.uniform(0.88, 1.12), color, thickness, rng)
         symbols.append(sym)
         counts[name] += 1
         return sym
@@ -170,9 +164,7 @@ def generate_circuit_image(
     for col in range(n_cols):
         gx = src_x + 190 + col_gap * col + rng.uniform(-20, 20)
         n_gates = int(rng.integers(1, 4)) if col < n_cols - 1 else 1
-        gate_ys = np.linspace(h * 0.25, h * 0.75, n_gates) + rng.uniform(
-            -20, 20, n_gates
-        )
+        gate_ys = np.linspace(h * 0.25, h * 0.75, n_gates) + rng.uniform(-20, 20, n_gates)
         layer: list[DrawnSymbol] = []
         used: Counter = Counter()
         for gy in gate_ys:
@@ -258,9 +250,7 @@ def _write_yolo_label(
     path.write_text("\n".join(lines) + "\n")
 
 
-def _convert_roboflow_split(
-    split_src: str, split_dst: str, out_dir: Path, counts: Counter
-) -> int:
+def _convert_roboflow_split(split_src: str, split_dst: str, out_dir: Path, counts: Counter) -> int:
     """
     Copy one Roboflow split into the merged dataset, converting polygon labels
     to bounding boxes and remapping class ids to the canonical 12-class list.
@@ -353,14 +343,7 @@ def build_dataset(out_dir: Path, count: int, seed: int) -> None:
         print(f"roboflow {split}: {n} images merged")
     counts.update(rf_counts)
 
-    yaml_text = (
-        f"path: {out_dir.resolve()}\n"
-        "train: images/train\n"
-        "val: images/valid\n"
-        "test: images/test\n"
-        f"nc: {len(CLASS_NAMES)}\n"
-        f"names: {CLASS_NAMES}\n"
-    )
+    yaml_text = f"path: {out_dir.resolve()}\ntrain: images/train\nval: images/valid\ntest: images/test\nnc: {len(CLASS_NAMES)}\nnames: {CLASS_NAMES}\n"
     (out_dir / "data.yaml").write_text(yaml_text)
 
     total = sum(counts.values())

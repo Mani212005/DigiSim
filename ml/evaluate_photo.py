@@ -104,20 +104,9 @@ def _detect(image_path: Path, folder_id: int | None, cookie: str) -> dict:
         urllib.error.HTTPError: On non-2xx responses.
     """
     boundary = uuid.uuid4().hex
-    parts = [
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="image"; '
-        f'filename="{image_path.name}"\r\n'
-        "Content-Type: image/jpeg\r\n\r\n".encode()
-        + image_path.read_bytes()
-        + b"\r\n"
-    ]
+    parts = [f'--{boundary}\r\nContent-Disposition: form-data; name="image"; filename="{image_path.name}"\r\nContent-Type: image/jpeg\r\n\r\n'.encode() + image_path.read_bytes() + b"\r\n"]
     if folder_id is not None:
-        parts.append(
-            f"--{boundary}\r\n"
-            f'Content-Disposition: form-data; name="folder_id"\r\n\r\n'
-            f"{folder_id}\r\n".encode()
-        )
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="folder_id"\r\n\r\n{folder_id}\r\n'.encode())
     body = b"".join(parts) + f"--{boundary}--\r\n".encode()
     request = urllib.request.Request(f"{API_URL}/detect_v2", method="POST", data=body)
     request.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
@@ -217,11 +206,7 @@ def main() -> int:
             continue
         for key in totals:
             totals[key] += counters[key]
-        print(
-            f"{entry['file']}: gt={counters['gt']}"
-            f" recalled={counters['recalled']}"
-            f" top1={counters['top1']} assigned={counters['assigned']}"
-        )
+        print(f"{entry['file']}: gt={counters['gt']} recalled={counters['recalled']} top1={counters['top1']} assigned={counters['assigned']}")
 
     if totals["gt"] == 0:
         print("No ground-truth components scored — nothing to report.")

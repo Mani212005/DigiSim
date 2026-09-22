@@ -47,9 +47,7 @@ _CLIENT = InferenceHTTPClient(
 MODEL_ID = "my-first-project-yz9wf/1"
 
 _BACKEND_DIR = Path(__file__).resolve().parent
-_WEIGHTS_PATH = Path(
-    os.getenv("MODEL_WEIGHTS_PATH", _BACKEND_DIR / "model" / "weights" / "best.pt")
-)
+_WEIGHTS_PATH = Path(os.getenv("MODEL_WEIGHTS_PATH", _BACKEND_DIR / "model" / "weights" / "best.pt"))
 _CONFIDENCE = float(os.getenv("DETECTION_CONFIDENCE_THRESHOLD", "0.35"))
 
 _detector: GateDetector | None = None
@@ -133,11 +131,7 @@ def detect_circuit() -> tuple:
             jsonify(
                 {
                     "status": "pipeline_not_ready",
-                    "message": (
-                        f"Model weights not found at {_WEIGHTS_PATH}. "
-                        "Train with ml/train.py, or use /detect_gates for "
-                        "cloud inference."
-                    ),
+                    "message": (f"Model weights not found at {_WEIGHTS_PATH}. Train with ml/train.py, or use /detect_gates for cloud inference."),
                 }
             ),
             503,

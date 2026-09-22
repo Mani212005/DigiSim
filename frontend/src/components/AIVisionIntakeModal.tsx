@@ -4,7 +4,17 @@
  */
 
 import React, { useState, useRef } from 'react';
-import type { CustomComponentDefinition } from '../types';
+import type { CustomComponentDefinition, DigiNode, DigiEdge } from '../types';
+
+interface AIResult {
+  componentName?: string;
+  category?: string;
+  confidence: number;
+  unverifiedPins?: string[];
+  pins: CustomComponentDefinition['pins'];
+  subcircuit: { nodes: DigiNode[]; edges: DigiEdge[] };
+}
+
 import './AIVisionIntakeModal.css';
 
 interface Props {
@@ -14,7 +24,7 @@ interface Props {
 
 export function AIVisionIntakeModal({ onClose, onSave }: Props) {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [result, setResult] = useState<AIResult | null>(null);
   const [prompt, setPrompt] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 

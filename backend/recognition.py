@@ -65,9 +65,7 @@ def _thumbnail_data_uri(crop: np.ndarray) -> str:
     height, width = crop.shape[:2]
     scale = _THUMB_SIZE / max(height, width)
     if scale < 1.0:
-        crop = cv2.resize(
-            crop, (max(1, round(width * scale)), max(1, round(height * scale)))
-        )
+        crop = cv2.resize(crop, (max(1, round(width * scale)), max(1, round(height * scale))))
     ok, buffer = cv2.imencode(".jpg", crop, [cv2.IMWRITE_JPEG_QUALITY, 80])
     if not ok:
         return ""
@@ -142,21 +140,13 @@ def detect_v2() -> tuple:
         # Per-crop identity signals.
         crops = [_crop(image, p) for p in proposals]
         embedder = get_embedder()
-        embeddings: list[np.ndarray | None] = [
-            embedder.embed_bgr(c) if embedder is not None else None for c in crops
-        ]
+        embeddings: list[np.ndarray | None] = [embedder.embed_bgr(c) if embedder is not None else None for c in crops]
         ocr_budget = sorted(
-            (
-                i
-                for i, c in enumerate(crops)
-                if min(c.shape[0], c.shape[1]) >= _OCR_MIN_SIDE
-            ),
+            (i for i, c in enumerate(crops) if min(c.shape[0], c.shape[1]) >= _OCR_MIN_SIDE),
             key=lambda i: -proposals[i].confidence,
         )[:_OCR_MAX_CROPS]
         ocr_set = set(ocr_budget)
-        texts: list[list[str]] = [
-            read_text(crops[i]) if i in ocr_set else [] for i in range(len(crops))
-        ]
+        texts: list[list[str]] = [read_text(crops[i]) if i in ocr_set else [] for i in range(len(crops))]
 
         # Inventory targets when a real user sent their folder; else global.
         folder_raw = request.form.get("folder_id", "").strip()
@@ -190,9 +180,7 @@ def detect_v2() -> tuple:
                     "source": proposal.source,
                     "crop": _thumbnail_data_uri(crops[match.proposal_index]),
                     "ocr": texts[match.proposal_index],
-                    "assigned": (
-                        _candidate_json(match.assigned) if match.assigned else None
-                    ),
+                    "assigned": (_candidate_json(match.assigned) if match.assigned else None),
                     "candidates": [_candidate_json(c) for c in match.candidates],
                     "needs_review": match.needs_review,
                     "reasons": match.reasons,

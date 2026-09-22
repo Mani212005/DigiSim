@@ -107,7 +107,7 @@ export default function Sidebar({
   clearCanvas,
   startSidebarResize,
 }: SidebarProps): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<'silicon' | 'passives' | 'logic'>('silicon');
+  const [activeTab, setActiveTab] = useState<'silicon' | 'passives' | 'logic' | 'custom'>('silicon');
 
   return (
     <>
