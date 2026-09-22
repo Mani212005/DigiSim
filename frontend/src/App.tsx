@@ -305,13 +305,6 @@ function App(): React.ReactElement {
     setExportDropdownOpen(false);
   }, [nodes, edges, activeProject]);
 
-  // Listener for double-clicking nodes / digisim:open-node-properties
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
-
   useEffect(() => {
     const handleDrilldown = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -333,12 +326,6 @@ function App(): React.ReactElement {
   }, [nodes, edges, setNodes, setEdges]);
 
   useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
-
-  useEffect(() => {
     const handleOpenProps = (e: Event) => {
       const customEvent = e as CustomEvent<{ nodeId: string }>;
       const targetNode = nodes.find((n) => n.id === customEvent.detail?.nodeId);
@@ -353,12 +340,6 @@ function App(): React.ReactElement {
 
   // Close menus when clicking outside
   useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
-
-  useEffect(() => {
     const closeMenus = () => {
       setActiveMenu(null);
       setExportDropdownOpen(false);
@@ -368,11 +349,6 @@ function App(): React.ReactElement {
   }, []);
 
   // Check on initial mount whether the user has completed the onboarding tour
-  useEffect(() => {
-    const handleOpen = () => setAiIntakeOpen(true);
-    window.addEventListener('digisim:open_ai_intake', handleOpen);
-    return () => window.removeEventListener('digisim:open_ai_intake', handleOpen);
-  }, []);
 
   useEffect(() => {
     try {

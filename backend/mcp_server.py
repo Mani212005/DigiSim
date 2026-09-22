@@ -17,7 +17,8 @@ _BACKEND_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_BACKEND_DIR))
 
 try:
-    from pipeline.detector import CLASS_TO_NODE_TYPE, GateDetector
+    from pipeline.detector import GateDetector
+
     _DETECTOR_AVAILABLE = True
 except ImportError:
     _DETECTOR_AVAILABLE = False
@@ -55,18 +56,17 @@ def digisim_create_circuit(netlist: Dict[str, Any]) -> Dict[str, Any]:
             }
             node_type = type_map.get(raw_type, "andGate")
 
-        nodes.append({
-            "id": node_id,
-            "type": node_type,
-            "position": {
-                "x": comp.get("x", (idx % 4) * 220 + 100),
-                "y": comp.get("y", (idx // 4) * 150 + 100),
-            },
-            "data": {
-                "label": comp.get("label", f"{comp.get('type', 'Comp')} {node_id}"),
-                "value": 0 if node_type == "input" else None
+        nodes.append(
+            {
+                "id": node_id,
+                "type": node_type,
+                "position": {
+                    "x": comp.get("x", (idx % 4) * 220 + 100),
+                    "y": comp.get("y", (idx // 4) * 150 + 100),
+                },
+                "data": {"label": comp.get("label", f"{comp.get('type', 'Comp')} {node_id}"), "value": 0 if node_type == "input" else None},
             }
-        })
+        )
 
     for idx, conn in enumerate(connections):
         from_part = str(conn.get("from", "")).split(".")[0]
@@ -75,13 +75,15 @@ def digisim_create_circuit(netlist: Dict[str, Any]) -> Dict[str, Any]:
         handle = to_parts[1] if len(to_parts) > 1 and to_parts[1] in ("a", "b") else "a"
 
         if from_part and to_part:
-            edges.append({
-                "id": f"e-mcp-{idx + 1}",
-                "source": from_part,
-                "target": to_part,
-                "targetHandle": handle,
-                "animated": True,
-            })
+            edges.append(
+                {
+                    "id": f"e-mcp-{idx + 1}",
+                    "source": from_part,
+                    "target": to_part,
+                    "targetHandle": handle,
+                    "animated": True,
+                }
+            )
 
     return {
         "status": "ok",
@@ -105,8 +107,6 @@ def digisim_simulate_mna(circuit: Dict[str, Any]) -> Dict[str, Any]:
     waveforms: Dict[str, List[float]] = {}
 
     # Identify supply & ground nodes
-    v_source_nodes = [n for n in nodes if n.get("type") in ("vsource", "input") or n.get("data", {}).get("param")]
-    gnd_nodes = [n for n in nodes if n.get("type") == "ground"]
 
     for n in nodes:
         nid = n["id"]
@@ -165,20 +165,13 @@ def digisim_detect_circuit_photo(image_b64: str, confidence: float = 0.35) -> Di
             with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                 tmp.write(img_bytes)
                 tmp_path = Path(tmp.name)
-            
+
             detector = GateDetector(weights_path, confidence)
             raw_dets = detector.detect(tmp_path)
             tmp_path.unlink(missing_ok=True)
 
             for d in raw_dets:
-                detections.append({
-                    "class": d.class_name,
-                    "confidence": round(d.confidence, 3),
-                    "x": round(d.x, 1),
-                    "y": round(d.y, 1),
-                    "width": round(d.width, 1),
-                    "height": round(d.height, 1)
-                })
+                detections.append({"class": d.class_name, "confidence": round(d.confidence, 3), "x": round(d.x, 1), "y": round(d.y, 1), "width": round(d.width, 1), "height": round(d.height, 1)})
         except Exception:
             detections = []
 
@@ -193,30 +186,12 @@ def digisim_detect_circuit_photo(image_b64: str, confidence: float = 0.35) -> Di
 
     # Convert to schematic nodes
     netlist_input = {
-        "components": [
-            {
-                "id": str(i + 1),
-                "type": d["class"],
-                "label": f"{d['class']} {i + 1}",
-                "x": d["x"],
-                "y": d["y"]
-            }
-            for i, d in enumerate(detections)
-        ],
-        "connections": [
-            {"from": "1", "to": "3.a"},
-            {"from": "2", "to": "3.b"},
-            {"from": "3", "to": "4"}
-        ]
+        "components": [{"id": str(i + 1), "type": d["class"], "label": f"{d['class']} {i + 1}", "x": d["x"], "y": d["y"]} for i, d in enumerate(detections)],
+        "connections": [{"from": "1", "to": "3.a"}, {"from": "2", "to": "3.b"}, {"from": "3", "to": "4"}],
     }
     schematic = digisim_create_circuit(netlist_input)
 
-    return {
-        "status": "ok",
-        "detections": detections,
-        "nodes": schematic["nodes"],
-        "edges": schematic["edges"]
-    }
+    return {"status": "ok", "detections": detections, "nodes": schematic["nodes"], "edges": schematic["edges"]}
 
 
 def digisim_export_spice(circuit: Dict[str, Any]) -> Dict[str, Any]:
@@ -227,12 +202,7 @@ def digisim_export_spice(circuit: Dict[str, Any]) -> Dict[str, Any]:
     edges = circuit.get("edges", [])
     title = circuit.get("title", "DigiSim Exported Circuit")
 
-    lines = [
-        f"* {title}",
-        "* Generated by DigiSim MCP Server",
-        ".option scale=1u",
-        ""
-    ]
+    lines = [f"* {title}", "* Generated by DigiSim MCP Server", ".option scale=1u", ""]
 
     # Build node net dictionary
     net_counter = 1
@@ -248,7 +218,6 @@ def digisim_export_spice(circuit: Dict[str, Any]) -> Dict[str, Any]:
     res_count = 1
     cap_count = 1
     ind_count = 1
-    bjt_count = 1
     mos_count = 1
 
     for node in nodes:
@@ -282,19 +251,14 @@ def digisim_export_spice(circuit: Dict[str, Any]) -> Dict[str, Any]:
         elif ntype == "nmos":
             n3 = connected_nets[2] if len(connected_nets) > 2 else "0"
             w = data.get("width", 1.2)
-            l = data.get("length", 0.18)
-            lines.append(f"M{mos_count} {n1} {n2} {n3} 0 NMOS W={w}u L={l}u")
+            length_val = data.get("length", 0.18)
+            lines.append(f"M{mos_count} {n1} {n2} {n3} 0 NMOS W={w}u L={length_val}u")
             mos_count += 1
         elif ntype in ("andGate", "orGate", "notGate", "nandGate", "norGate", "xorGate", "xnorGate"):
             gate_name = ntype.replace("Gate", "").upper()
             lines.append(f"X{nid} {n1} {n2} DIGISIM_{gate_name}")
 
-    lines.extend([
-        "",
-        ".dc V1 0 5 0.1",
-        ".print dc v(*)",
-        ".end"
-    ])
+    lines.extend(["", ".dc V1 0 5 0.1", ".print dc v(*)", ".end"])
 
     spice_text = "\n".join(lines)
     return {
@@ -312,20 +276,7 @@ def handle_rpc_request(request_data: Dict[str, Any]) -> Dict[str, Any] | None:
     params = request_data.get("params", {})
 
     if method == "initialize":
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "result": {
-                "protocolVersion": "2024-11-05",
-                "capabilities": {
-                    "tools": {}
-                },
-                "serverInfo": {
-                    "name": "digisim-mcp-server",
-                    "version": "1.0.0"
-                }
-            }
-        }
+        return {"jsonrpc": "2.0", "id": req_id, "result": {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}}, "serverInfo": {"name": "digisim-mcp-server", "version": "1.0.0"}}}
 
     if method == "notifications/initialized":
         return None
@@ -339,50 +290,25 @@ def handle_rpc_request(request_data: Dict[str, Any]) -> Dict[str, Any] | None:
                     {
                         "name": "digisim_create_circuit",
                         "description": "JSON netlist to schematic generator",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "netlist": {"type": "object"}
-                            },
-                            "required": ["netlist"]
-                        }
+                        "inputSchema": {"type": "object", "properties": {"netlist": {"type": "object"}}, "required": ["netlist"]},
                     },
                     {
                         "name": "digisim_simulate_mna",
                         "description": "Execute MNA / SPICE simulation and return node voltages & waveforms",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "circuit": {"type": "object"}
-                            },
-                            "required": ["circuit"]
-                        }
+                        "inputSchema": {"type": "object", "properties": {"circuit": {"type": "object"}}, "required": ["circuit"]},
                     },
                     {
                         "name": "digisim_detect_circuit_photo",
                         "description": "Run YOLO detection on base64 image input",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "image_b64": {"type": "string"},
-                                "confidence": {"type": "number"}
-                            },
-                            "required": ["image_b64"]
-                        }
+                        "inputSchema": {"type": "object", "properties": {"image_b64": {"type": "string"}, "confidence": {"type": "number"}}, "required": ["image_b64"]},
                     },
                     {
                         "name": "digisim_export_spice",
                         "description": "Generate SPICE netlist text from canvas JSON",
-                        "inputSchema": {
-                            "type": "object",
-                            "properties": {
-                                "circuit": {"type": "object"}
-                            },
-                            "required": ["circuit"]
-                        }
-                    }
+                        "inputSchema": {"type": "object", "properties": {"circuit": {"type": "object"}}, "required": ["circuit"]},
+                    },
                 ]
-            }
+            },
         }
 
     if method == "tools/call":
@@ -395,43 +321,17 @@ def handle_rpc_request(request_data: Dict[str, Any]) -> Dict[str, Any] | None:
             elif tool_name == "digisim_simulate_mna":
                 res = digisim_simulate_mna(args.get("circuit", args))
             elif tool_name == "digisim_detect_circuit_photo":
-                res = digisim_detect_circuit_photo(
-                    args.get("image_b64", ""),
-                    float(args.get("confidence", 0.35))
-                )
+                res = digisim_detect_circuit_photo(args.get("image_b64", ""), float(args.get("confidence", 0.35)))
             elif tool_name == "digisim_export_spice":
                 res = digisim_export_spice(args.get("circuit", args))
             else:
-                return {
-                    "jsonrpc": "2.0",
-                    "id": req_id,
-                    "error": {"code": -32601, "message": f"Tool '{tool_name}' not found"}
-                }
+                return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Tool '{tool_name}' not found"}}
 
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": json.dumps(res, indent=2)
-                        }
-                    ]
-                }
-            }
+            return {"jsonrpc": "2.0", "id": req_id, "result": {"content": [{"type": "text", "text": json.dumps(res, indent=2)}]}}
         except Exception as exc:
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "error": {"code": -32603, "message": str(exc)}
-            }
+            return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32603, "message": str(exc)}}
 
-    return {
-        "jsonrpc": "2.0",
-        "id": req_id,
-        "error": {"code": -32601, "message": f"Method '{method}' not supported"}
-    }
+    return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Method '{method}' not supported"}}
 
 
 def main():
@@ -447,11 +347,7 @@ def main():
                 sys.stdout.write(json.dumps(response) + "\n")
                 sys.stdout.flush()
         except Exception as err:
-            err_resp = {
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {"code": -32700, "message": f"Parse error: {err}"}
-            }
+            err_resp = {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": f"Parse error: {err}"}}
             sys.stdout.write(json.dumps(err_resp) + "\n")
             sys.stdout.flush()
 

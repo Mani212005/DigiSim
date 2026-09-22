@@ -42,9 +42,7 @@ def _read_labels(path: Path) -> list[tuple[int, float, float, float, float]]:
     return rows
 
 
-def _boxes_to_corners(
-    rows: list[tuple[int, float, float, float, float]], w: int, h: int
-) -> tuple[list[int], np.ndarray]:
+def _boxes_to_corners(rows: list[tuple[int, float, float, float, float]], w: int, h: int) -> tuple[list[int], np.ndarray]:
     """
     Convert normalised YOLO boxes to pixel-space corner points.
 
@@ -84,16 +82,11 @@ def _corners_to_yolo(ids: list[int], corners: np.ndarray, w: int, h: int) -> lis
         y2 = float(np.clip(quad[:, 1].max(), 0, h))
         if x2 - x1 < 4 or y2 - y1 < 4:
             continue
-        lines.append(
-            f"{cls_id} {(x1 + x2) / 2 / w:.6f} {(y1 + y2) / 2 / h:.6f} "
-            f"{(x2 - x1) / w:.6f} {(y2 - y1) / h:.6f}"
-        )
+        lines.append(f"{cls_id} {(x1 + x2) / 2 / w:.6f} {(y1 + y2) / 2 / h:.6f} {(x2 - x1) / w:.6f} {(y2 - y1) / h:.6f}")
     return lines
 
 
-def augment_once(
-    img: np.ndarray, corners: np.ndarray, rng: np.random.Generator
-) -> tuple[np.ndarray, np.ndarray]:
+def augment_once(img: np.ndarray, corners: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
     """
     Apply one random augmentation chain to an image and its box corners.
 
@@ -140,9 +133,7 @@ def augment_once(
     return img, corners
 
 
-def augment_split(
-    dataset: Path, split: str, variants: int, match: str, seed: int
-) -> int:
+def augment_split(dataset: Path, split: str, variants: int, match: str, seed: int) -> int:
     """
     Generate augmented copies of every matching image in a dataset split.
 
@@ -180,9 +171,7 @@ def augment_split(
             aug_img, aug_corners = augment_once(img.copy(), corners.copy(), rng)
             name = f"aug_{img_path.stem}_{v}"
             cv2.imwrite(str(img_dir / f"{name}.jpg"), aug_img)
-            lines = _corners_to_yolo(
-                ids, aug_corners, aug_img.shape[1], aug_img.shape[0]
-            )
+            lines = _corners_to_yolo(ids, aug_corners, aug_img.shape[1], aug_img.shape[0])
             (lbl_dir / f"{name}.txt").write_text("\n".join(lines) + "\n")
             written += 1
     return written

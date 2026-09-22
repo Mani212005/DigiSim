@@ -32,9 +32,7 @@ class ComponentEmbedder:
                 cold cache) — callers should degrade gracefully, not crash.
         """
         try:
-            self._model = torch.hub.load(
-                "facebookresearch/dinov2", "dinov2_vits14", trust_repo=True
-            )
+            self._model = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14", trust_repo=True)
         except (OSError, RuntimeError, ValueError, ImportError) as exc:
             raise RuntimeError(f"DINOv2 backbone unavailable: {exc}") from exc
         self._model.eval()

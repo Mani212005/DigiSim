@@ -119,9 +119,7 @@ def _seed_catalog(conn: sqlite3.Connection) -> None:
     now = _now()
     for entry in seed.get("components", []):
         conn.execute(
-            "INSERT INTO library_components (canonical_name, aliases, category,"
-            " package, pin_map, sim_model, source, verified, created_by, created_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, 'seed', 1, NULL, ?)",
+            "INSERT INTO library_components (canonical_name, aliases, category, package, pin_map, sim_model, source, verified, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, 'seed', 1, NULL, ?)",
             (
                 entry["canonical_name"],
                 json.dumps(entry.get("aliases", [])),
@@ -156,8 +154,7 @@ def _sync_seed_pins(conn: sqlite3.Connection) -> None:
         if not pins:
             continue
         row = conn.execute(
-            "SELECT id, pin_map FROM library_components"
-            " WHERE canonical_name = ? AND source = 'seed'",
+            "SELECT id, pin_map FROM library_components WHERE canonical_name = ? AND source = 'seed'",
             (entry["canonical_name"],),
         ).fetchone()
         if row is None:
@@ -203,10 +200,7 @@ def _component_json(row: tuple, image_count: int | None = None) -> dict:
     return component
 
 
-_COMPONENT_COLS = (
-    "id, canonical_name, aliases, category, package, pin_map, sim_model,"
-    " source, verified"
-)
+_COMPONENT_COLS = "id, canonical_name, aliases, category, package, pin_map, sim_model, source, verified"
 
 
 def _user_id() -> int:
@@ -306,10 +300,7 @@ def search_components() -> tuple:
             scored.append((score, row))
     scored.sort(key=lambda pair: (-pair[0], pair[1][1]))
 
-    results = [
-        {**_component_json(row[:9], row[9]), "score": round(score, 1)}
-        for score, row in scored[:_SEARCH_LIMIT]
-    ]
+    results = [{**_component_json(row[:9], row[9]), "score": round(score, 1)} for score, row in scored[:_SEARCH_LIMIT]]
     return jsonify({"results": results}), 200
 
 
@@ -333,10 +324,7 @@ def get_component(component_id: int) -> tuple:
         if row is None:
             return jsonify({"error": "Component not found"}), 404
         image_rows = conn.execute(
-            "SELECT id, domain, quality, consent_shared, created_at"
-            " FROM component_images"
-            " WHERE library_component_id = ? AND status = 'active'"
-            " ORDER BY created_at DESC",
+            "SELECT id, domain, quality, consent_shared, created_at FROM component_images WHERE library_component_id = ? AND status = 'active' ORDER BY created_at DESC",
             (component_id,),
         ).fetchall()
     finally:
@@ -382,9 +370,7 @@ def create_component() -> tuple:
     conn = _get_db()
     try:
         cur = conn.execute(
-            "INSERT INTO library_components (canonical_name, aliases, category,"
-            " package, pin_map, sim_model, source, verified, created_by, created_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, 'community', 0, ?, ?)",
+            "INSERT INTO library_components (canonical_name, aliases, category, package, pin_map, sim_model, source, verified, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, 'community', 0, ?, ?)",
             (
                 name,
                 json.dumps(aliases),
@@ -468,9 +454,7 @@ def update_component_pins(component_id: int) -> tuple:
 
     conn = _get_db()
     try:
-        row = conn.execute(
-            "SELECT source FROM library_components WHERE id = ?", (component_id,)
-        ).fetchone()
+        row = conn.execute("SELECT source FROM library_components WHERE id = ?", (component_id,)).fetchone()
         if row is None:
             return jsonify({"error": "Component not found"}), 404
         if row[0] == "seed":
@@ -518,16 +502,12 @@ def upload_component_image(component_id: int) -> tuple:
 
     conn = _get_db()
     try:
-        exists = conn.execute(
-            "SELECT 1 FROM library_components WHERE id = ?", (component_id,)
-        ).fetchone()
+        exists = conn.execute("SELECT 1 FROM library_components WHERE id = ?", (component_id,)).fetchone()
         if exists is None:
             return jsonify({"error": "Component not found"}), 404
 
         try:
-            stored = enroll_image(
-                request.files["image"].read(), _UPLOADS_DIR / str(component_id)
-            )
+            stored = enroll_image(request.files["image"].read(), _UPLOADS_DIR / str(component_id))
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
 
@@ -541,9 +521,7 @@ def upload_component_image(component_id: int) -> tuple:
             embedding_blob = vector.tobytes()
             # Near-duplicate check against this component's existing gallery.
             existing = conn.execute(
-                "SELECT id, embedding FROM component_images"
-                " WHERE library_component_id = ? AND status = 'active'"
-                " AND embedding IS NOT NULL",
+                "SELECT id, embedding FROM component_images WHERE library_component_id = ? AND status = 'active' AND embedding IS NOT NULL",
                 (component_id,),
             ).fetchall()
             for image_id, blob in existing:
@@ -554,9 +532,7 @@ def upload_component_image(component_id: int) -> tuple:
 
         quality = {**stored.quality, "warnings": warnings}
         cur = conn.execute(
-            "INSERT INTO component_images (library_component_id, path, domain,"
-            " embedding, quality, uploaded_by, consent_shared, status, created_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)",
+            "INSERT INTO component_images (library_component_id, path, domain, embedding, quality, uploaded_by, consent_shared, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)",
             (
                 component_id,
                 str(stored.path.relative_to(_UPLOADS_DIR)),
@@ -632,9 +608,7 @@ def _component_gallery(conn: sqlite3.Connection, component_id: int) -> list[np.n
         L2-normalised float32 vectors (possibly empty).
     """
     rows = conn.execute(
-        "SELECT embedding FROM component_images"
-        " WHERE library_component_id = ? AND status = 'active'"
-        " AND embedding IS NOT NULL",
+        "SELECT embedding FROM component_images WHERE library_component_id = ? AND status = 'active' AND embedding IS NOT NULL",
         (component_id,),
     ).fetchall()
     return [np.frombuffer(blob, dtype=np.float32) for (blob,) in rows]
@@ -663,8 +637,7 @@ def load_inventory_targets(folder_id: int, user_id: int) -> list["MatchTarget"]:
         if owner is None:
             return []
         rows = conn.execute(
-            "SELECT id, designator, name_raw, qty, library_component_id"
-            " FROM project_inventory WHERE folder_id = ? ORDER BY id",
+            "SELECT id, designator, name_raw, qty, library_component_id FROM project_inventory WHERE folder_id = ? ORDER BY id",
             (folder_id,),
         ).fetchall()
 
@@ -675,8 +648,7 @@ def load_inventory_targets(folder_id: int, user_id: int) -> list["MatchTarget"]:
             label = name_raw
             if component_id is not None:
                 comp = conn.execute(
-                    "SELECT canonical_name, aliases FROM library_components"
-                    " WHERE id = ?",
+                    "SELECT canonical_name, aliases FROM library_components WHERE id = ?",
                     (component_id,),
                 ).fetchone()
                 if comp is not None:
@@ -714,9 +686,7 @@ def load_global_targets() -> list["MatchTarget"]:
 
     conn = _get_db()
     try:
-        rows = conn.execute(
-            "SELECT id, canonical_name, aliases FROM library_components"
-        ).fetchall()
+        rows = conn.execute("SELECT id, canonical_name, aliases FROM library_components").fetchall()
         targets: list[MatchTarget] = []
         for component_id, name, aliases in rows:
             targets.append(
@@ -738,9 +708,7 @@ def load_global_targets() -> list["MatchTarget"]:
 # Project inventory
 # ---------------------------------------------------------------------------
 
-_INVENTORY_COLS = (
-    "id, folder_id, designator, name_raw, qty, value, library_component_id"
-)
+_INVENTORY_COLS = "id, folder_id, designator, name_raw, qty, value, library_component_id"
 
 
 def _inventory_json(row: tuple) -> dict:
@@ -813,8 +781,7 @@ def list_inventory(folder_id: int) -> tuple:
         if not _own_folder(conn, folder_id):
             return jsonify({"error": "Folder not found"}), 404
         rows = conn.execute(
-            f"SELECT {_INVENTORY_COLS} FROM project_inventory"
-            " WHERE folder_id = ? ORDER BY id",
+            f"SELECT {_INVENTORY_COLS} FROM project_inventory WHERE folder_id = ? ORDER BY id",
             (folder_id,),
         ).fetchall()
     finally:
@@ -855,9 +822,7 @@ def add_inventory(folder_id: int) -> tuple:
         created: list[dict] = []
         for item in cleaned:
             cur = conn.execute(
-                "INSERT INTO project_inventory (folder_id, designator, name_raw,"
-                " qty, value, library_component_id, created_at)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO project_inventory (folder_id, designator, name_raw, qty, value, library_component_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     folder_id,
                     item["designator"],
@@ -906,8 +871,7 @@ def update_inventory(folder_id: int, item_id: int) -> tuple:
         if not _own_folder(conn, folder_id):
             return jsonify({"error": "Folder not found"}), 404
         row = conn.execute(
-            f"SELECT {_INVENTORY_COLS} FROM project_inventory"
-            " WHERE id = ? AND folder_id = ?",
+            f"SELECT {_INVENTORY_COLS} FROM project_inventory WHERE id = ? AND folder_id = ?",
             (item_id, folder_id),
         ).fetchone()
         if row is None:
@@ -924,8 +888,7 @@ def update_inventory(folder_id: int, item_id: int) -> tuple:
         if error:
             return jsonify({"error": error}), 400
         conn.execute(
-            "UPDATE project_inventory SET designator = ?, name_raw = ?, qty = ?,"
-            " value = ?, library_component_id = ? WHERE id = ?",
+            "UPDATE project_inventory SET designator = ?, name_raw = ?, qty = ?, value = ?, library_component_id = ? WHERE id = ?",
             (
                 item["designator"],
                 item["name"],
@@ -956,9 +919,7 @@ def update_inventory(folder_id: int, item_id: int) -> tuple:
     )
 
 
-@library_bp.route(
-    "/projects/<int:folder_id>/inventory/<int:item_id>", methods=["DELETE"]
-)
+@library_bp.route("/projects/<int:folder_id>/inventory/<int:item_id>", methods=["DELETE"])
 @require_user
 def delete_inventory(folder_id: int, item_id: int) -> tuple:
     """

@@ -12,27 +12,25 @@ from typing import Any, Dict
 import google.generativeai as genai
 
 
-def generate_subcircuit_from_photo(
-    image_b64: str, prompt: str = ""
-) -> Dict[str, Any]:
+def generate_subcircuit_from_photo(image_b64: str, prompt: str = "") -> Dict[str, Any]:
     """
     Generates a subcircuit and component pinout from a board or schematic photo.
-    
+
     Args:
         image_b64: Base64-encoded image data.
         prompt: Optional user context prompt.
-        
+
     Returns:
         Structured JSON response containing component pins and subcircuit netlist.
     """
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
         return _fallback_mock_response()
-        
+
     genai.configure(api_key=api_key)
     # Gemini 3.1 Pro (or fallback to 1.5 Pro)
     model_name = "gemini-1.5-pro"  # Use available model
-    
+
     try:
         model = genai.GenerativeModel(model_name)
     except Exception:
@@ -59,7 +57,7 @@ def generate_subcircuit_from_photo(
         "}\n"
         "Only output the JSON object."
     )
-    
+
     try:
         response = model.generate_content([sys_prompt, image_parts[0], prompt])
         text = response.text.strip()
@@ -76,7 +74,7 @@ def generate_subcircuit_from_photo(
 def _fallback_mock_response() -> Dict[str, Any]:
     """
     Provides a mock synthesis response if the AI API is unavailable.
-    
+
     Returns:
         Mock structured JSON for an 8-bit ALU.
     """
@@ -90,19 +88,19 @@ def _fallback_mock_response() -> Dict[str, Any]:
             {"id": "b", "label": "B", "type": "INPUT", "side": "LEFT"},
             {"id": "out", "label": "OUT", "type": "OUTPUT", "side": "RIGHT"},
             {"id": "clk", "label": "CLK", "type": "INPUT", "side": "TOP"},
-            {"id": "cout", "label": "CARRY_OUT", "type": "OUTPUT", "side": "BOTTOM"}
+            {"id": "cout", "label": "CARRY_OUT", "type": "OUTPUT", "side": "BOTTOM"},
         ],
         "subcircuit": {
             "nodes": [
                 {"id": "a", "type": "input", "position": {"x": 0, "y": 0}, "data": {"label": "a", "value": 0}},
                 {"id": "b", "type": "input", "position": {"x": 0, "y": 50}, "data": {"label": "b", "value": 0}},
                 {"id": "and1", "type": "andGate", "position": {"x": 100, "y": 25}, "data": {"label": "AND", "value": 0}},
-                {"id": "out", "type": "output", "position": {"x": 200, "y": 25}, "data": {"label": "out", "value": 0}}
+                {"id": "out", "type": "output", "position": {"x": 200, "y": 25}, "data": {"label": "out", "value": 0}},
             ],
             "edges": [
                 {"id": "e1", "source": "a", "target": "and1", "sourceHandle": "s:val", "targetHandle": "a"},
                 {"id": "e2", "source": "b", "target": "and1", "sourceHandle": "s:val", "targetHandle": "b"},
-                {"id": "e3", "source": "and1", "target": "out", "sourceHandle": "s:val", "targetHandle": "val"}
-            ]
-        }
+                {"id": "e3", "source": "and1", "target": "out", "sourceHandle": "s:val", "targetHandle": "val"},
+            ],
+        },
     }

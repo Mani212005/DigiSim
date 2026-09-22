@@ -39,7 +39,7 @@ export interface NodeData {
 
   label: string;
   /** Logic level: 0 (LOW), 1 (HIGH), 'Z' (High-Z), or 'X' (Undefined). */
-  value?: number | string;
+  value?: number | string | Record<string, number | string>;
   /** Hardware nodes only: pin layout copied from the library pin map. */
   pins?: LibraryPin[];
   /** Hardware nodes only: shared-library identity for this part. */
@@ -848,8 +848,8 @@ export interface CustomComponentDefinition {
     bitWidth?: number;
   }[];
   subcircuit: {
-    nodes: Node[];
-    edges: Edge[];
+    nodes: DigiNode[];
+    edges: DigiEdge[];
   };
   symbolShape?: 'RECTANGLE' | 'DIP_CHIP' | 'QFP' | 'GATE_CUSTOM';
   createdAt: string;

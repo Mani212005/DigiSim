@@ -49,10 +49,7 @@ def classify_image(image_path: Path) -> DomainDecision:
     saturated = float(np.mean(hsv[:, :, 1] > _SATURATION_LEVEL))
     bright = float(np.mean(hsv[:, :, 2] > _BRIGHT_LEVEL))
 
-    is_schematic = (
-        saturated < _MAX_SCHEMATIC_SAT_FRACTION
-        and bright > _MIN_SCHEMATIC_BRIGHT_FRACTION
-    )
+    is_schematic = saturated < _MAX_SCHEMATIC_SAT_FRACTION and bright > _MIN_SCHEMATIC_BRIGHT_FRACTION
     return DomainDecision(
         domain="schematic" if is_schematic else "photo",
         saturated_fraction=round(saturated, 4),

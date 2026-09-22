@@ -44,7 +44,7 @@ const runSimulationWithCycleGuard = (
   }
 
   // Load custom components for hierarchy
-  let customComponents: any[] = [];
+  let customComponents: import('../../types').CustomComponentDefinition[] = [];
   try {
     const raw = localStorage.getItem('customComponents');
     if (raw) customComponents = JSON.parse(raw);
@@ -76,7 +76,7 @@ const runSimulationWithCycleGuard = (
 
         if (src.type === 'customComponent' && typeof src.data.value === 'object' && src.data.value !== null) {
           const outputPinId = edge.sourceHandle?.replace('s:', '');
-          return outputPinId ? ((src.data.value as any)[outputPinId] ?? 'Z') : 'Z';
+          return outputPinId ? ((src.data.value as Record<string, number | string>)[outputPinId] ?? 'Z') : 'Z';
         }
 
         return src.data.value !== undefined ? src.data.value : 'Z';
@@ -93,9 +93,9 @@ const runSimulationWithCycleGuard = (
         if (srcA) {
           if (srcA.type === 'customComponent' && typeof srcA.data.value === 'object' && srcA.data.value !== null) {
              const outputPinId = edgeA.sourceHandle?.replace('s:', '');
-             valA = outputPinId ? ((srcA.data.value as any)[outputPinId] ?? 0) : 0;
+             valA = outputPinId ? ((srcA.data.value as Record<string, number | string>)[outputPinId] ?? 0) : 0;
           } else {
-             valA = srcA.data.value !== undefined ? srcA.data.value : 0;
+             valA = srcA.data.value !== undefined ? srcA.data.value as string | number : 0;
           }
         }
       }
@@ -105,9 +105,9 @@ const runSimulationWithCycleGuard = (
         if (srcB) {
           if (srcB.type === 'customComponent' && typeof srcB.data.value === 'object' && srcB.data.value !== null) {
              const outputPinId = edgeB.sourceHandle?.replace('s:', '');
-             valB = outputPinId ? ((srcB.data.value as any)[outputPinId] ?? 0) : 0;
+             valB = outputPinId ? ((srcB.data.value as Record<string, number | string>)[outputPinId] ?? 0) : 0;
           } else {
-             valB = srcB.data.value !== undefined ? srcB.data.value : 0;
+             valB = srcB.data.value !== undefined ? srcB.data.value as string | number : 0;
           }
         }
       }
@@ -146,9 +146,9 @@ const runSimulationWithCycleGuard = (
               if (src) {
                 if (src.type === 'customComponent' && typeof src.data.value === 'object' && src.data.value !== null) {
                   const outId = edge.sourceHandle?.replace('s:', '');
-                  val = outId ? ((src.data.value as any)[outId] ?? 'Z') : 'Z';
+                  val = outId ? ((src.data.value as Record<string, number | string>)[outId] ?? 'Z') : 'Z';
                 } else {
-                  val = src.data.value ?? 'Z';
+                  val = (src.data.value as string | number) ?? 'Z';
                 }
               }
               // find the internal node that corresponds to this input pin
@@ -166,10 +166,10 @@ const runSimulationWithCycleGuard = (
             // Map internal outputs back to external output pins
             const internalOutputNodes = simulatedInternal.filter(n => n.type === 'output');
             const outputs: Record<string, number | string> = {};
-            for (const outPin of def.pins.filter((p: any) => p.type === 'OUTPUT')) {
+            for (const outPin of def.pins.filter(p => p.type === 'OUTPUT')) {
               const internalOut = internalOutputNodes.find(n => n.id === outPin.id || n.data.label === outPin.id);
               if (internalOut) {
-                outputs[outPin.id] = internalOut.data.value ?? 'Z';
+                outputs[outPin.id] = (internalOut.data.value as string | number) ?? 'Z';
               } else {
                 outputs[outPin.id] = 'Z';
               }
@@ -181,7 +181,7 @@ const runSimulationWithCycleGuard = (
         }
       } else {
         const oldVal = node.data.value as number | string | undefined;
-        newVal = evaluateGate(node.type, inputs, oldVal);
+        newVal = evaluateGate(node.type, inputs as (string | number)[], oldVal as string | number | undefined);
       }
 
       // Check if value changed

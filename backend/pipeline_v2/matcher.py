@@ -123,9 +123,7 @@ def _ocr_score(texts: list[str], target: MatchTarget) -> float:
     return best / 100.0
 
 
-def score_pair(
-    embedding: np.ndarray | None, texts: list[str], target: MatchTarget
-) -> tuple[float, float, float]:
+def score_pair(embedding: np.ndarray | None, texts: list[str], target: MatchTarget) -> tuple[float, float, float]:
     """
     Combined identity score for one proposal/target pair.
 
@@ -226,10 +224,7 @@ def match_proposals(
         else:
             if assigned.score < REVIEW_SCORE:
                 reasons.append("low_score")
-            if (
-                len(candidates) > 1
-                and candidates[0].score - candidates[1].score < REVIEW_MARGIN
-            ):
+            if len(candidates) > 1 and candidates[0].score - candidates[1].score < REVIEW_MARGIN:
                 reasons.append("small_margin")
             if assigned.visual == 0.0:
                 # Identity rests on silkscreen text alone — always confirm.
@@ -247,9 +242,7 @@ def match_proposals(
             )
         )
 
-    return MatchResult(
-        matches=matches, missing_labels=_label_counts(targets, used_slots)
-    )
+    return MatchResult(matches=matches, missing_labels=_label_counts(targets, used_slots))
 
 
 def _label_counts(targets: list[MatchTarget], used_slots: set[int]) -> list[str]:
@@ -266,6 +259,4 @@ def _label_counts(targets: list[MatchTarget], used_slots: set[int]) -> list[str]
     for j, target in enumerate(targets):
         if j not in used_slots:
             counts[target.label] = counts.get(target.label, 0) + 1
-    return [
-        label if count == 1 else f"{label} ×{count}" for label, count in counts.items()
-    ]
+    return [label if count == 1 else f"{label} ×{count}" for label, count in counts.items()]

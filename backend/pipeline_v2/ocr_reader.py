@@ -53,8 +53,4 @@ def read_text(image_bgr: np.ndarray) -> list[str]:
         return []
     if not result:
         return []
-    return [
-        str(text).strip().lower()
-        for _box, text, confidence in result
-        if float(confidence) >= _MIN_TEXT_CONFIDENCE and str(text).strip()
-    ]
+    return [str(text).strip().lower() for _box, text, confidence in result if float(confidence) >= _MIN_TEXT_CONFIDENCE and str(text).strip()]

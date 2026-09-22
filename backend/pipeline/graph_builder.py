@@ -148,9 +148,7 @@ class GraphBuilder:
             nets.setdefault(uf.find(i), []).append(seg)
         return list(nets.values())
 
-    def _net_contacts(
-        self, net: list[WireSegment], components: list[Detection]
-    ) -> list[tuple[int, str, tuple[float, float]]]:
+    def _net_contacts(self, net: list[WireSegment], components: list[Detection]) -> list[tuple[int, str, tuple[float, float]]]:
         """
         Find which components a net touches and on which side.
 
@@ -166,10 +164,7 @@ class GraphBuilder:
             for px, py in seg.endpoints:
                 for idx, det in enumerate(components):
                     x1, y1, x2, y2 = det.box
-                    if (
-                        x1 - BOX_INFLATE <= px <= x2 + BOX_INFLATE
-                        and y1 - BOX_INFLATE <= py <= y2 + BOX_INFLATE
-                    ):
+                    if x1 - BOX_INFLATE <= px <= x2 + BOX_INFLATE and y1 - BOX_INFLATE <= py <= y2 + BOX_INFLATE:
                         side = "right" if px >= det.x else "left"
                         # Keep one contact per box quadrant so a gate's two
                         # input ports (top/bottom halves) both survive dedup.
@@ -200,9 +195,7 @@ class GraphBuilder:
 
         # Drivers: gates contacted on their output (right) side. Output-style
         # nodes cannot drive a net.
-        sources = [
-            c for c in contacts if c[1] == "right" and node_type(c[0]) != "output"
-        ]
+        sources = [c for c in contacts if c[1] == "right" and node_type(c[0]) != "output"]
         if not sources:
             # Fallback: the leftmost touched component drives the net.
             leftmost = min(contacts, key=lambda c: components[c[0]].x)
@@ -211,9 +204,7 @@ class GraphBuilder:
         source_ids = {c[0] for c in sources}
         # Consumers: contacted on their input (left) side. Input-style nodes
         # have no input handles and can never be targets.
-        targets = [
-            c for c in contacts if c[0] not in source_ids and node_type(c[0]) != "input"
-        ]
+        targets = [c for c in contacts if c[0] not in source_ids and node_type(c[0]) != "input"]
 
         for tgt_idx, _, tgt_point in targets:
             # When bad segment merging yields several drivers on one net,

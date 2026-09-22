@@ -52,9 +52,7 @@ class CircuitExporter:
                 {
                     "id": node_id,
                     "type": node_type,
-                    "label": NODE_TYPE_LABELS.get(
-                        node_type, attrs.get("class_name", "Component")
-                    ),
+                    "label": NODE_TYPE_LABELS.get(node_type, attrs.get("class_name", "Component")),
                     "x": round(float(attrs.get("x", 0.0)), 1),
                     "y": round(float(attrs.get("y", 0.0)), 1),
                     "confidence": round(float(attrs.get("confidence", 0.0)), 3),

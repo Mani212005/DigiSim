@@ -149,7 +149,4 @@ class WireExtractor:
         )
         if lines is None:
             return []
-        return [
-            WireSegment(int(x1), int(y1), int(x2), int(y2))
-            for x1, y1, x2, y2 in lines[:, 0]
-        ]
+        return [WireSegment(int(x1), int(y1), int(x2), int(y2)) for x1, y1, x2, y2 in lines[:, 0]]

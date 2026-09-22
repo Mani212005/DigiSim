@@ -121,7 +121,7 @@ export function InteractiveProbeTooltip({
         i = 0.005; // 5mA nominal digital flow
       }
 
-      const logic = deriveLogicState(srcNode?.data.value, v);
+      const logic = deriveLogicState(srcNode?.data.value as string | number | undefined, v);
 
       // Get or update sample history
       const histKey = `wire:${edge.id}`;
@@ -173,7 +173,7 @@ export function InteractiveProbeTooltip({
         v = 0;
       }
 
-      const logic = deriveLogicState(node.data.value, v);
+      const logic = deriveLogicState(node.data.value as string | number | undefined, v);
 
       const histKey = `term:${node.id}:${handle}`;
       let hist = historyMapRef.current.get(histKey);
