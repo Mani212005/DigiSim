@@ -1,0 +1,49 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd frontend && npm ci --legacy-peer-deps && npm run build",
+  "installCommand": "cd frontend && npm ci --legacy-peer-deps",
+  "outputDirectory": "frontend/build",
+  "framework": "create-react-app",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://digisim-backend.onrender.com/api/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "https://digisim-backend.onrender.com/auth/:path*"
+    },
+    {
+      "source": "/library/:path*",
+      "destination": "https://digisim-backend.onrender.com/library/:path*"
+    },
+    {
+      "source": "/projects",
+      "destination": "https://digisim-backend.onrender.com/projects"
+    },
+    {
+      "source": "/projects/:path*",
+      "destination": "https://digisim-backend.onrender.com/projects/:path*"
+    },
+    {
+      "source": "/detect_gates",
+      "destination": "https://digisim-backend.onrender.com/detect_gates"
+    },
+    {
+      "source": "/detect_circuit",
+      "destination": "https://digisim-backend.onrender.com/detect_circuit"
+    },
+    {
+      "source": "/detect_v2",
+      "destination": "https://digisim-backend.onrender.com/detect_v2"
+    },
+    {
+      "source": "/health",
+      "destination": "https://digisim-backend.onrender.com/health"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

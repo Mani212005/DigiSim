@@ -109,6 +109,14 @@ To register DigiSim's MCP server with Claude Desktop or Antigravity, add the fol
 
 ---
 
+## 🌐 Hosting
+
+Live topology: static frontend on Vercel, Flask backend as a Docker container
+on Render (API calls proxy through `vercel.json` rewrites). Click-through
+deploy steps and required secrets: [`docs/deploy-vercel-render.md`](docs/deploy-vercel-render.md).
+
+---
+
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for details.
