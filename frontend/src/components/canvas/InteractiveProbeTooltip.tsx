@@ -6,10 +6,8 @@
  * and a mini SVG sparkline waveform showing the last 20 time samples.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type {
-  DigiEdge,
-  DigiNode,
   InteractiveProbeTooltipProps,
   OperatingRegion,
   ProbedElectricalState,
@@ -85,8 +83,15 @@ export function InteractiveProbeTooltip({
   const activeTargetRef = useRef<string | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
 
-  // Detect and sample live electrical parameters for a wire/terminal/node
-  const resolveElectricalState = (
+  /**
+   * Detect and sample live electrical parameters for a wire/terminal/node.
+   * Memoized so pointer-listener and sampling effects can depend on it safely.
+   * @param targetType - Whether the target is a wire, terminal, or node body
+   * @param targetId - Edge id for wires, node id otherwise
+   * @param extraId - Terminal handle id for terminal targets
+   * @returns Live electrical state snapshot, or null when the target is gone
+   */
+  const resolveElectricalState = useCallback((
     targetType: 'wire' | 'terminal' | 'node',
     targetId: string,
     extraId?: string
@@ -201,7 +206,7 @@ export function InteractiveProbeTooltip({
     }
 
     return null;
-  };
+  }, [nodes, edges, simOutputs, vdd]);
 
   // Attach global DOM pointer listeners on canvas elements
   useEffect(() => {
@@ -285,7 +290,7 @@ export function InteractiveProbeTooltip({
       window.removeEventListener('mousemove', handlePointerMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  });
+  }, [visible, resolveElectricalState]);
 
   // Continuous waveform sampling clock for active probe
   useEffect(() => {
@@ -306,7 +311,7 @@ export function InteractiveProbeTooltip({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isVisible, probeState, nodes, edges, simOutputs, vdd]);
+  }, [isVisible, probeState, resolveElectricalState]);
 
   if (!visible || !probeState) return null;
 
