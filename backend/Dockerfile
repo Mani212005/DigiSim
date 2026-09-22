@@ -9,6 +9,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# OpenCV (pulled in by inference-sdk) links against libGL and glib, which the
+# slim image does not ship; without them gunicorn fails to boot on import.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Locked deps first for layer caching. --no-install-project: the app runs as
 # top-level modules (app.py, auth.py, pipeline/...) from WORKDIR, it is not
 # an installed package.
