@@ -1,0 +1,39 @@
+# Render Blueprint for the DigiSim Flask backend.
+# Deploy via Dashboard -> New -> Blueprint -> select this repo.
+# The frontend (Vercel) proxies API calls here through vercel.json rewrites;
+# if you rename this service, update those rewrite destinations to match.
+services:
+  - type: web
+    name: digisim-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    autoDeploy: true
+    # Unauthenticated liveness probe (backend/app.py -> /health).
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: DETECTION_CONFIDENCE_THRESHOLD
+        value: 0.35
+      # Local YOLO weights are gitignored, so the default path is empty in a
+      # fresh deploy: /detect_gates (Roboflow cloud) works with just
+      # ROBOFLOW_API_KEY, while /detect_circuit returns 503 until weights are
+      # provided (persistent disk upload or baked image). See docs/deploy-vercel-render.md.
+      - key: MODEL_WEIGHTS_PATH
+        value: model/weights/best.pt
+      # Same-origin via the Vercel /api-style rewrites, so the default
+      # local origins below only matter for direct access. Set to the Vercel
+      # app origin when calling the backend cross-origin.
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: ROBOFLOW_API_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      # Serve HTTPS on Render, so the Secure session cookie flag is safe.
+      - key: COOKIE_SECURE
+        value: 1

@@ -7,6 +7,8 @@ import React, { useState, useRef } from 'react';
 import type { CustomComponentDefinition, DigiNode, DigiEdge } from '../types';
 import './AIVisionIntakeModal.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
 interface AIResult {
   componentName?: string;
   category?: string;
@@ -36,7 +38,7 @@ export function AIVisionIntakeModal({ onClose, onSave }: Props) {
       const b64 = ev.target?.result as string;
       setLoading(true);
       try {
-        const res = await fetch('http://127.0.0.1:5000/api/circuit/photo-to-subcircuit', {
+        const res = await fetch(`${API_URL}/api/circuit/photo-to-subcircuit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: b64, prompt })
