@@ -1,0 +1,8 @@
+# Netlify build configuration for DigiSim.
+# The React frontend lives in frontend/ (Create React App); the repo root
+# has no package.json, so without this file Netlify has nothing to build
+# and every deploy preview fails. This file is the canonical fix.
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "build"
