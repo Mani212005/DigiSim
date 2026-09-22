@@ -7,9 +7,11 @@ rewrites every backend path to the Render host, so API calls stay same-origin
 changes). The Azure Static Web Apps workflow is untouched and still deploys
 the frontend to Azure as before.
 
-There is no Netlify in this project: no `netlify.toml`, no `_redirects`, no
-Netlify workflow, and no Netlify references in code or docs. Nothing had to
-be migrated off it.
+The live deploy story is Vercel plus Render only. A minimal `netlify.toml`
+(base `frontend/`, stock CRA build) exists solely to satisfy the Netlify
+GitHub App's deploy-preview checks, which are required status checks on
+PRs; no Netlify workflow, `_redirects`, or docs references exist, and no
+traffic is served from Netlify.
 
 ## Backend on Render (click-through)
 
