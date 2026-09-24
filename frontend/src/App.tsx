@@ -95,6 +95,7 @@ import ComponentPropertiesModal from './components/hud/ComponentPropertiesModal'
 import { exportNetlist } from './logic/netlistIO';
 import { downloadGerberFile } from './logic/gerberExport';
 import { downloadSpiceNetlist, downloadSpectreNetlist } from './logic/simulation/netlistSpice';
+import { ensureStandardCellsSeeded } from './logic/library/standardCells';
 import { useProjects } from './hooks/useProjects';
 import type { TechNode } from './types/pdk';
 import type {
@@ -125,15 +126,10 @@ import type {
 const initialNodes: DigiNode[] = [
   { id: '1', position: { x: 0, y: 0 }, data: { label: 'Input A', value: 0 }, type: 'input' },
   { id: '2', position: { x: 0, y: 160 }, data: { label: 'Input B', value: 0 }, type: 'input' },
-  { id: '3', position: { x: 260, y: 70 }, data: { label: 'AND Gate', value: 0 }, type: 'andGate' },
   { id: '4', position: { x: 520, y: 78 }, data: { label: 'Output', value: 0 }, type: 'output' },
 ];
 
-const initialEdges: DigiEdge[] = [
-  { id: 'e1-3', source: '1', target: '3', sourceHandle: null, targetHandle: 'a' },
-  { id: 'e2-3', source: '2', target: '3', sourceHandle: null, targetHandle: 'b' },
-  { id: 'e3-4', source: '3', target: '4' },
-];
+const initialEdges: DigiEdge[] = [];
 
 let id = 5;
 const getId = (): string => `${id++}`;
@@ -208,15 +204,14 @@ const ANALOG_DEFAULT_DATA: Record<string, Partial<NodeData>> = {
   subckt: { cellName: 'INVERTER', params: { W_p: 2.4, W_n: 1.2, L: 0.18 } },
 };
 
-const GATE_PALETTE: PaletteEntry[] = [
-  { type: 'andGate', label: 'AND Gate', glyph: 'and', name: 'AND' },
-  { type: 'orGate', label: 'OR Gate', glyph: 'or', name: 'OR' },
-  { type: 'notGate', label: 'NOT Gate', glyph: 'not', name: 'NOT' },
-  { type: 'nandGate', label: 'NAND Gate', glyph: 'nand', name: 'NAND' },
-  { type: 'norGate', label: 'NOR Gate', glyph: 'nor', name: 'NOR' },
-  { type: 'xorGate', label: 'XOR Gate', glyph: 'xor', name: 'XOR' },
-  { type: 'xnorGate', label: 'XNOR Gate', glyph: 'xnor', name: 'XNOR' },
-];
+/**
+ * Transistor-first: ready-made gate primitives are no longer offered as
+ * palette primitives. This legacy list is kept empty on purpose — old
+ * `andGate`/`nandGate`/… node types still render and simulate (hidden
+ * compatibility path for saved circuits), but users build from NMOS/PMOS +
+ * supply/inputs/outputs and reuse transistor-built cells from My Library.
+ */
+const GATE_PALETTE: PaletteEntry[] = [];
 
 function App(): React.ReactElement {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -468,16 +463,37 @@ function App(): React.ReactElement {
    */
   const handleSaveCustomComponent = useCallback((def: CustomComponentDefinition) => {
     try {
+      ensureStandardCellsSeeded();
       const raw = localStorage.getItem('customComponents');
       const existing = raw ? (JSON.parse(raw) as CustomComponentDefinition[]) : [];
+      // Keep only wires fully inside the packaged selection so reused
+      // cells simulate standalone (external canvas wires stay outside).
+      const keptIds = new Set(def.subcircuit.nodes.map((n) => n.id));
+      const internalEdges = def.subcircuit.edges.filter(
+        (e) => keptIds.has(e.source) && keptIds.has(e.target)
+      );
+      const clean: CustomComponentDefinition = {
+        ...def,
+        subcircuit: { nodes: def.subcircuit.nodes, edges: internalEdges },
+      };
       const unique = Array.from(
-        new Map([...existing, def].map((item) => [item.id, item])).values()
+        new Map([...existing, clean].map((item) => [item.id, item])).values()
       );
       localStorage.setItem('customComponents', JSON.stringify(unique));
     } catch {
       /* storage unavailable — the modal still closes */
     }
     window.dispatchEvent(new Event('digisim:library_updated'));
+  }, []);
+
+  // Transistor-first seed: standard cells (NOT/NAND/NOR/AND/OR/XOR) built
+  // from transistors, so My Library starts with inspectable gates.
+  useEffect(() => {
+    try {
+      ensureStandardCellsSeeded();
+    } catch {
+      /* seed is best-effort; the canvas still works without it */
+    }
   }, []);
 
   // Load the shared component library once for the placement palette.
@@ -498,6 +514,9 @@ function App(): React.ReactElement {
     );
   }, [setNodes]);
 
+  // Hidden compatibility path: legacy primitive gate node types still
+  // render and simulate so saved circuits using them keep loading, even
+  // though the palette no longer offers them (transistor-first).
   const nodeTypes = useMemo<NodeTypes>(() => ({
     input: (props: NodeProps<NodeData>) => (
       <InputNode {...props} updateNodeData={updateNodeData} />

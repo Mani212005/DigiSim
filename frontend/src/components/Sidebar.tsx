@@ -1,12 +1,14 @@
 /**
  * @file Sidebar.tsx
  * @description Cadence Virtuoso-grade Silicon EDA Component Toolbox.
- * Categorized into Silicon Transistors, Passives & Power References, and Digital Standard Cells.
+ * Transistor-first: base blocks are CMOS transistors, passives/power, and
+ * digital I/O terminals. Gates live as transistor-built cells in My Library,
+ * not as ready-made primitives. Legacy gate node types still render for
+ * backward compatibility but are never offered here.
  */
 
 import React, { useState } from 'react';
 import './Sidebar.css';
-import { GateGlyph } from '../nodes/GateShell';
 import SampleImages from './SampleImages';
 import { ComponentLibraryPanel } from './ComponentLibraryPanel';
 
@@ -108,6 +110,9 @@ export default function Sidebar({
   startSidebarResize,
 }: SidebarProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<'silicon' | 'passives' | 'logic' | 'custom'>('silicon');
+  // gatePalette is intentionally unused transistor-first: legacy gate node
+  // types still render for old circuits but are never offered as primitives.
+  void gatePalette;
 
   return (
     <>
@@ -175,12 +180,12 @@ export default function Sidebar({
           <nav className="sidebar-menu" aria-label="Toolbox sections">
             <button className="sidebar-menu-btn" onClick={() => setSidebarView('library')}>
               <span className="sidebar-menu-btn__icon" aria-hidden="true">▦</span>
-              <span className="sidebar-menu-btn__text">
-                <span className="sidebar-menu-btn__name">Silicon Primitives</span>
-                <span className="sidebar-menu-btn__sub">
-                  MOSFETs, BJTs, passives & logic gates
+                <span className="sidebar-menu-btn__text">
+                  <span className="sidebar-menu-btn__name">Silicon Primitives</span>
+                  <span className="sidebar-menu-btn__sub">
+                    MOSFETs, passives, I/O & your library cells
+                  </span>
                 </span>
-              </span>
               <span className="sidebar-menu-btn__arrow" aria-hidden="true">›</span>
             </button>
             <button className="sidebar-menu-btn" onClick={() => setSidebarView('vision')}>
@@ -228,7 +233,7 @@ export default function Sidebar({
                   className={`segment-tab ${activeTab === 'logic' ? 'active' : ''}`}
                   onClick={() => setActiveTab('logic')}
                 >
-                  Logic Gates</button>
+                  Digital I/O</button>
                 <button
                   className={`segment-tab ${activeTab === 'custom' ? 'active' : ''}`}
                   onClick={() => setActiveTab('custom')}
@@ -519,60 +524,12 @@ export default function Sidebar({
                     </div>
                   </Accordion>
 
-                  <Accordion title="Standard Logic Gates">
-                    {gatePalette
-                      .filter((g) => ['andGate', 'orGate', 'notGate', 'nandGate', 'norGate'].includes(g.type))
-                      .map((gate) => {
-                        const tipInfo = COMPONENT_TOOLTIP_DATA[gate.type] ?? {
-                          name: gate.label,
-                          category: 'LOGIC GATE',
-                          description: `${gate.label} digital logic component.`,
-                          pins: '3 Pins: [In A, In B, Out Y]',
-                        };
-                        return (
-                          <div
-                            key={gate.type}
-                            role="button"
-                            aria-label={`Add ${gate.label}`}
-                            className="component-chip"
-                            draggable
-                            onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
-                            onClick={() => addNode(gate.type, gate.label)}
-                          >
-                            <GateGlyph type={gate.glyph} className="chip-icon" />
-                            <span className="chip-label">{gate.name}</span>
-                            <ComponentTooltipCard info={tipInfo} />
-                          </div>
-                        );
-                      })}
-                  </Accordion>
-
-                  <Accordion title="Arithmetic & Parity Gates" defaultOpen={false}>
-                    {gatePalette
-                      .filter((g) => ['xorGate', 'xnorGate'].includes(g.type))
-                      .map((gate) => {
-                        const tipInfo = COMPONENT_TOOLTIP_DATA[gate.type] ?? {
-                          name: gate.label,
-                          category: 'ARITHMETIC',
-                          description: `${gate.label} digital logic component.`,
-                          pins: '3 Pins: [In A, In B, Out Y]',
-                        };
-                        return (
-                          <div
-                            key={gate.type}
-                            role="button"
-                            aria-label={`Add ${gate.label}`}
-                            className="component-chip"
-                            draggable
-                            onDragStart={(e) => onPaletteDragStart(e, gate.type, gate.label)}
-                            onClick={() => addNode(gate.type, gate.label)}
-                          >
-                            <GateGlyph type={gate.glyph} className="chip-icon" />
-                            <span className="chip-label">{gate.name}</span>
-                            <ComponentTooltipCard info={tipInfo} />
-                          </div>
-                        );
-                      })}
+                  <Accordion title="Gates live in My Library">
+                    <p className="library-hint">
+                      Transistor-first: wire NMOS/PMOS + supplies, select it,
+                      and package it as a named cell. Seeded NOT/NAND/NOR/AND/OR/XOR
+                      cells (built from transistors) are under My Library.
+                    </p>
                   </Accordion>
                 </>
               )}

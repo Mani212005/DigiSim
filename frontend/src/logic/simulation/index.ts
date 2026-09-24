@@ -2,10 +2,12 @@
  * @file index.ts
  * @description Simulation engine entry point (CLAUDE.md: all simulation logic
  * lives in src/logic/simulation/). simulate() partitions the canvas into
- * islands, keeps today's digital semantics for gate/IO islands, and solves
- * fully-analog islands with the MNA DC solver. Islands mixing gates with
- * analog parts simulate digitally and flag the analog parts — bridging the
- * two domains arrives with board pin stubs (S3).
+ * islands, keeps today's digital semantics for gate/IO islands, solves
+ * transistor-first CMOS (NMOS/PMOS + supplies) with the switch-level solver
+ * inside runSimulation, and solves fully-analog islands with the MNA DC
+ * solver. Islands mixing gates with true analog parts simulate digitally and
+ * flag the analog parts — bridging the two domains arrives with board pin
+ * stubs (S3). Transistor/supply nodes never raise the mixed warning.
  */
 
 import type { DigiEdge, DigiNode } from '../../types';
@@ -18,9 +20,21 @@ export { runSimulation } from './digital';
 export type { SimulateCircuit } from './digital';
 export { ANALOG_TYPES, partitionIslands } from './islands';
 export { solveAnalogIsland } from './mna';
+export { solveSwitchNets, normalizeTerminal } from './switchLevel';
+export type { SwitchValue } from './switchLevel';
 
 const MIXED_ISLAND_WARNING =
   'Analog parts can’t drive gates yet — connect them via board pins (coming in S3)';
+
+/** Switch-level CMOS nodes are digital, never mixed-warning analog parts. */
+const SWITCH_DIGITAL_TYPES: ReadonlySet<string> = new Set([
+  'nmos',
+  'pmos',
+  'subckt',
+  'vsource',
+  'ground',
+  'clockSource',
+]);
 
 /**
  * Simulate the whole canvas: digital islands via topological gate evaluation,
@@ -67,7 +81,8 @@ export function simulate(
       });
     } else if (island.mixed) {
       for (const islandNode of island.nodes) {
-        if (ANALOG_TYPES.has(islandNode.type ?? '')) {
+        const t = islandNode.type ?? '';
+        if (ANALOG_TYPES.has(t) && !SWITCH_DIGITAL_TYPES.has(t)) {
           const node = byId.get(islandNode.id);
           if (node) node.data.simWarning = MIXED_ISLAND_WARNING;
         }

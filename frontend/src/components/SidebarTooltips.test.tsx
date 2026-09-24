@@ -79,18 +79,18 @@ describe('Sidebar and ComponentTooltipCard', () => {
     expect(screen.getByText(/I_D = ½ · μ_n·C_ox/i)).toBeInTheDocument();
   });
 
-  it('renders silicon transistors and logic gate chips with attached tooltips in Sidebar', () => {
-    const { getByRole, getByText } = render(<Sidebar {...mockProps} />);
+  it('renders silicon transistors and digital I/O chips with attached tooltips in Sidebar', () => {
+    render(<Sidebar {...mockProps} />);
     // Initial active tab is 'silicon'
-    expect(getByRole('button', { name: 'Add NMOS Transistor' })).toBeInTheDocument();
-    expect(getByRole('button', { name: 'Add PMOS Transistor' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add NMOS Transistor' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add PMOS Transistor' })).toBeInTheDocument();
 
-    // Switch to 'Logic Gates' tab
-    const logicTab = getByText('Logic Gates');
+    // Switch to 'Digital I/O' tab (transistor-first: no gate primitives)
+    const logicTab = screen.getByText('Digital I/O');
     fireEvent.click(logicTab);
 
-    expect(getByRole('button', { name: 'Add Input' })).toBeInTheDocument();
-    expect(getByRole('button', { name: 'Add Output' })).toBeInTheDocument();
-    expect(getByRole('button', { name: 'Add AND Gate' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Input' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Output' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add AND Gate' })).not.toBeInTheDocument();
   });
 });

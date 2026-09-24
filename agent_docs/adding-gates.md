@@ -1,43 +1,25 @@
-# Adding a New Gate Type
+# Adding a New Gate Type (transistor-first)
 
-## 4 Required Changes — All Mandatory
+DigiSim no longer adds ready-made gate primitives to the palette. To add a new
+gate, build it from transistors and package it as a reusable cell.
 
-### 1. `frontend/src/nodes/<Name>GateNode.tsx`
-Copy `AndGateNode.tsx` exactly. Change:
-- Component name
-- Number of input Handles (NOT gate = 1, all others = 2)
-- Gate label string
-- File header `@description`
+## Workflow
 
-### 2. `App.tsx`
-Two locations:
-```typescript
-// 1. nodeTypes object
-const nodeTypes = {
-  and: AndGateNode,
-  <name>: <Name>GateNode,   // add here
-};
+### 1. Build from transistors on the canvas
+Place NMOS/PMOS (Transistors tab), a Voltage Source (VDD), Ground, Inputs and
+an Output. Wire complementary CMOS and confirm the truth table in the terminal
+panel (switch-level solver in `frontend/src/logic/simulation/switchLevel.ts`).
 
-// 2. addNode button list — match existing button pattern exactly
-```
+### 2. Package as a cell
+Drag-select the gate transistors + supplies + I/O, click **Package** in the
+selection toolbar, and save it (e.g. `XNOR`) to My Library. Cells persist in
+`localStorage` (`customComponents`) across reloads.
 
-### 3. `useLogicSimulation.ts:evaluateGate`
-Add a case to the gate handler lookup map:
-```typescript
-const gateHandlers: Record<GateType, GateHandler> = {
-  AND: (inputs) => inputs.every(Boolean),
-  <NAME>: (inputs) => <evaluation logic>,
-};
-```
-
-### 4. `backend/pipeline/detector.py`
-Add class name to the detection → node type mapping:
-```python
-CLASS_TO_NODE_TYPE: dict[str, str] = {
-    "AND": "and",
-    "<NAME>": "<name>",   # add here
-}
-```
+### 3. Seed (only for built-in standard cells)
+Built-in cells live in `frontend/src/logic/library/standardCells.ts` with
+stable `std-*` ids. NOT/NAND/NOR are direct CMOS; AND/OR/XOR nest those cells
+(AND = NAND+NOT, OR = NOR+NOT, XOR = 4x NAND) to prove hierarchy. Seeding is
+versioned/idempotent via `ensureStandardCellsSeeded()`.
 
 ## Truth Tables for Reference
 | Gate | 2-input logic |
@@ -50,8 +32,12 @@ CLASS_TO_NODE_TYPE: dict[str, str] = {
 | XNOR | !(A ^ B) |
 | NOT  | !A (1 input only) |
 
+## Legacy compatibility (do not extend)
+Old `andGate`/`nandGate`/… node types in `App.tsx nodeTypes` plus
+`logic/simulation/evaluateGate.ts` exist only so saved circuits using the
+retired primitives still load and simulate. Never add a new primitive type.
+
 ## Checklist Before Marking Done
-- [ ] File header comment in new node file
-- [ ] JSDoc on every new function
+- [ ] Cell simulates to the correct truth table (`standardCells.test.ts` pattern)
+- [ ] Cell drills down to transistors (no primitive gates inside seeds)
 - [ ] `npm test -- --watchAll=false` → zero failures
-- [ ] `uv run ruff check .` → zero warnings

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { CustomComponentDefinition } from '../types';
+import { ensureStandardCellsSeeded } from '../logic/library/standardCells';
 import './ComponentLibraryPanel.css';
 
 interface Props {
@@ -18,8 +19,10 @@ export function ComponentLibraryPanel({ onPaletteDragStart, addNode }: Props) {
 
   const loadComponents = () => {
     try {
+      ensureStandardCellsSeeded();
       const raw = localStorage.getItem('customComponents');
       if (raw) setComponents(JSON.parse(raw));
+      else setComponents([]);
     } catch (e) {
       console.error(e);
     }

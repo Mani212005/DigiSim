@@ -365,3 +365,16 @@
 .sidebar-content::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted, #64748b);
 }
+
+/* Transistor-first hint under Digital I/O (points users to My Library cells). */
+.library-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary, #94a3b8);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+  grid-column: 1 / -1;
+}

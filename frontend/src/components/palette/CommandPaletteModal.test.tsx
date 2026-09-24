@@ -62,8 +62,8 @@ describe('CommandPaletteModal and fuzzyScore', () => {
     });
 
     it('does not render when open is false', () => {
-      const { container } = render(<CommandPaletteModal {...mockProps} open={false} />);
-      expect(container.firstChild).toBeNull();
+      render(<CommandPaletteModal {...mockProps} open={false} />);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('renders search input and commands when open', () => {
@@ -71,7 +71,7 @@ describe('CommandPaletteModal and fuzzyScore', () => {
       expect(screen.getByPlaceholderText(/Type a command/i)).toBeInTheDocument();
       expect(screen.getByText('NMOS Transistor')).toBeInTheDocument();
       expect(screen.getByText('PMOS Transistor')).toBeInTheDocument();
-      expect(screen.getByText('AND Gate')).toBeInTheDocument();
+      expect(screen.getByText('Gates live in My Library (transistor cells)')).toBeInTheDocument();
       expect(screen.getByText('Switch to 180nm CMOS')).toBeInTheDocument();
     });
 
@@ -79,9 +79,9 @@ describe('CommandPaletteModal and fuzzyScore', () => {
       render(<CommandPaletteModal {...mockProps} />);
       const input = screen.getByPlaceholderText(/Type a command/i);
 
-      fireEvent.change(input, { target: { value: 'nand' } });
-      expect(screen.getByText('NAND Gate')).toBeInTheDocument();
-      expect(screen.queryByText('PMOS Transistor')).not.toBeInTheDocument();
+      fireEvent.change(input, { target: { value: 'potentiometer' } });
+      expect(screen.getByText('Potentiometer')).toBeInTheDocument();
+      expect(screen.queryByText('NMOS Transistor')).not.toBeInTheDocument();
     });
 
     it('places a component on canvas when clicked', () => {
@@ -129,15 +129,15 @@ describe('CommandPaletteModal and fuzzyScore', () => {
 
     it('navigates with keyboard (ArrowDown, ArrowUp, Enter, Escape)', () => {
       render(<CommandPaletteModal {...mockProps} />);
-      const modal = screen.getByRole('dialog');
+      const input = screen.getByPlaceholderText(/Type a command/i);
 
       // Press ArrowDown then Enter
-      fireEvent.keyDown(modal.querySelector('.cmd-palette-modal')!, { key: 'ArrowDown' });
-      fireEvent.keyDown(modal.querySelector('.cmd-palette-modal')!, { key: 'Enter' });
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+      fireEvent.keyDown(input, { key: 'Enter' });
       expect(mockProps.onClose).toHaveBeenCalled();
 
       // Press Escape
-      fireEvent.keyDown(modal.querySelector('.cmd-palette-modal')!, { key: 'Escape' });
+      fireEvent.keyDown(input, { key: 'Escape' });
       expect(mockProps.onClose).toHaveBeenCalled();
     });
 
