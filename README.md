@@ -10,14 +10,38 @@
 
 Build and simulate logic circuits manually on a dark glassmorphic canvas, or upload a picture/schematic of a circuit to let DigiSim automatically detect the gates, trace the wires, and construct the interactive circuit for you.
 
+## 🔬 Transistor-first workflow (Cadence-style)
+
+DigiSim no longer ships ready-made NOT/AND/OR/NAND/NOR/XOR primitives in the
+palette. The base building blocks are **NMOS/PMOS transistors, supplies
+(VDD/GND), digital inputs/outputs, and wires**:
+
+1. Place NMOS/PMOS from **Transistors**, add a Voltage Source (VDD), Ground,
+   two Inputs and one Output.
+2. Wire a CMOS gate (e.g. NAND: 2× PMOS in parallel to VDD, 2× NMOS in series
+   to GND, gates to A/B, drains to Y). The switch-level solver shows the
+   correct truth table live in the terminal panel.
+3. Drag-select the gate, click **Package** in the selection toolbar, name it
+   (e.g. `NAND`), and save it to **My Library → Standard Cells**.
+4. Reuse the cell anywhere — including inside another cell (e.g. an AND built
+   from a NAND cell + a NOT cell). Double-click a cell to drill down to its
+   transistors. Cells persist in `localStorage` across reloads.
+5. My Library is pre-seeded with transistor-built **NOT, NAND, NOR** plus
+   hierarchical **AND (NAND+NOT), OR (NOR+NOT), XOR (4× NAND)** — open any of
+   them to inspect down to transistors.
+
+Legacy note: canvases saved with the old `andGate`/`nandGate`/… primitives
+still load, render, and simulate (hidden compatibility path), but new designs
+should use the seeded cells or package their own.
+
 ---
 
 ## ⚡ Key Features
 
 - **⚡ Glassmorphic Dark UI (v2.0 Pro)**: Ultra-modern, responsive dark layout (`#0B0F19`) with glowing status indicators, translucent navbars, and custom ReactFlow node styling.
-- **🎨 Consolidated Component Library**: Categorized drag-and-drop sidebar featuring logic gates (AND, OR, NAND, NOR, XOR, XNOR, NOT), IO controls (Toggle Switches, LED Probes, Clock Signals), and Analog components.
+- **🎨 Consolidated Component Library**: Categorized drag-and-drop sidebar featuring transistors (NMOS/PMOS), IO controls (Toggle Switches, LED Probes, Clock Signals), Analog components, and a personal **My Library** of transistor-built standard cells.
 - **🔍 ⌘K Component Search**: Instant search and filtering across the entire component palette.
-- **⚙️ Real-time Simulation Engine**: Topological Kahn's algorithm sorting for digital gates and Modified Nodal Analysis (MNA) solver for analog nodes with live signal propagation (HIGH/LOW/Z/X).
+- **⚙️ Real-time Simulation Engine**: Relaxation-based digital gate evaluation, a switch-level CMOS solver (NMOS/PMOS + supplies resolve to correct truth tables), and Modified Nodal Analysis (MNA) solver for analog nodes with live signal propagation (HIGH/LOW/Z/X).
 - **📸 ML Image-to-Circuit Detection**:
   - **YOLOv8 Schematic Detection**: Detects drawn logic gates and uses OpenCV line transforms (Hough) to extract wire paths into a NetworkX graph.
   - **DINOv2 Physical Board Analysis**: Physical board photo component recognition using DINOv2 embeddings and OCR.

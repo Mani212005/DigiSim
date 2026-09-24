@@ -71,7 +71,7 @@ describe('CommandPaletteModal and fuzzyScore', () => {
       expect(screen.getByPlaceholderText(/Type a command/i)).toBeInTheDocument();
       expect(screen.getByText('NMOS Transistor')).toBeInTheDocument();
       expect(screen.getByText('PMOS Transistor')).toBeInTheDocument();
-      expect(screen.getByText('AND Gate')).toBeInTheDocument();
+      expect(screen.getByText('Gates live in My Library (transistor cells)')).toBeInTheDocument();
       expect(screen.getByText('Switch to 180nm CMOS')).toBeInTheDocument();
     });
 
@@ -79,9 +79,9 @@ describe('CommandPaletteModal and fuzzyScore', () => {
       render(<CommandPaletteModal {...mockProps} />);
       const input = screen.getByPlaceholderText(/Type a command/i);
 
-      fireEvent.change(input, { target: { value: 'nand' } });
-      expect(screen.getByText('NAND Gate')).toBeInTheDocument();
-      expect(screen.queryByText('PMOS Transistor')).not.toBeInTheDocument();
+      fireEvent.change(input, { target: { value: 'potentiometer' } });
+      expect(screen.getByText('Potentiometer')).toBeInTheDocument();
+      expect(screen.queryByText('NMOS Transistor')).not.toBeInTheDocument();
     });
 
     it('places a component on canvas when clicked', () => {

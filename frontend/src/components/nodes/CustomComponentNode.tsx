@@ -56,6 +56,13 @@ export default function CustomComponentNode({ id, data }: CustomComponentNodePro
 
       {def.pins.map((pin) => {
         const pos = getPosition(pin.side);
+        // Spread same-side pins along the edge so every pin is wireable
+        // (two LEFT inputs otherwise stack exactly on top of each other).
+        const sidePins = def.pins.filter((p) => p.side === pin.side);
+        const sideIndex = sidePins.findIndex((p) => p.id === pin.id);
+        const spread = `${((sideIndex + 1) / (sidePins.length + 1)) * 100}%`;
+        const pinOffset =
+          pin.side === 'LEFT' || pin.side === 'RIGHT' ? { top: spread } : { left: spread };
         // Is it target or source?
         // INPUT -> target
         // OUTPUT -> source
@@ -68,9 +75,7 @@ export default function CustomComponentNode({ id, data }: CustomComponentNodePro
                 id={`t:${pin.id}`}
                 position={pos}
                 className="custom-pin"
-                style={{
-                  ...((pin.side === 'LEFT' || pin.side === 'RIGHT') ? { top: '50%' } : { left: '50%' })
-                }}
+                style={pinOffset}
               />
             )}
             {pin.type !== 'INPUT' && (
@@ -79,9 +84,7 @@ export default function CustomComponentNode({ id, data }: CustomComponentNodePro
                 id={`s:${pin.id}`}
                 position={pos}
                 className="custom-pin"
-                style={{
-                  ...((pin.side === 'LEFT' || pin.side === 'RIGHT') ? { top: '50%' } : { left: '50%' })
-                }}
+                style={pinOffset}
               />
             )}
             {/* simple label */}

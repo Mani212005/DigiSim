@@ -41,25 +41,24 @@ test('opening Silicon Primitives shows transistor categories and allows navigati
   expect(screen.getByRole('button', { name: /silicon primitives/i })).toBeInTheDocument();
 });
 
-test('renders a palette chip for every gate type when switching to Logic Gates tab', () => {
+test('transistor-first: Digital I/O tab offers no ready-made gate primitives', () => {
   render(<App />);
   fireEvent.click(screen.getByRole('button', { name: /silicon primitives/i }));
-  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
+  fireEvent.click(screen.getByRole('button', { name: /digital i\/o/i }));
 
-  // Advanced gates are collapsed by default
-  fireEvent.click(screen.getByText(/^arithmetic & parity gates$/i));
-
+  // Gates now live as transistor-built cells in My Library, not primitives.
   for (const gate of ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR']) {
     expect(
-      screen.getByRole('button', { name: new RegExp(`add ${gate} gate`, 'i') })
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: new RegExp(`add ${gate} gate`, 'i') })
+    ).not.toBeInTheDocument();
   }
+  expect(screen.getByText(/gates live in my library/i)).toBeInTheDocument();
 });
 
-test('renders Input and Output palette chips in Logic Gates tab', () => {
+test('renders Input and Output palette chips in Digital I/O tab', () => {
   render(<App />);
   fireEvent.click(screen.getByRole('button', { name: /silicon primitives/i }));
-  fireEvent.click(screen.getByRole('button', { name: /logic gates/i }));
+  fireEvent.click(screen.getByRole('button', { name: /digital i\/o/i }));
   expect(screen.getByRole('button', { name: /add input/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /add output/i })).toBeInTheDocument();
 });

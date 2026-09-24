@@ -2,11 +2,14 @@
  * @file digital.ts
  * @description Digital circuit evaluation — Relaxation algorithm propagates 0/1/Z/X
  * logic values gate-by-gate until stable, resolving feedback loops and latches.
- * Supports hierarchical subcircuit evaluation via customComponents.
+ * Supports hierarchical subcircuit evaluation via customComponents and
+ * switch-level CMOS transistor networks (NMOS/PMOS + supplies) so hand-wired
+ * transistor gates simulate to the correct truth table.
  */
 
 import type { DigiEdge, DigiNode } from '../../types';
 import { evaluateGate } from './evaluateGate';
+import { solveSwitchNets } from './switchLevel';
 
 export type SimulateCircuit = (
   currentNodes: DigiNode[],
@@ -34,9 +37,9 @@ const runSimulationWithCycleGuard = (
   let iterations = 0;
   const MAX_ITERATIONS = 50; // Enough to settle combinational loops and latches
 
-  // Initialize clock nodes
+  // Initialize clock nodes (legacy 'clock' and current 'clockSource').
   for (const node of newNodes) {
-    if (node.type === 'clock') {
+    if (node.type === 'clock' || node.type === 'clockSource') {
       const freq = Number(node.data.param) || 1;
       const period = 1 / freq;
       node.data.value = (timeSeconds % period) < (period / 2) ? 1 : 0;
@@ -57,7 +60,7 @@ const runSimulationWithCycleGuard = (
     iterations++;
 
     for (const node of newNodes) {
-      if (node.type === 'input' || node.type === 'clock' || node.type === 'vsource' || node.type === 'ground' || node.type === 'resistor' || node.type === 'potentiometer' || node.type === 'analogSwitch') {
+      if (node.type === 'input' || node.type === 'clock' || node.type === 'clockSource' || node.type === 'vsource' || node.type === 'ground' || node.type === 'resistor' || node.type === 'potentiometer' || node.type === 'analogSwitch' || node.type === 'nmos' || node.type === 'pmos') {
         continue;
       }
 
@@ -199,6 +202,27 @@ const runSimulationWithCycleGuard = (
         node.data.value = newVal;
         changed = true;
       }
+    }
+  }
+
+  // Switch-level CMOS pass: hand-wired NMOS/PMOS + supplies resolve to
+  // digital levels on output probes. Only definitive 0/1 override the
+  // gate pass, so pure gate circuits are untouched.
+  if (newNodes.some((n) => n.type === 'nmos' || n.type === 'pmos')) {
+    try {
+      const liveMap = new Map<string, DigiNode>(newNodes.map((node) => [node.id, node]));
+      const solved = solveSwitchNets(newNodes, currentEdges, liveMap);
+      for (const node of newNodes) {
+        if (node.type !== 'output') continue;
+        const sw = solved.get(`${node.id}`);
+        if (sw === 0 || sw === 1) {
+          if (node.data.value !== sw) node.data.value = sw;
+        } else if (sw === 'X') {
+          if (node.data.value !== 'X') node.data.value = 'X';
+        }
+      }
+    } catch (e) {
+      console.warn('Switch-level solve failed, keeping gate results');
     }
   }
 
