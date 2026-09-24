@@ -1,39 +1,30 @@
 # Simulation Engine
 
 ## Location
-`frontend/src/hooks/useLogicSimulation.ts`
+`frontend/src/logic/simulation/` (entry point: `index.ts`)
 
-## What It Does
-On every `nodes` or `edges` state change in `App.tsx`, runs a full circuit evaluation:
-1. Builds an adjacency list from current edges
-2. Topological sort (Kahn's algorithm)
-3. Propagates 0/1 values gate by gate in sorted order
-4. Returns updated nodes with computed output values
+`frontend/src/hooks/useLogicSimulation.ts` is only a thin React hook wrapper exposing `simulateCircuit` to `App.tsx`.
 
-## Topological Sort
-Uses Kahn's algorithm (BFS-based). Handles cycles by detecting nodes that never reach zero in-degree — these are skipped and their outputs default to `0`.
+## Architecture & Flow
+On every canvas state change, `simulate(nodes, edges, timeSeconds)`:
+1. **Digital Pass (`digital.ts`)**: Evaluates digital logic, hierarchical subcircuits (`customComponent`), and switch-level CMOS networks (`switchLevel.ts`).
+2. **Island Partitioning (`islands.ts`)**: Splits the graph into connected subgraphs (digital, analog, or mixed).
+3. **Analog Solve (`mna.ts`)**: Runs the Modified Nodal Analysis (MNA) DC solver on purely analog islands.
+4. **Mixed Island Detection**: Flags unsupported direct analog-to-gate connections with a warning on the analog node.
 
-## evaluateGate
-Single dispatch point for all gate logic. Implemented as a lookup map — not a switch statement:
-```typescript
-const gateHandlers: Record<GateType, GateHandler> = {
-  AND:  (inputs) => inputs.every(Boolean),
-  OR:   (inputs) => inputs.some(Boolean),
-  NOT:  ([a]) => !a,
-  NAND: (inputs) => !inputs.every(Boolean),
-  NOR:  (inputs) => !inputs.some(Boolean),
-  XOR:  ([a, b]) => a !== b,
-  XNOR: ([a, b]) => a === b,
-};
-```
+## Digital Evaluation & Relaxation (`digital.ts`)
+- Iterative relaxation loop (up to 50 iterations) to settle combinational feedback, latches, and subcircuits.
+- Supports hierarchical subcircuit evaluation by looking up definitions in `localStorage` (`customComponents`).
+- Dispatches legacy primitive gates via `evaluateGate.ts` for backwards compatibility.
 
-**CRITICAL:** All gate logic lives here and only here. Never add evaluation logic to node components.
+## Switch-Level CMOS Solver (`switchLevel.ts`)
+Transistor-first simulation treats NMOS (ON when gate=1) and PMOS (ON when gate=0) as ideal switches between drain and source terminals:
+- Drivers: VDD (1), GND/VSS (0), clock sources, digital inputs, and custom cell output pins.
+- Transistors in series/parallel propagate logic levels to output probes. Contending drivers resolve to `X`; undriven nodes float as `Z`.
+- Enables transistor-level cells (NOT, NAND, NOR, etc.) to simulate to accurate truth tables without full analog SPICE.
 
-## Adding Logic for a New Gate
-Add one entry to `gateHandlers`. Nothing else in this file changes.
+## Adding New Gates
+Do not add new primitive gate types. Build new gates from transistors (NMOS/PMOS + VDD/GND + I/O), test the truth table, and package them as reusable standard cells in **My Library** (see `@agent_docs/adding-gates.md`).
 
-## Edge Cases
-- **No inputs:** defaults to `0`
-- **Cycle detected:** all nodes in the cycle output `0`
-- **Disconnected node:** retains previous output value
-- **Missing handler:** throws `UnknownGateTypeError` — never silently defaults
+## Legacy Compatibility (`evaluateGate.ts`)
+Lookup table dispatch for retired primitive gates (`andGate`, `orGate`, `notGate`, `nandGate`, `norGate`, `xorGate`, `xnorGate`) to ensure legacy saved circuits continue to load and simulate.

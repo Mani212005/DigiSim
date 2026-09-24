@@ -80,17 +80,17 @@ describe('Sidebar and ComponentTooltipCard', () => {
   });
 
   it('renders silicon transistors and digital I/O chips with attached tooltips in Sidebar', () => {
-    const { getByRole, getByText, queryByRole } = render(<Sidebar {...mockProps} />);
+    render(<Sidebar {...mockProps} />);
     // Initial active tab is 'silicon'
-    expect(getByRole('button', { name: 'Add NMOS Transistor' })).toBeInTheDocument();
-    expect(getByRole('button', { name: 'Add PMOS Transistor' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add NMOS Transistor' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add PMOS Transistor' })).toBeInTheDocument();
 
     // Switch to 'Digital I/O' tab (transistor-first: no gate primitives)
-    const logicTab = getByText('Digital I/O');
+    const logicTab = screen.getByText('Digital I/O');
     fireEvent.click(logicTab);
 
-    expect(getByRole('button', { name: 'Add Input' })).toBeInTheDocument();
-    expect(getByRole('button', { name: 'Add Output' })).toBeInTheDocument();
-    expect(queryByRole('button', { name: 'Add AND Gate' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Input' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Output' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add AND Gate' })).not.toBeInTheDocument();
   });
 });

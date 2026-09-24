@@ -78,26 +78,15 @@ npm start
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 4. Model Context Protocol (MCP) Server Setup
-Register the stdio DigiSim MCP server with Claude Desktop or AGY / Cursor by adding this entry to your `mcpServers` configuration (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "digisim": {
-      "command": "uv",
-      "args": ["run", "python", "backend/mcp_server.py"],
-      "cwd": "/path/to/DigiSim"
-    }
-  }
-}
+### 3. Run the Backend (Port 5001)
+```bash
+cd backend
+uv sync
+uv run python app.py
 ```
 
-The MCP server exposes the following tools:
-- `digisim_create_circuit`: Generate a DigiSim schematic from a JSON netlist.
-- `digisim_simulate_mna`: Execute MNA / SPICE simulation and return node voltages & waveforms.
-- `digisim_detect_circuit_photo`: Run YOLO detection on base64 image input.
-- `digisim_export_spice`: Generate SPICE netlist text from canvas JSON.
+### 4. Model Context Protocol (MCP) Server Setup
+See [DigiSim Model Context Protocol (MCP) Server](#-digisim-model-context-protocol-mcp-server) below for setup instructions and tool capabilities.
 
 ---
 
