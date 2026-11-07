@@ -1,6 +1,6 @@
 /**
  * @file digital.ts
- * @description Digital circuit evaluation — Relaxation algorithm propagates 0/1/Z/X
+ * @description Digital circuit evaluation - Relaxation algorithm propagates 0/1/Z/X
  * logic values gate-by-gate until stable, resolving feedback loops and latches.
  * Supports hierarchical subcircuit evaluation via customComponents and
  * switch-level CMOS transistor networks (NMOS/PMOS + supplies) so hand-wired
@@ -17,10 +17,27 @@ export type SimulateCircuit = (
   timeSeconds?: number
 ) => DigiNode[];
 
+const NO_EDGES: readonly DigiEdge[] = [];
+
+/**
+ * Simulate circuit logic values across nodes and edges using relaxation evaluation.
+ * @param currentNodes - Array of circuit nodes to evaluate
+ * @param currentEdges - Array of circuit edges defining connections
+ * @param timeSeconds - Simulation elapsed time in seconds
+ * @returns Array of evaluated nodes with updated states
+ */
 export const runSimulation: SimulateCircuit = (currentNodes, currentEdges, timeSeconds = 0) => {
   return runSimulationWithCycleGuard(currentNodes, currentEdges, timeSeconds, new Set());
 };
 
+/**
+ * Relaxation evaluation loop with cycle detection for hierarchical subcircuits.
+ * @param currentNodes - Array of circuit nodes to evaluate
+ * @param currentEdges - Array of circuit edges defining connections
+ * @param timeSeconds - Simulation elapsed time in seconds
+ * @param visitedSubcircuits - Set of visited subcircuit IDs to guard against recursion cycles
+ * @returns Array of evaluated nodes with updated states
+ */
 const runSimulationWithCycleGuard = (
   currentNodes: DigiNode[],
   currentEdges: DigiEdge[],
@@ -32,6 +49,19 @@ const runSimulationWithCycleGuard = (
     data: { ...node.data },
   }));
   const nodeMap = new Map<string, DigiNode>(newNodes.map((node) => [node.id, node]));
+
+  // Index incoming edges once per run (O(E)) instead of rescanning every edge
+  // for every node on every relaxation pass. Each list keeps edge order and is
+  // sorted by handle name ('a', 'b', 'c', ...) or index, exactly as before.
+  const incomingByTarget = new Map<string, DigiEdge[]>();
+  for (const edge of currentEdges) {
+    const list = incomingByTarget.get(edge.target);
+    if (list) list.push(edge);
+    else incomingByTarget.set(edge.target, [edge]);
+  }
+  incomingByTarget.forEach((list) => {
+    list.sort((e1, e2) => (e1.targetHandle || '').localeCompare(e2.targetHandle || ''));
+  });
 
   let changed = true;
   let iterations = 0;
@@ -64,14 +94,7 @@ const runSimulationWithCycleGuard = (
         continue;
       }
 
-      const incomingEdges = currentEdges.filter((edge) => edge.target === node.id);
-      
-      // Sort edges by handle name ('a', 'b', 'c', ...) or index
-      incomingEdges.sort((e1, e2) => {
-        const h1 = e1.targetHandle || '';
-        const h2 = e2.targetHandle || '';
-        return h1.localeCompare(h2);
-      });
+      const incomingEdges = incomingByTarget.get(node.id) ?? NO_EDGES;
 
       const inputs = incomingEdges.map((edge) => {
         const src = nodeMap.get(edge.source);
