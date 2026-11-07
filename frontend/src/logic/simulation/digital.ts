@@ -17,6 +17,8 @@ export type SimulateCircuit = (
   timeSeconds?: number
 ) => DigiNode[];
 
+const NO_EDGES: readonly DigiEdge[] = [];
+
 export const runSimulation: SimulateCircuit = (currentNodes, currentEdges, timeSeconds = 0) => {
   return runSimulationWithCycleGuard(currentNodes, currentEdges, timeSeconds, new Set());
 };
@@ -32,6 +34,19 @@ const runSimulationWithCycleGuard = (
     data: { ...node.data },
   }));
   const nodeMap = new Map<string, DigiNode>(newNodes.map((node) => [node.id, node]));
+
+  // Index incoming edges once per run (O(E)) instead of rescanning every edge
+  // for every node on every relaxation pass. Each list keeps edge order and is
+  // sorted by handle name ('a', 'b', 'c', ...) or index, exactly as before.
+  const incomingByTarget = new Map<string, DigiEdge[]>();
+  for (const edge of currentEdges) {
+    const list = incomingByTarget.get(edge.target);
+    if (list) list.push(edge);
+    else incomingByTarget.set(edge.target, [edge]);
+  }
+  incomingByTarget.forEach((list) => {
+    list.sort((e1, e2) => (e1.targetHandle || '').localeCompare(e2.targetHandle || ''));
+  });
 
   let changed = true;
   let iterations = 0;
@@ -64,14 +79,7 @@ const runSimulationWithCycleGuard = (
         continue;
       }
 
-      const incomingEdges = currentEdges.filter((edge) => edge.target === node.id);
-      
-      // Sort edges by handle name ('a', 'b', 'c', ...) or index
-      incomingEdges.sort((e1, e2) => {
-        const h1 = e1.targetHandle || '';
-        const h2 = e2.targetHandle || '';
-        return h1.localeCompare(h2);
-      });
+      const incomingEdges = incomingByTarget.get(node.id) ?? NO_EDGES;
 
       const inputs = incomingEdges.map((edge) => {
         const src = nodeMap.get(edge.source);
