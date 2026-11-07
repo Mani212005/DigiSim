@@ -1,3 +1,9 @@
+/**
+ * @file digital.test.ts
+ * @description Unit tests for digital circuit evaluation and relaxation simulation,
+ * including hierarchical components, input handle ordering, and adder settling.
+ */
+
 import { runSimulation } from './digital';
 import type { DigiEdge, DigiNode } from '../../types';
 
@@ -113,9 +119,22 @@ describe('runSimulation', () => {
     const b = 0b01101110;
     const nodes: DigiNode[] = [];
     const edges: DigiEdge[] = [];
+    /**
+     * Append a directed edge targeting a handle.
+     * @param source - Source node ID
+     * @param target - Target node ID
+     * @param handle - Target handle name
+     */
     const wire = (source: string, target: string, handle: string): void => {
       edges.push({ id: `e${edges.length}`, source, target, targetHandle: handle } as DigiEdge);
     };
+
+    /**
+     * Append a circuit node.
+     * @param id - Unique node ID
+     * @param type - Component type
+     * @param value - Optional initial value
+     */
     const node = (id: string, type: string, value?: number): void => {
       nodes.push({ id, type, data: { label: id, ...(value === undefined ? {} : { value }) }, position: { x: 0, y: 0 } } as DigiNode);
     };

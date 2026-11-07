@@ -13,7 +13,7 @@ On every canvas state change, `simulate(nodes, edges, timeSeconds)`:
 4. **Mixed Island Detection**: Flags unsupported direct analog-to-gate connections with a warning on the analog node.
 
 ## Digital Evaluation & Relaxation (`digital.ts`)
-- Iterative relaxation loop (up to 50 iterations) to settle combinational feedback, latches, and subcircuits.
+- Iterative relaxation loop (up to 50 iterations) to settle combinational feedback, latches, and subcircuits. Pre-indexes incoming edges by target node and sorts by target handle once per run to avoid repeated linear scans.
 - Supports hierarchical subcircuit evaluation by looking up definitions in `localStorage` (`customComponents`).
 - Dispatches legacy primitive gates via `evaluateGate.ts` for backwards compatibility.
 

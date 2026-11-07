@@ -1,6 +1,6 @@
 /**
  * @file digital.ts
- * @description Digital circuit evaluation — Relaxation algorithm propagates 0/1/Z/X
+ * @description Digital circuit evaluation - Relaxation algorithm propagates 0/1/Z/X
  * logic values gate-by-gate until stable, resolving feedback loops and latches.
  * Supports hierarchical subcircuit evaluation via customComponents and
  * switch-level CMOS transistor networks (NMOS/PMOS + supplies) so hand-wired
@@ -19,10 +19,25 @@ export type SimulateCircuit = (
 
 const NO_EDGES: readonly DigiEdge[] = [];
 
+/**
+ * Simulate circuit logic values across nodes and edges using relaxation evaluation.
+ * @param currentNodes - Array of circuit nodes to evaluate
+ * @param currentEdges - Array of circuit edges defining connections
+ * @param timeSeconds - Simulation elapsed time in seconds
+ * @returns Array of evaluated nodes with updated states
+ */
 export const runSimulation: SimulateCircuit = (currentNodes, currentEdges, timeSeconds = 0) => {
   return runSimulationWithCycleGuard(currentNodes, currentEdges, timeSeconds, new Set());
 };
 
+/**
+ * Relaxation evaluation loop with cycle detection for hierarchical subcircuits.
+ * @param currentNodes - Array of circuit nodes to evaluate
+ * @param currentEdges - Array of circuit edges defining connections
+ * @param timeSeconds - Simulation elapsed time in seconds
+ * @param visitedSubcircuits - Set of visited subcircuit IDs to guard against recursion cycles
+ * @returns Array of evaluated nodes with updated states
+ */
 const runSimulationWithCycleGuard = (
   currentNodes: DigiNode[],
   currentEdges: DigiEdge[],
