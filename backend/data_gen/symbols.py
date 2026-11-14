@@ -6,28 +6,27 @@ Purpose: Hand-drawn-style rendering of logic-gate schematic symbols with OpenCV.
          screenshot pipeline can auto-generate YOLO labels and route wires.
 """
 
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import cv2
 import numpy as np
 
-# Canonical class list for the whole ML pipeline (ids are the YOLO class ids).
-CLASS_NAMES: list[str] = [
-    "AND",
-    "OR",
-    "NOT",
-    "NAND",
-    "NOR",
-    "XOR",
-    "XNOR",
-    "SWITCH",
-    "INPUT",
-    "OUTPUT",
-    "LED",
-    "JUNCTION",
-]
+# Canonical class list for the whole ML pipeline, loaded from ml/classes.yaml (the single
+# source of truth). CLASS_NAMES index == YOLO class id (tier A only); CLASS_TO_ID also
+# resolves legacy gate-era names (SWITCH, INPUT, OUTPUT, LED) to their canonical class id,
+# because this renderer still draws those symbols.
+_ML_DIR = Path(__file__).resolve().parents[2] / "ml"
+if str(_ML_DIR) not in sys.path:
+    sys.path.insert(0, str(_ML_DIR))
 
-CLASS_TO_ID: dict[str, int] = {name: i for i, name in enumerate(CLASS_NAMES)}
+from class_schema import load_schema, render_data_yaml  # noqa: E402,F401  (render_data_yaml re-exported)
+
+SCHEMA = load_schema()
+CLASS_NAMES: list[str] = [c.name for c in SCHEMA.classes_up_to("A")]
+CLASS_TO_ID: dict[str, int] = {name: i for i, name in enumerate(SCHEMA.names)}
+CLASS_TO_ID.update({alias: CLASS_TO_ID[canonical] for alias, canonical in SCHEMA.aliases.items()})
 
 
 @dataclass

@@ -48,18 +48,16 @@ Reviewer agent runs this checklist before approving anything.
 
 ## ML — Phase Completion Criteria
 
-### Phase 1 (AND, OR, NOT)
-- [ ] `evaluate.py` reports F1 ≥ 0.95 for AND individually
-- [ ] `evaluate.py` reports F1 ≥ 0.95 for OR individually
-- [ ] `evaluate.py` reports F1 ≥ 0.95 for NOT individually
+### Phase 1 (NMOS, PMOS, VDD, GND)
+- [ ] `evaluate.py` reports F1 ≥ 0.95 for NMOS, PMOS, VDD and GND individually
 - [ ] mAP@0.5 ≥ 0.90 overall
 - [ ] Inference on 5 unseen images completes in under 3 seconds on CPU
 - [ ] `/detect_circuit` returns valid JSON matching `CircuitExportJSON`
 - [ ] Training run logged in `ml/experiments/run_YYYYMMDD_HHMM/`
 - [ ] `ml/experiments/current_phase.txt` updated to `2`
 
-### Phase 2 (All 12 classes)
-- [ ] F1 ≥ 0.95 for every class individually (all 12)
+### Phase 2 (All 14 tier A classes, `ml/classes.yaml`)
+- [ ] F1 ≥ 0.95 for every class individually (all 14)
 - [ ] mAP@0.5 ≥ 0.90 overall
 - [ ] No class under 10% in confusion matrix
 - [ ] Training run logged

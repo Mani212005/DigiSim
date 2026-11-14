@@ -30,10 +30,10 @@ Do not stop and report — diagnose, fix, and re-evaluate in the same session un
 
 | Phase | Classes | Stages Active |
 |-------|---------|---------------|
-| 1 | AND, OR, NOT | 1 only |
-| 2 | All 12: + NAND, NOR, XOR, XNOR, Switch, Input, Output, LED, Junction | 1 only |
-| 3 | All 12 | 1 + 2 + 3 |
-| 4 | All 12 | 1 + 2 + 3 + 4 |
+| 1 | NMOS, PMOS, VDD, GND | 1 only |
+| 2 | All 14 tier A (see `ml/classes.yaml`): + INPUT_PORT, OUTPUT_PORT, JUNCTION, AND, OR, NOT, NAND, NOR, XOR, XNOR | 1 only |
+| 3 | All 14 | 1 + 2 + 3 |
+| 4 | All 14 | 1 + 2 + 3 + 4 |
 
 Current phase tracked in `ml/experiments/current_phase.txt`.
 
