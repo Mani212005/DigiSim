@@ -6,11 +6,12 @@
  */
 
 import * as ort from 'onnxruntime-web';
-import type { CircuitNodeType } from '../../types';
+import type { YoloNodeType } from '../../types';
+import { YOLO_CLASS_ALIASES, YOLO_CLASS_MAP, YOLO_CLASS_NAMES } from './yoloClassMap.generated';
 
 export interface YoloDetection {
   className: string;
-  nodeType: CircuitNodeType;
+  nodeType: YoloNodeType;
   confidence: number;
   x: number;      // Bounding box center X (image space)
   y: number;      // Bounding box center Y (image space)
@@ -22,31 +23,18 @@ export interface YoloDetection {
   y2: number;     // Box bottom-right Y
 }
 
-/** Class mapping from YOLO labels to DigiSim ReactFlow node types. */
-export const YOLO_CLASS_MAP: Record<string, CircuitNodeType> = {
-  AND: 'andGate',
-  OR: 'orGate',
-  NOT: 'notGate',
-  NAND: 'nandGate',
-  NOR: 'norGate',
-  XOR: 'xorGate',
-  XNOR: 'xnorGate',
-  SWITCH: 'input',
-  INPUT: 'input',
-  OUTPUT: 'output',
-  LED: 'output',
-  and: 'andGate',
-  or: 'orGate',
-  not: 'notGate',
-  nand: 'nandGate',
-  nor: 'norGate',
-  xor: 'xorGate',
-  xnor: 'xnorGate',
-  switch: 'input',
-  input: 'input',
-  output: 'output',
-  led: 'output',
-};
+export { YOLO_CLASS_ALIASES, YOLO_CLASS_MAP, YOLO_CLASS_NAMES };
+
+/**
+ * Resolve a model class name (canonical or legacy alias, any case) to its canonical name.
+ * @param className - Class name as emitted by a model, e.g. 'NMOS' or the legacy 'SWITCH'
+ * @returns The canonical class name, or null if it is not in the vocabulary
+ */
+export function resolveYoloClassName(className: string): string | null {
+  const upper = className.trim().toUpperCase();
+  if (YOLO_CLASS_NAMES.includes(upper)) return upper;
+  return YOLO_CLASS_ALIASES[upper] ?? null;
+}
 
 const DEFAULT_MODEL_URL = '/models/yolo_circuit.onnx';
 
@@ -277,9 +265,8 @@ export class YoloCircuitDetector {
         }
 
         if (maxScore >= confidenceThreshold) {
-          const classNames = Object.keys(YOLO_CLASS_MAP);
-          const className = classNames[maxClassIdx % classNames.length] || 'AND';
-          const nodeType = YOLO_CLASS_MAP[className] || 'andGate';
+          const className = YOLO_CLASS_NAMES[maxClassIdx] ?? 'AND';
+          const nodeType = YOLO_CLASS_MAP[className] ?? 'andGate';
 
           rawDetections.push({
             className,

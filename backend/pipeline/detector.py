@@ -1,8 +1,10 @@
 """
 Module: detector.py
-Purpose: YOLOv8 gate detection stage — takes a circuit image and returns bounding boxes
-         with class labels for all detected logic gates. Runs fully local inference
-         with the transfer-learned weights produced by ml/train.py.
+Purpose: YOLOv8 symbol detection stage — takes a circuit image and returns bounding boxes
+         with class labels for all detected circuit symbols (transistors, supplies, ports,
+         gates, junctions). Runs fully local inference with the transfer-learned weights
+         produced by ml/train.py. The class vocabulary comes from ml/classes.yaml via the
+         generated pipeline/class_map.py; legacy gate-era names stay resolvable as aliases.
 """
 
 from dataclasses import dataclass
@@ -10,10 +12,21 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
+from pipeline.class_map import CLASS_ALIASES, CLASS_NAMES, CLASS_TO_NODE_TYPE
+
+__all__ = [
+    "CLASS_ALIASES",
+    "CLASS_NAMES",
+    "CLASS_TO_NODE_TYPE",
+    "Detection",
+    "GateDetector",
+    "resolve_class_name",
+]
+
 
 @dataclass
 class Detection:
-    """A single gate detection result from the YOLO model."""
+    """A single symbol detection result from the YOLO model."""
 
     class_name: str
     confidence: float
@@ -38,22 +51,19 @@ class Detection:
         )
 
 
-# Canonical model class names → ReactFlow node types used by the frontend.
-# SWITCH acts as a toggleable input; LED acts as an output indicator.
-CLASS_TO_NODE_TYPE: dict[str, str] = {
-    "AND": "andGate",
-    "OR": "orGate",
-    "NOT": "notGate",
-    "NAND": "nandGate",
-    "NOR": "norGate",
-    "XOR": "xorGate",
-    "XNOR": "xnorGate",
-    "SWITCH": "input",
-    "INPUT": "input",
-    "OUTPUT": "output",
-    "LED": "output",
-    "JUNCTION": "junction",
-}
+def resolve_class_name(class_name: str) -> str | None:
+    """
+    Resolve a model class name (canonical or legacy alias, any case) to its canonical name.
+
+    Args:
+        class_name: Class name as emitted by a model, e.g. 'NMOS' or the legacy 'SWITCH'.
+    Returns:
+        The canonical class name, or None if the name is not in the vocabulary.
+    """
+    upper = class_name.strip().upper()
+    if upper in CLASS_NAMES:
+        return upper
+    return CLASS_ALIASES.get(upper)
 
 
 class GateDetector:

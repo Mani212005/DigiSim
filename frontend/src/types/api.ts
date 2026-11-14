@@ -15,7 +15,23 @@ export type CircuitNodeType =
   | 'nandGate'
   | 'norGate'
   | 'xorGate'
-  | 'xnorGate';
+  | 'xnorGate'
+  | 'nmos'
+  | 'pmos'
+  | 'vsource'
+  | 'ground'
+  | 'resistor'
+  | 'capacitor'
+  | 'inductor'
+  | 'bjtNpn'
+  | 'bjtPnp'
+  | 'clockSource';
+
+/**
+ * Node type a detector class maps to: a canvas node type, or 'junction' (a wire dot that
+ * merges nets and never becomes a canvas node). Generated into YOLO_CLASS_MAP from ml/classes.yaml.
+ */
+export type YoloNodeType = CircuitNodeType | 'junction';
 
 /** One detected component placed on the canvas. */
 export interface CircuitComponent {

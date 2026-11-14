@@ -1,0 +1,55 @@
+# DigiSim detector class schema - the single source of truth for the symbol vocabulary.
+#
+# Everything that names a detector class is generated from or checked against this file:
+#   - backend/pipeline/class_map.py            (CLASS_TO_NODE_TYPE, re-exported by detector.py)
+#   - frontend/src/logic/vision/yoloClassMap.generated.ts  (YOLO_CLASS_MAP)
+#   - the YOLO dataset data.yaml               (python ml/class_schema.py data-yaml)
+# Regenerate after editing:  cd ml && uv run python class_schema.py generate
+# CI-style check (also run by the pytest and Jest contract tests): uv run python class_schema.py check
+#
+# Fields per class:
+#   name         canonical class name emitted by the detector (upper snake case, unique)
+#   id           YOLO class id; contiguous from 0 and ordered by tier (all tier A before tier B)
+#   tier         A = required for the transistor-first app, B = next (analog parts)
+#   node_type    frontend ReactFlow node type the class maps to ("junction" is not a canvas node: it merges nets)
+#   terminals    terminal names, in the handle naming used by the frontend (analog nodes: t:<name> / s:<name>;
+#                gates: inputs a, b and the default output handle "out")
+#   default_size [width, height] in canvas px, a layout hint for the importer
+#
+# Tier B terminal names are provisional until those nodes get a final handle layout.
+
+version: 1
+
+classes:
+  # ---- Tier A: transistor-level symbols and supplies ----
+  - {name: NMOS, id: 0, tier: A, node_type: nmos, terminals: [d, g, s, b], default_size: [80, 100]}
+  - {name: PMOS, id: 1, tier: A, node_type: pmos, terminals: [s, g, d, b], default_size: [80, 100]}
+  - {name: VDD, id: 2, tier: A, node_type: vsource, terminals: [pos, neg], default_size: [60, 60]}
+  - {name: GND, id: 3, tier: A, node_type: ground, terminals: [gnd], default_size: [40, 40]}
+  - {name: INPUT_PORT, id: 4, tier: A, node_type: input, terminals: [out], default_size: [70, 50]}
+  - {name: OUTPUT_PORT, id: 5, tier: A, node_type: output, terminals: [a], default_size: [70, 50]}
+  - {name: JUNCTION, id: 6, tier: A, node_type: junction, terminals: [net], default_size: [12, 12]}
+  # ---- Tier A: gate-level symbols (hidden legacy nodes until T9 maps them to library cells) ----
+  - {name: AND, id: 7, tier: A, node_type: andGate, terminals: [a, b, out], default_size: [120, 90]}
+  - {name: OR, id: 8, tier: A, node_type: orGate, terminals: [a, b, out], default_size: [120, 90]}
+  - {name: NOT, id: 9, tier: A, node_type: notGate, terminals: [a, out], default_size: [100, 70]}
+  - {name: NAND, id: 10, tier: A, node_type: nandGate, terminals: [a, b, out], default_size: [120, 90]}
+  - {name: NOR, id: 11, tier: A, node_type: norGate, terminals: [a, b, out], default_size: [120, 90]}
+  - {name: XOR, id: 12, tier: A, node_type: xorGate, terminals: [a, b, out], default_size: [120, 90]}
+  - {name: XNOR, id: 13, tier: A, node_type: xnorGate, terminals: [a, b, out], default_size: [120, 90]}
+  # ---- Tier B: analog parts that already exist as palette nodes ----
+  - {name: RESISTOR, id: 14, tier: B, node_type: resistor, terminals: [a, b], default_size: [100, 40]}
+  - {name: CAPACITOR, id: 15, tier: B, node_type: capacitor, terminals: [a, b], default_size: [100, 40]}
+  - {name: INDUCTOR, id: 16, tier: B, node_type: inductor, terminals: [a, b], default_size: [100, 40]}
+  - {name: BJT_NPN, id: 17, tier: B, node_type: bjtNpn, terminals: [c, b, e], default_size: [80, 100]}
+  - {name: BJT_PNP, id: 18, tier: B, node_type: bjtPnp, terminals: [c, b, e], default_size: [80, 100]}
+  - {name: CLOCK, id: 19, tier: B, node_type: clockSource, terminals: [out], default_size: [70, 50]}
+
+# Legacy class names -> canonical class. The 12-class gate-era weights (AND OR NOT NAND NOR XOR XNOR
+# SWITCH INPUT OUTPUT LED JUNCTION) predict these names, so they must keep resolving. Lookups are
+# case-insensitive. A SWITCH acts as a toggleable input and an LED as an output indicator.
+aliases:
+  SWITCH: INPUT_PORT
+  INPUT: INPUT_PORT
+  OUTPUT: OUTPUT_PORT
+  LED: OUTPUT_PORT
