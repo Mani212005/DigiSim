@@ -36,7 +36,7 @@ uv run pytest test_generate_v2.py
 | `images/<split>/NNNNNN.jpg` | image |
 | `labels/<split>/NNNNNN.txt` | YOLO boxes, ids from `ml/classes.yaml` (symbols and JUNCTION dots) |
 | `annotations/<split>/NNNNNN.json` | per symbol: id, class, bbox, variant, **pin points** per terminal, **orientation** (`rotation` clockwise after optional `mirror`), terminal nets; junctions (center, diameter, bbox, net); wire polylines per net; crossings; text boxes; render style |
-| `netlists/<split>/NNNNNN.netlist.json` | components (devices, ports, supply symbols, with `node_type` and terminal-to-net pins), nets, inputs, outputs, reference truth table, topology hash |
+| `netlists/<split>/NNNNNN.json` | components (devices, ports, supply symbols, with `node_type` and terminal-to-net pins), nets, inputs, outputs, reference truth table, topology hash |
 | `manifest.json` | seed, count, per-sample split/domain/recipe/topology hash/held-out flag and SHA-256 of every file (canonical JSON, byte-identical for a given seed and count) |
 | `balance_report.json` | per-domain and per-split class counts, the 10%-of-max rule, junction dot size stats |
 | `data.yaml` | YOLO dataset config (tier A) |

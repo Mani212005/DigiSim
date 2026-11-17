@@ -202,7 +202,7 @@ def write_sample(out: Path, sample: Sample) -> dict:
         "image": f"images/{sample.split}/{sample.sample_id}.jpg",
         "label": f"labels/{sample.split}/{sample.sample_id}.txt",
         "annotation": f"annotations/{sample.split}/{sample.sample_id}.json",
-        "netlist": f"netlists/{sample.split}/{sample.sample_id}.netlist.json",
+        "netlist": f"netlists/{sample.split}/{sample.sample_id}.json",
     }
     payloads = {
         "image": sample.image,

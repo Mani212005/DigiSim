@@ -237,7 +237,7 @@ def test_verifier_catches_a_broken_netlist(dataset: Path, tmp_path: Path) -> Non
     netlist = json.loads((dataset / entry["files"]["netlist"]["path"]).read_text())
     mos = next(c for c in netlist["components"] if c["class"] == "NMOS")
     mos["pins"]["g"] = "VDD"
-    (tmp_path / "x.netlist.json").write_text(json.dumps(netlist))
+    (tmp_path / "x.json").write_text(json.dumps(netlist))
     result = _run_verifier(tmp_path)
     assert result.returncode == 1
     assert "0/1 netlists pass" in result.stdout

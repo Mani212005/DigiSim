@@ -35,16 +35,16 @@ function loadSolver() {
 }
 
 /**
- * Recursively list netlist files under a directory.
+ * Recursively list netlist JSON files under a directory.
  * @param dir - Directory to scan
- * @returns Sorted absolute paths of *.netlist.json files
+ * @returns Sorted absolute paths of *.json files
  */
 function listNetlists(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...listNetlists(full));
-    else if (entry.name.endsWith('.netlist.json')) out.push(full);
+    else if (entry.name.endsWith('.json')) out.push(full);
   }
   return out.sort();
 }
@@ -209,7 +209,9 @@ function main() {
   }
   const jsonIdx = args.indexOf('--json');
   const solver = loadSolver();
-  const files = listNetlists(dir);
+  // A dataset root also holds annotation JSON, so scan only its netlists/ subtree when present.
+  const netlistDir = path.join(dir, 'netlists');
+  const files = listNetlists(fs.existsSync(netlistDir) ? netlistDir : dir);
   const failures = [];
   const byDomain = {};
   for (const file of files) {
