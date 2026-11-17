@@ -17,6 +17,8 @@ INK_RATIO = 0.72
 # Background kernel as a fraction of the longer image side (must exceed the largest junction dot).
 BACKGROUND_KERNEL_FRACTION = 0.03
 MIN_BACKGROUND_KERNEL = 15
+# The paper background is smooth, so it is estimated on a copy whose longer side is at most this many pixels.
+BACKGROUND_MAX_SIDE = 1000
 
 
 def _odd(n: float) -> int:
@@ -58,10 +60,13 @@ def ink_mask(image: np.ndarray) -> np.ndarray:
     """
     gray = to_gray(image)
     h, w = gray.shape
-    k = _odd(max(MIN_BACKGROUND_KERNEL, BACKGROUND_KERNEL_FRACTION * max(h, w)))
+    shrink = min(1.0, BACKGROUND_MAX_SIDE / max(h, w))
+    small = gray if shrink == 1.0 else cv2.resize(gray, (max(1, round(w * shrink)), max(1, round(h * shrink))), interpolation=cv2.INTER_AREA)
+    k = _odd(max(MIN_BACKGROUND_KERNEL, BACKGROUND_KERNEL_FRACTION * max(small.shape)))
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
-    background = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, kernel)
-    background = cv2.blur(background, (k, k))
+    background = cv2.blur(cv2.morphologyEx(small, cv2.MORPH_CLOSE, kernel), (k, k))
+    if shrink != 1.0:
+        background = cv2.resize(background, (w, h), interpolation=cv2.INTER_LINEAR)
     ratio = gray / np.maximum(background, 1.0)
     return ratio < INK_RATIO
 

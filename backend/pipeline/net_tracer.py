@@ -249,7 +249,8 @@ class NetTracer:
             used = {id(c) for c in terms.values()}
             leftovers = [c for c in mine if id(c) not in used]
             diag.unassigned_contacts += len(leftovers)
-            diag.pass_through_repairs += self._repair_pass_through(leftovers, uf, cfg.pass_through_cos)
+            if not det.keypoints or all(t in det.keypoints for t in CLASS_TERMINALS[cls]):
+                diag.pass_through_repairs += self._repair_pass_through(leftovers, uf, cfg.pass_through_cos)
 
         net_of_root: dict[int, str] = {}
         counter = itertools.count()

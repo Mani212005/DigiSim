@@ -9,6 +9,7 @@ Purpose: Tests for net tracing v2 (pipeline/net_tracer.py and helpers) and the s
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 
 import cv2
@@ -334,6 +335,19 @@ def test_rotated_mirrored_transistor(orientation: Orientation, keypoints: bool) 
     assert mos.orientation == orientation
 
 
+def test_partial_keypoints_do_not_merge_drain_and_source_nets() -> None:
+    """A vertical NMOS whose drain and source keypoints were dropped keeps its two wires on separate nets."""
+    sc = transistor_scene(0, False)
+    dets = sc.detections(keypoints=True)
+    mos = next(d for d, sym in zip(dets, sc.symbols) if sym.name == "M")
+    mos.keypoints = {"g": mos.keypoints["g"]}
+    result = NetTracer().trace(sc.image(), dets, texts=[])
+    names = {c.id: s.name for c, s in zip(result.components, sc.symbols)}
+    nets = [{f"{names[p.partition(':')[0]]}:{p.partition(':')[2]}" for p in net.pins} for net in result.nets]
+    assert not any("OUT:a" in pins and "GND:gnd" in pins for pins in nets)
+    assert result.diagnostics.pass_through_repairs == 0
+
+
 @pytest.mark.parametrize(
     ("cls", "variant", "four"),
     [
@@ -400,6 +414,22 @@ def test_ink_ignores_ruled_paper_lines() -> None:
     mask = ink_mask(img)
     assert mask[100, 150] and not mask[35, 150]
     assert abs(stroke_width(mask) - int(mask[:, 150].sum())) <= 1.0
+
+
+def test_ink_mask_on_a_large_photo_is_fast_and_keeps_strokes() -> None:
+    """A 4000x3000 shaded photo binarises in well under a second and finds the same strokes as a downscaled copy."""
+    h, w = 3000, 4000
+    shade = np.linspace(190, 245, w, dtype=np.float32)[None, :].repeat(h, axis=0)
+    img = cv2.cvtColor(shade.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+    cv2.line(img, (200, 1500), (3800, 1500), (25, 25, 25), 9)
+    cv2.line(img, (2000, 200), (2000, 2800), (25, 25, 25), 9)
+    start = time.perf_counter()
+    mask = ink_mask(img)
+    elapsed = time.perf_counter() - start
+    assert elapsed < 1.0
+    assert mask.shape == (h, w)
+    assert mask[1500, 1000] and mask[1000, 2000] and not mask[700, 1000] and not mask[2500, 3000]
+    assert abs(stroke_width(mask) - int((img[:, 1000, 0] < 100).sum())) <= 1.0
 
 
 def test_reads_port_labels_beside_symbols() -> None:
