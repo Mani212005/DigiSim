@@ -22,7 +22,7 @@ Not legal advice. Reviewed against the primary sources linked below on 2026-11-1
 
 > This work uses the CGHD dataset: F. Thoma, J. Bayer, Y. Li, A. Dengel, "A Public Ground-Truth Dataset for Handwritten Circuit Diagram Images", ICDAR 2021 Workshops, DOI 10.5281/zenodo.15333233, licensed under CC BY 4.0. We converted its VOC annotations to YOLO format, remapped classes to DigiSim's vocabulary and added NMOS/PMOS polarity labels to transistor symbols.
 
-**Changes we made (CC BY requires saying so):** class remap to `ml/classes.yaml`; `transistor.fet` split into NMOS and PMOS by our own manual pass; `terminal` boxes triaged into input, output or supply ports from their neighbouring text; image EXIF orientation applied (removed from the converted copy); unmapped classes kept only as ignore regions.
+**Changes we made (CC BY requires saying so):** class remap to `ml/classes.yaml`; `transistor.fet` split into NMOS and PMOS by our own manual pass; `terminal`, `vss` and `voltage.dc` boxes triaged into input, output or supply ports (VDD/GND) from their neighbouring text, otherwise ignored; image EXIF orientation applied (removed from the converted copy); unmapped classes kept only as ignore regions.
 
 ## 2. Roboflow `my-first-project-yz9wf` (46 images, 6 gate classes)
 

@@ -81,7 +81,7 @@ labels in `ml/real_data/labels/`.
 - Sources: CGHD pilot (drafters 16, 19, 20, 25, HF mirror pinned to a revision), the 46-image Roboflow export, and the 4 spare `Sampleimages/` (held-out qualitative split `heldout_qual`).
 - Splits are by **drafter** (CGHD) or source image, never by image; the leakage check also compares content hashes and near-duplicate hashes.
 - `transistor.fet` has no polarity in CGHD: NMOS/PMOS comes from `labels/fet_polarity.json` (our manual pass, propagated across photos); uncertain ones are not labels.
-- Boxes that are not labels (unmapped classes, undecided transistors/terminals) are kept as ignore regions in `data_real/yolo/ignore/` so evaluation can mask them.
+- Boxes that are not labels (unmapped classes, undecided transistors/terminals/supply symbols) are kept as ignore regions in `data_real/yolo/ignore/` so evaluation can mask them.
 - Commands (from `ml/`): `python -m real_data.build fetch | sheets | convert | verify | report`; tests: `pytest tests`.
 - The test split hash is frozen: change the pilot or the labels and `convert` produces a new hash, which is a new eval set (record it, do not tune on it).
 
