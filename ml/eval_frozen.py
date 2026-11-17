@@ -52,33 +52,20 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def split_dirs(dataset_root: Path, split: str) -> tuple[Path, Path, Path]:
+def hash_split(images_dir: Path, labels_dir: Path, netlists_dir: Path, class_names: Sequence[str]) -> SplitDigest:
     """
-    The image, label and netlist directories of a split.
+    Deterministic digest of a dataset split, over exactly the directories an evaluation reads.
 
     Args:
-        dataset_root: Dataset root (the `path:` of data.yaml).
-        split: Split name such as 'test'.
-    Returns:
-        (images/<split>, labels/<split>, netlists/<split>); the netlist directory may not exist.
-    """
-    return dataset_root / "images" / split, dataset_root / "labels" / split, dataset_root / "netlists" / split
-
-
-def hash_split(dataset_root: Path, split: str, class_names: Sequence[str]) -> SplitDigest:
-    """
-    Deterministic digest of a dataset split.
-
-    Args:
-        dataset_root: Dataset root directory.
-        split: Split name.
+        images_dir: Directory holding the split's images.
+        labels_dir: Directory holding the split's YOLO label files.
+        netlists_dir: Directory holding the split's ground-truth netlists (may not exist).
         class_names: Class names in id order (label ids are meaningless without them).
     Returns:
         The SplitDigest. Only *.txt labels, image files and *.json netlists count; caches are ignored.
     Raises:
         FileNotFoundError: If the image or label directory does not exist.
     """
-    images_dir, labels_dir, netlists_dir = split_dirs(dataset_root, split)
     for required in (images_dir, labels_dir):
         if not required.is_dir():
             raise FileNotFoundError(f"Split directory missing: {required}")

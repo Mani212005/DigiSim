@@ -72,6 +72,7 @@ class DatasetInfo:
     names: tuple[str, ...]
     images_dir: Path
     labels_dir: Path
+    netlists_dir: Path
 
 
 def load_dataset_info(data: Path, split: str) -> DatasetInfo:
@@ -104,9 +105,10 @@ def load_dataset_info(data: Path, split: str) -> DatasetInfo:
         root = (data.parent / root).resolve()
     images_dir = root / str(doc[key])
     labels_dir = root / str(doc[key]).replace("images", "labels", 1)
+    netlists_dir = root / str(doc[key]).replace("images", "netlists", 1)
     if not images_dir.is_dir():
         raise FileNotFoundError(f"Split images directory missing: {images_dir}")
-    return DatasetInfo(root=root, names=names, images_dir=images_dir, labels_dir=labels_dir)
+    return DatasetInfo(root=root, names=names, images_dir=images_dir, labels_dir=labels_dir, netlists_dir=netlists_dir)
 
 
 def read_labels(label_file: Path, width: int, height: int) -> np.ndarray:
@@ -448,7 +450,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--gt-netlists and --pred-netlists go together")
 
     info = load_dataset_info(args.data, args.split)
-    digest: SplitDigest = hash_split(info.root, args.split, info.names)
+    digest: SplitDigest = hash_split(info.images_dir, info.labels_dir, args.gt_netlists or info.netlists_dir, info.names)
     if not args.freeze and not args.frozen_name:
         args.frozen_name = infer_frozen_name(args.split, info.names, args.registry)
         if args.split == "test" and not args.frozen_name:
@@ -503,7 +505,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.reproduce:
             parser.error("--reproduce needs the legacy block (drop --skip-legacy)")
     if args.gt_netlists:
-        report["end_to_end"] = evaluate_netlists(args.gt_netlists, args.pred_netlists, not args.no_truth_table, args.match_mode, args.score_bulk)
+        report["end_to_end"] = evaluate_netlists(args.gt_netlists, args.pred_netlists, not args.no_truth_table, args.match_mode, args.score_bulk, rules)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stem = report["run"]["name"]

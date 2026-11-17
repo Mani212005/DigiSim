@@ -14,7 +14,7 @@ from conftest import nand_netlist
 from test_eval_frozen import make_dataset
 
 from eval_report import render_markdown
-from evaluate import build_class_map, main, read_labels, reproduction_check
+from evaluate import build_class_map, load_dataset_info, main, read_labels, reproduction_check
 
 
 def test_read_labels_handles_boxes_polygons_and_missing_files(tmp_path: Path) -> None:
@@ -102,3 +102,57 @@ def test_end_to_end_report_renders_markdown(tmp_path: Path) -> None:
     assert report["end_to_end"]["overall"]["net_micro"]["f1"] == 1.0
     assert render_markdown(report, report).count("# DigiSim evaluation") == 1
     assert np.isclose(report["end_to_end"]["overall"]["exact_match"]["value"], 1.0)
+
+
+def test_frozen_hash_covers_the_directories_data_yaml_names(tmp_path: Path) -> None:
+    """A split entry that is not images/<split> is hashed where it points: editing that directory is refused."""
+    root = tmp_path / "d"
+    (root / "images" / "test_v2").mkdir(parents=True)
+    (root / "labels" / "test_v2").mkdir(parents=True)
+    (root / "images" / "test_v2" / "syn_0.jpg").write_bytes(b"image-bytes")
+    (root / "labels" / "test_v2" / "syn_0.txt").write_text("0 0.5 0.5 0.1 0.1\n")
+    data = root / "data.yaml"
+    data.write_text(f"path: {root}\ntrain: images/test_v2\nval: images/test_v2\ntest: images/test_v2\nnames: [A, B]\n")
+    info = load_dataset_info(data, "test")
+    assert info.netlists_dir == root / "netlists" / "test_v2"
+    registry = tmp_path / "frozen.json"
+    common = ["--data", str(data), "--registry", str(registry), "--out-dir", str(tmp_path / "out"), "--skip-detection", "--frozen-name", "t"]
+    assert main([*common, "--freeze"]) == 0
+    assert main(common) == 0
+    (root / "labels" / "test_v2" / "syn_0.txt").write_text("1 0.5 0.5 0.1 0.1\n")
+    assert main(common) == 3
+
+
+def test_frozen_hash_covers_the_scored_ground_truth_netlists(tmp_path: Path) -> None:
+    """--gt-netlists pointing outside the dataset is hashed too: a different ground truth is refused."""
+    root = make_dataset(tmp_path / "d")
+    gt = tmp_path / "gt"
+    gt.mkdir()
+    (gt / "syn_0.json").write_text(json.dumps(nand_netlist(with_boxes=True)))
+    pred = tmp_path / "pred"
+    pred.mkdir()
+    (pred / "syn_0.json").write_text(json.dumps(nand_netlist(with_boxes=True)))
+    data, out = write_yaml(root), tmp_path / "out"
+    base = ["--data", str(data), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-detection", "--frozen-name", "t"]
+    scored = [*base, "--gt-netlists", str(gt), "--pred-netlists", str(pred), "--no-truth-table"]
+    assert main([*scored, "--freeze"]) == 0
+    assert main(scored) == 0
+    (gt / "syn_0.json").write_text(json.dumps(nand_netlist(with_boxes=True, shift=2.0)))
+    assert main(scored) == 3
+
+
+def test_end_to_end_domains_follow_cli_domain_rules(tmp_path: Path) -> None:
+    """--domain-rule groups the end-to-end per-domain block, not only the detection one."""
+    root = make_dataset(tmp_path / "d")
+    gt, pred = tmp_path / "gt", tmp_path / "pred"
+    for folder in (gt, pred):
+        folder.mkdir()
+        for stem in ("syn_0", "foo_1"):
+            (folder / f"{stem}.json").write_text(json.dumps(nand_netlist(with_boxes=True)))
+    out = tmp_path / "out"
+    args = ["--data", str(write_yaml(root)), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-detection", "--frozen-name", "t"]
+    scored = [*args, "--gt-netlists", str(gt), "--pred-netlists", str(pred), "--no-truth-table", "--domain-rule", "foo_=bar"]
+    assert main([*scored, "--freeze"]) == 0
+    assert main(scored) == 0
+    report = json.loads((out / "t.json").read_text())
+    assert set(report["end_to_end"]["per_domain"]) == {"synthetic", "bar"}

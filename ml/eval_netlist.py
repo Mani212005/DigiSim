@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 
 from class_schema import load_schema
-from eval_metrics import IOU_MATCH_THRESHOLD, LOW_SUPPORT_N, box_iou, domain_for, rate
+from eval_metrics import DEFAULT_DOMAIN_RULES, IOU_MATCH_THRESHOLD, LOW_SUPPORT_N, box_iou, domain_for, rate
 
 ML_DIR = Path(__file__).resolve().parent
 BRIDGE_SCRIPT = ML_DIR / "sim_bridge" / "truth_table.cjs"
@@ -443,6 +443,7 @@ def evaluate_netlists(
     truth_table: bool = True,
     match_mode: str = "auto",
     score_bulk: bool = False,
+    domain_rules: Sequence[tuple[str, str]] = DEFAULT_DOMAIN_RULES,
 ) -> dict[str, object]:
     """
     End-to-end metrics over every ground-truth netlist in gt_dir.
@@ -455,6 +456,7 @@ def evaluate_netlists(
         truth_table: Also compute truth-table equivalence with DigiSim's simulator.
         match_mode: Component pairing mode (see match_components).
         score_bulk: Score MOSFET bulk pins too.
+        domain_rules: (filename prefix, domain) rules used to group circuits per domain.
     Returns:
         Dict with per-circuit records, micro/macro net P/R/F1, exact-match rate and truth-table equivalence
         rate (with Wilson CIs), overall and per domain.
@@ -488,7 +490,7 @@ def evaluate_netlists(
         comps_ok = len(pred.components) == len(gt.components) == len(mapping)
         records[stem] = CircuitResult(
             stem=stem,
-            domain=domain_for(stem),
+            domain=domain_for(stem, domain_rules),
             gt_components=len(gt.components),
             pred_components=len(pred.components),
             matched_components=len(mapping),
