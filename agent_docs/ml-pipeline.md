@@ -118,8 +118,8 @@ labels in `ml/real_data/labels/`.
 ## Training Harness
 `ml/train.py` runs on CPU, one GPU or DDP with the same command (`--device cpu | auto | 0 | 0,1,2,3`); `--workers` defaults to the usable CPU count (max 8) and `--batch` is the total across GPUs (default: 16 per device).
 Presets: `smoke` (2 epochs, yolov8n, imgsz 320), `stage-a` (synthetic pretrain, yolov8s, imgsz 960, 100 epochs), `stage-b` (mixed fine-tune from the stage-A `best.pt` via `--model`, real images repeated `--real-oversample` times through `--real-train DIR`, lr0 0.002).
-Always pretrained weights; `--resume RUN_DIR` continues an interrupted run; `--dry-run` prints the resolved plan (device layout, batch per process, dataset counts, class-vocabulary check against `ml/classes.yaml`) without importing torch.
-Each run folder (`ml/experiments/run_*`, gitignored) holds `config.yaml`, `notes.md`, `best.pt`, `best.onnx` and `metrics.json` (per-class P/R/F1/AP/accuracy, the F1/accuracy gate verdict, environment, dataset counts).
+Always pretrained weights; `--resume RUN_DIR` continues an interrupted run (it keeps the run's base model, total batch and rebuilt mixed/oversampled dataset, and `metrics.json` records `resumed_from`); `--dry-run` prints the resolved plan (device layout, batch per process, dataset counts, class-vocabulary check against `ml/classes.yaml`) without importing torch.
+Each run folder (`ml/experiments/run_*`, gitignored) holds `config.yaml`, `notes.md`, `best.pt`, `best.onnx` and `metrics.json` (per-class P/R/F1/AP/accuracy, the F1/accuracy gate verdict, environment, dataset counts and the effective `data_effective` yaml).
 `ml/kaggle/train_kaggle.py` is the self-contained Kaggle twin (installs ultralytics, finds `data.yaml` under `/kaggle/input`, writes the same artifacts to `/kaggle/working/digisim_run`); `ml/tests/test_train_harness.py` keeps its preset table equal to `train.py`.
 `ml/make_smoke_dataset.py` writes a throwaway procedural dataset for harness checks (not training data). Harness tests: `cd ml && uv run pytest` (add `DIGISIM_ML_SMOKE=1` for the 2-epoch CPU run).
 

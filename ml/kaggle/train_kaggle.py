@@ -397,7 +397,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
     out_dir = resume.parent.parent.parent if resume else args.out
     saved = read_yaml(out_dir / "config.yaml") if resume and (out_dir / "config.yaml").is_file() else {}
     preset = PRESETS[args.preset or str(saved.get("preset") or "stage-a")]
-    model = str(resume) if resume else (args.model or preset.model)
+    model = str(saved.get("model") or resume) if resume else (args.model or preset.model)  # a resumed run keeps its original base weights on record
     if model is None:
         raise ValueError(f"preset {preset.name} fine-tunes earlier weights: pass --model /kaggle/input/<stage-a>/best.pt")
     saved_real = saved.get("real_train") or []
@@ -405,6 +405,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
     inherited = not args.real_train and bool(saved_real)
     default_oversample = int(saved.get("real_oversample") or 1) if inherited else (preset.real_oversample if real_train else 1)
     oversample = args.real_oversample if args.real_oversample is not None else default_oversample
+    saved_batch = int(str(saved["batch_total"])) if resume and saved.get("batch_total") else None  # resume keeps the original total batch unless --batch says otherwise
     if oversample > 1 and not real_train:
         raise ValueError("--real-oversample needs at least one --real-train folder")
     warnings: list[str] = []
@@ -424,7 +425,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
         "device": device_spec(ids),
         "world_size": world,
         "ddp": world > 1,
-        "batch_total": resolve_batch(args.batch, preset.batch_per_device, world),
+        "batch_total": resolve_batch(args.batch if args.batch is not None else saved_batch, preset.batch_per_device, world),
         "workers": args.workers if args.workers is not None else default_workers(),
         "epochs": args.epochs if args.epochs is not None else int(saved.get("epochs") or preset.epochs),
         "imgsz": args.imgsz if args.imgsz is not None else int(saved.get("imgsz") or preset.imgsz),
@@ -469,9 +470,11 @@ def run(plan: dict[str, Any], install: bool) -> Path:
     (out / "config.yaml").write_text(yaml.safe_dump({**plan, "data_effective": str(data_yaml)}, sort_keys=False))
 
     started = time.time()
-    model = YOLO(plan["model"])  # always a pretrained checkpoint: transfer learning only
+    model = YOLO(plan["resume"] or plan["model"])  # always a pretrained checkpoint: transfer learning only
     if plan["resume"]:
-        model.train(resume=True, device=plan["device"], batch=plan["batch_total"], imgsz=plan["imgsz"], workers=plan["workers"])
+        # `data` is only ultralytics' fallback when the checkpoint's recorded dataset yaml is gone (copied run dir); without it a
+        # resume silently falls back to coco8 instead of the mixed, oversampled dataset.
+        model.train(resume=True, data=str(data_yaml), device=plan["device"], batch=plan["batch_total"], imgsz=plan["imgsz"], workers=plan["workers"])
     else:
         model.train(
             data=str(data_yaml),
@@ -506,6 +509,7 @@ def run(plan: dict[str, Any], install: bool) -> Path:
         "schema_version": METRICS_SCHEMA_VERSION,
         "run_name": out.name,
         "preset": plan["preset"],
+        "resumed_from": plan["resume"],
         "map50": float(val.box.map50),
         "map50_95": float(val.box.map),
         "mean_precision": float(val.box.mp),
@@ -514,7 +518,7 @@ def run(plan: dict[str, Any], install: bool) -> Path:
         "per_class": per_class,
         "gate": gate_verdict(per_class),
         "class_names": [best_model.names[i] for i in sorted(best_model.names)],
-        "dataset": {"data": plan["data_yaml"], **{f"{k}_images": v for k, v in counts.items()}, "real_oversample": plan["real_oversample"]},
+        "dataset": {"data": plan["data_yaml"], "data_effective": str(data_yaml), **{f"{k}_images": v for k, v in counts.items()}, "real_oversample": plan["real_oversample"]},
         "settings": {k: plan[k] for k in ("model", "epochs", "imgsz", "device", "workers", "seed", "lr0")} | {"batch": plan["batch_total"]},
         "environment": environment_info(),
         "train_seconds": round(time.time() - started, 1),

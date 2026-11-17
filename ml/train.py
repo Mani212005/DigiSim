@@ -419,7 +419,7 @@ def resolve_config(args: argparse.Namespace) -> TrainConfig:
     resume = resolve_resume_checkpoint(args.resume) if args.resume else None
     saved = load_saved_config(resume.parent.parent.parent) if resume else {}
     preset = PRESETS[args.preset or str(saved.get("preset") or DEFAULT_PRESET)]
-    model = str(resume) if resume else (args.model or preset.model)
+    model = str(saved.get("model") or resume) if resume else (args.model or preset.model)  # a resumed run keeps its original base weights on record
     if model is None:
         raise ValueError(f"preset {preset.name} fine-tunes earlier weights: pass --model path/to/stage_a/best.pt")
     saved_real = [Path(str(p)) for p in saved.get("real_train") or []]
@@ -427,6 +427,7 @@ def resolve_config(args: argparse.Namespace) -> TrainConfig:
     inherited = not args.real_train and bool(saved_real)
     default_oversample = int(saved.get("real_oversample") or 1) if inherited else (preset.real_oversample if real_train else 1)
     oversample = args.real_oversample if args.real_oversample is not None else default_oversample
+    saved_batch = int(str(saved["batch"])) if resume and saved.get("batch") else None  # resume keeps the original total batch unless --batch says otherwise
     if oversample > 1 and not real_train:
         raise ValueError("--real-oversample needs at least one --real-train folder")
     return TrainConfig(
@@ -437,7 +438,7 @@ def resolve_config(args: argparse.Namespace) -> TrainConfig:
         name=resume.parent.parent.parent.name if resume else (args.name or f"run_{datetime.now():%Y%m%d_%H%M}"),
         epochs=args.epochs if args.epochs is not None else int(saved.get("epochs") or preset.epochs),
         imgsz=args.imgsz if args.imgsz is not None else int(saved.get("imgsz") or preset.imgsz),
-        batch=resolve_batch(args.batch, preset.batch_per_device, plan),
+        batch=resolve_batch(args.batch if args.batch is not None else saved_batch, preset.batch_per_device, plan),
         device=plan,
         workers=args.workers if args.workers is not None else default_workers(),
         patience=args.patience if args.patience is not None else int(saved.get("patience") or preset.patience),
@@ -620,7 +621,7 @@ def train(cfg: TrainConfig) -> Path:
         (run_dir / "notes.md").write_text(f"# {cfg.name}\n\n{cfg.notes or 'No notes provided.'}\n")
 
     started = time.time()
-    model = YOLO(cfg.model)  # always a pretrained checkpoint: transfer learning only
+    model = YOLO(str(cfg.resume) if cfg.resume else cfg.model)  # always a pretrained checkpoint: transfer learning only
     train_kwargs: dict[str, object] = {
         "data": str(data_yaml),
         "epochs": cfg.epochs,
@@ -640,8 +641,10 @@ def train(cfg: TrainConfig) -> Path:
         "exist_ok": True,
     }
     if cfg.resume:
-        # ultralytics keeps the original run settings from the checkpoint and only lets these be overridden.
-        model.train(resume=True, device=cfg.device.spec, batch=cfg.batch, imgsz=cfg.imgsz, workers=cfg.workers)
+        # ultralytics keeps the original run settings from the checkpoint and only lets the overrides below be changed. `data` is
+        # only its fallback for a checkpoint whose recorded dataset yaml no longer exists (moved run dir); without it ultralytics
+        # silently resumes on its default coco8 instead of the mixed, oversampled dataset.
+        model.train(resume=True, data=str(data_yaml), device=cfg.device.spec, batch=cfg.batch, imgsz=cfg.imgsz, workers=cfg.workers)
     else:
         model.train(**train_kwargs)
     trainer = model.trainer
@@ -672,6 +675,7 @@ def train(cfg: TrainConfig) -> Path:
         "schema_version": METRICS_SCHEMA_VERSION,
         "run_name": cfg.name,
         "preset": cfg.preset,
+        "resumed_from": str(cfg.resume) if cfg.resume else None,
         "map50": float(val.box.map50),
         "map50_95": float(val.box.map),
         "mean_precision": float(val.box.mp),
@@ -682,6 +686,7 @@ def train(cfg: TrainConfig) -> Path:
         "class_names": [best_model.names[i] for i in sorted(best_model.names)],
         "dataset": {
             "data": str(cfg.data),
+            "data_effective": str(data_yaml),
             "train_images": len(split_images(data_cfg, cfg.data, "train")),
             "val_images": len(split_images(data_cfg, cfg.data, "val")),
             "test_images": len(split_images(data_cfg, cfg.data, "test")),
