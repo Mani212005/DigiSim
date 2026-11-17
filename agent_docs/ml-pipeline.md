@@ -17,7 +17,7 @@ Image → [Stage 1: YOLO Detection] → [Stage 2: OpenCV Wire Extraction]
 
 ## Class Vocabulary
 Single source of truth: `ml/classes.yaml` (name, tier, YOLO id, frontend node type, terminals, default size, legacy aliases).
-Never hand-edit the generated files; after editing the YAML run `cd ml && uv run --no-project --with pyyaml python class_schema.py generate`
+Never hand-edit the generated files; after editing the YAML run `cd ml && uv run python class_schema.py generate`
 (`check` verifies nothing is stale; pytest `backend/test_class_schema.py` and Jest `yoloClassMap.test.ts` assert the backend and frontend maps equal the YAML).
 
 | Tier | Classes (YOLO ids in file order) |
