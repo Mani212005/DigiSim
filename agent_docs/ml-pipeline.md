@@ -27,8 +27,22 @@ Image → [Stage 1: YOLO Detection] → [Stage 2: OpenCV Net Tracing (wire extra
 - Bench: `cd backend && uv run python data_gen/generate_v2.py --count 300 --seed 1 --out DIR && uv run python bench_tracing.py --data DIR --truth-table`
   drives the tracer from perturbed ground-truth detections and scores it with `ml/eval_netlist.py` per render style (clean = cad/textbook,
   hand_drawn = hand/photo); it exits 1 unless net F1 >= 0.90 for both styles, exact match >= 70% clean / >= 50% hand-drawn, and p95 runtime < 2 s.
-- Not yet: the T3 screenshot round-trip check, and the frontend importer (T9) still reads only the legacy `connections` (gate-level); wiring
-  transistor-level imports means consuming `nets`/`edges` (handles `t:`/`s:` + terminal) and `library_cell` in `App.tsx importCircuit`.
+- Measured T2 results: 300 samples from `generate_v2.py --count 300 --seed 1` (held out from tuning, which used seed 7). Detections are
+  perturbed ground truth (box edges N(0, 3% of side), keypoints N(0, 3% of short side), 2% of junction dots dropped), scored with
+  `ml/eval_netlist.py`. These scores come from perturbed ground-truth detections because no trained detector for the new classes exists yet,
+  so they bound the tracer, not the end-to-end photo pipeline.
+
+  | Mode | Style (circuits) | Net F1 | Exact match | Truth-table match |
+  |------|------------------|--------|-------------|-------------------|
+  | Keypoints | clean (151) | 0.9995 | 99.3% | 99.3% |
+  | Keypoints | hand-drawn (149) | 0.9989 | 98.7% | 98.7% |
+  | Geometry fallback (no keypoints) | clean | 0.9897 | 88.7% | 92.0% (overall) |
+  | Geometry fallback (no keypoints) | hand-drawn | 0.9799 | 86.6% | 92.0% (overall) |
+
+  Keypoint mode overall truth-table match is 99.0%. Runtime per image: mean 0.12 s, p95 0.29 s, max 0.80 s (keypoints); p95 0.34 s (geometry fallback).
+- Not yet: the T3 screenshot round-trip truth-table check is tracked as a T3/T8 follow-up (the T3 screenshot set does not exist yet). The
+  frontend importer (T9) still reads only the legacy `connections` (gate-level); wiring transistor-level imports means consuming
+  `nets`/`edges` (handles `t:`/`s:` + terminal) and `library_cell` in `App.tsx importCircuit`.
 
 ## Class Vocabulary
 Single source of truth: `ml/classes.yaml` (name, tier, YOLO id, frontend node type, terminals, default size, legacy aliases).
