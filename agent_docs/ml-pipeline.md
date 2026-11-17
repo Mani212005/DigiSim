@@ -115,6 +115,14 @@ labels in `ml/real_data/labels/`.
 - Commands (from `ml/`): `python -m real_data.build fetch | sheets | convert | verify | report`; tests: `pytest tests`.
 - The test split hash is frozen: change the pilot or the labels and `convert` produces a new hash, which is a new eval set (record it, do not tune on it).
 
+## Training Harness
+`ml/train.py` runs on CPU, one GPU or DDP with the same command (`--device cpu | auto | 0 | 0,1,2,3`); `--workers` defaults to the usable CPU count (max 8) and `--batch` is the total across GPUs (default: 16 per device).
+Presets: `smoke` (2 epochs, yolov8n, imgsz 320), `stage-a` (synthetic pretrain, yolov8s, imgsz 960, 100 epochs), `stage-b` (mixed fine-tune from the stage-A `best.pt` via `--model`, real images repeated `--real-oversample` times through `--real-train DIR`, lr0 0.002).
+Always pretrained weights; `--resume RUN_DIR` continues an interrupted run; `--dry-run` prints the resolved plan (device layout, batch per process, dataset counts, class-vocabulary check against `ml/classes.yaml`) without importing torch.
+Each run folder (`ml/experiments/run_*`, gitignored) holds `config.yaml`, `notes.md`, `best.pt`, `best.onnx` and `metrics.json` (per-class P/R/F1/AP/accuracy, the F1/accuracy gate verdict, environment, dataset counts).
+`ml/kaggle/train_kaggle.py` is the self-contained Kaggle twin (installs ultralytics, finds `data.yaml` under `/kaggle/input`, writes the same artifacts to `/kaggle/working/digisim_run`); `ml/tests/test_train_harness.py` keeps its preset table equal to `train.py`.
+`ml/make_smoke_dataset.py` writes a throwaway procedural dataset for harness checks (not training data). Harness tests: `cd ml && uv run pytest` (add `DIGISIM_ML_SMOKE=1` for the 2-epoch CPU run).
+
 ## Key Principle
 Dataset quality > annotation correctness > pipeline correctness > model architecture.
 Fix data before changing models.
@@ -126,7 +134,7 @@ Fix data before changing models.
 | Detection | YOLOv8 (ultralytics), pretrained COCO weights |
 | Image processing | OpenCV |
 | Graph | NetworkX |
-| Training | Google Colab T4 |
+| Training | Kaggle GPUs (`ml/kaggle/train_kaggle.py`), local CPU for smoke runs (`ml/train.py`) |
 | Inference | Local / Azure |
 
 ## What We Are NOT Doing
