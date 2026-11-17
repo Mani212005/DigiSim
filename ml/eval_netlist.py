@@ -158,27 +158,20 @@ def load_netlist(path: Path) -> Netlist:
     return parse_netlist(raw)
 
 
-def match_components(gt: Netlist, pred: Netlist, mode: str = "auto", iou_threshold: float = IOU_MATCH_THRESHOLD) -> dict[str, str]:
+def match_components(gt: Netlist, pred: Netlist, iou_threshold: float = IOU_MATCH_THRESHOLD) -> dict[str, str]:
     """
     Pair predicted components with ground-truth components.
 
     Args:
         gt: Ground-truth netlist.
         pred: Predicted netlist.
-        mode: 'bbox' (IoU, same type), 'id' (same id and type) or 'auto' (bbox when every component of both
-            sides has one, otherwise id).
         iou_threshold: Minimum IoU for bbox pairing.
     Returns:
-        Mapping predicted component id -> ground-truth component id (one-to-one).
-    Raises:
-        ValueError: If mode is unknown, or 'bbox' is requested but a component has no bbox.
+        Mapping predicted component id -> ground-truth component id (one-to-one). Components are paired by IoU
+        and type when every component of both sides has a bbox, otherwise by id and type.
     """
-    if mode not in {"auto", "bbox", "id"}:
-        raise ValueError(f"Unknown match mode {mode!r}")
     have_boxes = all(c.bbox for c in gt.components.values()) and all(c.bbox for c in pred.components.values())
-    if mode == "bbox" and not have_boxes:
-        raise ValueError("bbox matching needs a bbox on every component of both netlists")
-    if mode == "id" or (mode == "auto" and not have_boxes):
+    if not have_boxes:
         return {pid: pid for pid, c in pred.components.items() if pid in gt.components and gt.components[pid].type == c.type}
     gids, pids = list(gt.components), list(pred.components)
     if not gids or not pids:
@@ -213,19 +206,18 @@ def _as_array(boxes: Sequence[tuple[float, float, float, float] | None]) -> np.n
     return np.asarray([b for b in boxes], dtype=np.float64).reshape(-1, 4)
 
 
-def scored_nets(netlist: Netlist, score_bulk: bool = False) -> list[frozenset[str]]:
+def scored_nets(netlist: Netlist) -> list[frozenset[str]]:
     """
-    Nets reduced to scored pins, dropping nets with fewer than two pins.
+    Nets reduced to scored pins (MOSFET bulk pins are unscored), dropping nets with fewer than two pins.
 
     Args:
         netlist: Netlist to reduce.
-        score_bulk: Keep MOSFET bulk pins when True.
     Returns:
         List of pin sets with at least two pins.
     """
     kept: list[frozenset[str]] = []
     for net in netlist.nets:
-        pins = frozenset(p for p in net if score_bulk or (netlist.components[p.partition(":")[0]].type, p.partition(":")[2]) not in BULK_TERMINALS)
+        pins = frozenset(p for p in net if (netlist.components[p.partition(":")[0]].type, p.partition(":")[2]) not in BULK_TERMINALS)
         if len(pins) >= 2:
             kept.append(pins)
     return kept
@@ -441,8 +433,6 @@ def evaluate_netlists(
     gt_dir: Path,
     pred_dir: Path,
     truth_table: bool = True,
-    match_mode: str = "auto",
-    score_bulk: bool = False,
     domain_rules: Sequence[tuple[str, str]] = DEFAULT_DOMAIN_RULES,
 ) -> dict[str, object]:
     """
@@ -454,8 +444,6 @@ def evaluate_netlists(
         gt_dir: Directory of ground-truth netlists named <image stem>.json.
         pred_dir: Directory of predicted netlists with the same stems.
         truth_table: Also compute truth-table equivalence with DigiSim's simulator.
-        match_mode: Component pairing mode (see match_components).
-        score_bulk: Score MOSFET bulk pins too.
         domain_rules: (filename prefix, domain) rules used to group circuits per domain.
     Returns:
         Dict with per-circuit records, micro/macro net P/R/F1, exact-match rate and truth-table equivalence
@@ -483,9 +471,9 @@ def evaluate_netlists(
                 pred = load_netlist(pred_file)
             except NetlistError as exc:
                 pred_error = str(exc)
-        mapping = match_components(gt, pred, match_mode)
-        gt_nets = scored_nets(gt, score_bulk)
-        pred_nets = remap_pins(scored_nets(pred, score_bulk), mapping)
+        mapping = match_components(gt, pred)
+        gt_nets = scored_nets(gt)
+        pred_nets = remap_pins(scored_nets(pred), mapping)
         counts = connectivity_scores(pin_pairs(gt_nets), pin_pairs(pred_nets))
         comps_ok = len(pred.components) == len(gt.components) == len(mapping)
         records[stem] = CircuitResult(
@@ -514,7 +502,7 @@ def evaluate_netlists(
                 rec.truth_table_detail = str(pred_t["error"]) if "error" in pred_t else None
     domains = sorted({r.domain for r in records.values()})
     return {
-        "settings": {"match_mode": match_mode, "score_bulk": score_bulk, "truth_table": truth_table, "iou": IOU_MATCH_THRESHOLD},
+        "settings": {"truth_table": truth_table, "iou": IOU_MATCH_THRESHOLD},
         "overall": aggregate(list(records.values())),
         "per_domain": {d: aggregate([r for r in records.values() if r.domain == d]) for d in domains},
         "circuits": {stem: r.to_dict() for stem, r in records.items()},

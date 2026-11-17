@@ -2,7 +2,9 @@
 Module: test_evaluate.py
 Purpose: Tests for ml/evaluate.py helpers and CLI behaviour that need no trained weights: label
          parsing, class-name mapping (incl. legacy aliases), the reproduction check, the markdown
-         renderer, and the refusal to run when the frozen test set changed.
+         renderer, and the refusal to run when the frozen test set changed. The CLI runs use a stub
+         detector (no weights, no ultralytics) and --skip-legacy; the frozen check, netlist scoring and
+         report writing around it are the real code.
 """
 
 import json
@@ -13,8 +15,51 @@ import pytest
 from conftest import nand_netlist
 from test_eval_frozen import make_dataset
 
+import evaluate
+from eval_metrics import DetectionAccumulator
 from eval_report import render_markdown
-from evaluate import build_class_map, load_dataset_info, main, read_labels, reproduction_check
+from evaluate import DatasetInfo, build_class_map, load_dataset_info, main, read_labels, reproduction_check, sibling_dir
+
+DETECTOR_CALLS: list[Path] = []
+
+
+def stub_detection(info: DatasetInfo, weights: Path, imgsz: int, conf: float, iou: float, small_px: float, device: str, domain_rules: tuple[tuple[str, str], ...]) -> dict:
+    """
+    Stand-in for evaluate_detection: an empty but schema-complete detection block, recording that it ran.
+
+    Args:
+        info: Resolved dataset.
+        weights: Weights path (unused).
+        imgsz: Inference size (unused).
+        conf: Operating confidence.
+        iou: IoU threshold.
+        small_px: Small-object threshold.
+        device: Device (unused).
+        domain_rules: Domain rules (unused).
+    Returns:
+        A detection dict with no ground truth and no predictions.
+    """
+    DETECTOR_CALLS.append(weights)
+    acc = DetectionAccumulator(len(info.names), small_px, iou)
+    per_class = acc.per_class(info.names)
+    return {
+        "conf": conf,
+        "iou_threshold": iou,
+        "model_classes": list(info.names),
+        "class_map": {},
+        "overall": acc.overall(),
+        "per_class": per_class,
+        "per_domain": {},
+        "confusion_matrix": acc.confusion(info.names),
+        "junction_recall": None,
+    }
+
+
+@pytest.fixture(autouse=True)
+def stub_detector(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace the model-backed detector so CLI runs need no weights."""
+    DETECTOR_CALLS.clear()
+    monkeypatch.setattr(evaluate, "evaluate_detection", stub_detection)
 
 
 def test_read_labels_handles_boxes_polygons_and_missing_files(tmp_path: Path) -> None:
@@ -69,7 +114,7 @@ def test_cli_refuses_changed_frozen_set_and_requires_a_name(tmp_path: Path, caps
     data = write_yaml(root)
     registry = tmp_path / "frozen.json"
     out = tmp_path / "out"
-    common = ["--data", str(data), "--registry", str(registry), "--out-dir", str(out), "--skip-detection"]
+    common = ["--data", str(data), "--registry", str(registry), "--out-dir", str(out), "--skip-legacy"]
     with pytest.raises(SystemExit):
         main([*common])  # test split without --frozen-name
     assert main([*common, "--frozen-name", "t", "--freeze", "--freeze-note", "tiny"]) == 0
@@ -79,13 +124,15 @@ def test_cli_refuses_changed_frozen_set_and_requires_a_name(tmp_path: Path, caps
     assert report["run"]["dataset"]["sha256"] == json.loads(registry.read_text())["t"]["sha256"]
     (out / "t.json").unlink()
     (root / "labels" / "test" / "syn_0.txt").write_text("1 0.5 0.5 0.1 0.1\n")
+    detector_runs = len(DETECTOR_CALLS)
     assert main([*common, "--frozen-name", "t"]) == 3
+    assert len(DETECTOR_CALLS) == detector_runs
     assert not (out / "t.json").exists()
     assert "refusing to evaluate" in capsys.readouterr().err
 
 
 def test_end_to_end_report_renders_markdown(tmp_path: Path) -> None:
-    """An end-to-end-only run writes JSON plus a Markdown table with the three headline metrics."""
+    """A run with netlists writes JSON plus a Markdown table with the three end-to-end headline metrics."""
     root = make_dataset(tmp_path / "d")
     (root / "netlists" / "test").mkdir(parents=True)
     (root / "netlists" / "test" / "syn_0.json").write_text(json.dumps(nand_netlist(with_boxes=True)))
@@ -93,7 +140,7 @@ def test_end_to_end_report_renders_markdown(tmp_path: Path) -> None:
     pred.mkdir()
     (pred / "syn_0.json").write_text(json.dumps(nand_netlist(with_boxes=True, prefix="p_", shift=1.0)))
     data, out = write_yaml(root), tmp_path / "out"
-    args = ["--data", str(data), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-detection", "--frozen-name", "t"]
+    args = ["--data", str(data), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-legacy", "--frozen-name", "t"]
     assert main([*args, "--freeze"]) == 0
     assert main([*args, "--gt-netlists", str(root / "netlists" / "test"), "--pred-netlists", str(pred), "--no-truth-table"]) == 0
     markdown = (out / "t.md").read_text()
@@ -116,7 +163,7 @@ def test_frozen_hash_covers_the_directories_data_yaml_names(tmp_path: Path) -> N
     info = load_dataset_info(data, "test")
     assert info.netlists_dir == root / "netlists" / "test_v2"
     registry = tmp_path / "frozen.json"
-    common = ["--data", str(data), "--registry", str(registry), "--out-dir", str(tmp_path / "out"), "--skip-detection", "--frozen-name", "t"]
+    common = ["--data", str(data), "--registry", str(registry), "--out-dir", str(tmp_path / "out"), "--skip-legacy", "--frozen-name", "t"]
     assert main([*common, "--freeze"]) == 0
     assert main(common) == 0
     (root / "labels" / "test_v2" / "syn_0.txt").write_text("1 0.5 0.5 0.1 0.1\n")
@@ -133,7 +180,7 @@ def test_frozen_hash_covers_the_scored_ground_truth_netlists(tmp_path: Path) -> 
     pred.mkdir()
     (pred / "syn_0.json").write_text(json.dumps(nand_netlist(with_boxes=True)))
     data, out = write_yaml(root), tmp_path / "out"
-    base = ["--data", str(data), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-detection", "--frozen-name", "t"]
+    base = ["--data", str(data), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-legacy", "--frozen-name", "t"]
     scored = [*base, "--gt-netlists", str(gt), "--pred-netlists", str(pred), "--no-truth-table"]
     assert main([*scored, "--freeze"]) == 0
     assert main(scored) == 0
@@ -150,9 +197,37 @@ def test_end_to_end_domains_follow_cli_domain_rules(tmp_path: Path) -> None:
         for stem in ("syn_0", "foo_1"):
             (folder / f"{stem}.json").write_text(json.dumps(nand_netlist(with_boxes=True)))
     out = tmp_path / "out"
-    args = ["--data", str(write_yaml(root)), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-detection", "--frozen-name", "t"]
+    args = ["--data", str(write_yaml(root)), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-legacy", "--frozen-name", "t"]
     scored = [*args, "--gt-netlists", str(gt), "--pred-netlists", str(pred), "--no-truth-table", "--domain-rule", "foo_=bar"]
     assert main([*scored, "--freeze"]) == 0
     assert main(scored) == 0
     report = json.loads((out / "t.json").read_text())
     assert set(report["end_to_end"]["per_domain"]) == {"synthetic", "bar"}
+
+
+def test_report_marks_an_unfrozen_split_unverified(tmp_path: Path) -> None:
+    """A split with no registered frozen set runs unchecked, and the Markdown says so instead of claiming verification."""
+    root = make_dataset(tmp_path / "d")
+    out = tmp_path / "out"
+    unfrozen = ["--data", str(write_yaml(root)), "--registry", str(tmp_path / "f.json"), "--out-dir", str(out), "--skip-legacy", "--split", "val"]
+    assert main(unfrozen) == 0
+    assert "(not frozen - unverified)" in (out / "d_val.md").read_text()
+    assert "(verified)" not in (out / "d_val.md").read_text()
+    frozen = [*unfrozen[:-2], "--frozen-name", "t"]
+    assert main([*frozen, "--freeze"]) == 0
+    assert main(frozen) == 0
+    assert "(verified)" in (out / "t.md").read_text()
+
+
+def test_labels_and_netlists_dirs_swap_the_last_images_component(tmp_path: Path) -> None:
+    """Like ultralytics, only the last 'images' path component is replaced, so an 'images' earlier in the path stays."""
+    assert sibling_dir(Path("/a/images/ds/images/test"), "labels") == Path("/a/images/ds/labels/test")
+    root = tmp_path / "my_images"
+    (root / "images" / "test").mkdir(parents=True)
+    data = root / "data.yaml"
+    data.write_text(f"path: {root}\ntest: images/test\nnames: [A, B]\n")
+    info = load_dataset_info(data, "test")
+    assert info.labels_dir == root / "labels" / "test"
+    assert info.netlists_dir == root / "netlists" / "test"
+    with pytest.raises(ValueError):
+        sibling_dir(Path("/data/test"), "labels")

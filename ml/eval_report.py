@@ -203,11 +203,13 @@ def render_markdown(report: JsonDict, baseline: JsonDict | None = None) -> str:
         The Markdown text.
     """
     run = report["run"]
+    ds = run["dataset"]
+    status = "(verified)" if ds["frozen_name"] else "(not frozen - unverified)"
     lines = [f"# DigiSim evaluation - {run['name']}", ""]
     lines += [
         f"- generated: {run['generated_at']}",
-        f"- weights: `{run['weights']['name']}` sha256 `{str(run['weights']['sha256'])[:16]}...`" if run.get("weights") else "- weights: none (end-to-end only)",
-        f"- dataset: `{run['dataset']['frozen_name']}` split `{run['dataset']['split']}`, {run['dataset']['images']} images, frozen sha256 `{str(run['dataset']['sha256'])[:16]}...` (verified)",
+        f"- weights: `{run['weights']['name']}` sha256 `{str(run['weights']['sha256'])[:16]}...`",
+        f"- dataset: `{ds['frozen_name'] or 'unregistered'}` split `{ds['split']}`, {ds['images']} images, sha256 `{str(ds['sha256'])[:16]}...` {status}",
         f"- params: {run['params']}",
         "",
     ]

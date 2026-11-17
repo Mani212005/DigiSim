@@ -35,7 +35,7 @@ from typing import Any
 import numpy as np
 
 from class_schema import load_schema
-from eval_frozen import DEFAULT_REGISTRY, FrozenSetError, SplitDigest, file_sha256, freeze, hash_split, infer_frozen_name, verify_frozen
+from eval_frozen import DEFAULT_REGISTRY, IMAGE_SUFFIXES, FrozenSetError, SplitDigest, file_sha256, freeze, hash_split, infer_frozen_name, verify_frozen
 from eval_metrics import (
     DEFAULT_DOMAIN_RULES,
     DEFAULT_SMALL_PX,
@@ -59,7 +59,7 @@ ACC_THRESHOLD = 0.95
 PREDICT_CONF_FLOOR = 0.001
 DEFAULT_OPERATING_CONF = 0.35  # production DETECTION_CONFIDENCE_THRESHOLD (backend/pipeline/detector.py)
 DEFAULT_TOLERANCE = 0.02
-IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".webp"})
+OMP_THREADS = "4"
 EXIT_FROZEN = 3
 EXIT_REPRODUCTION = 4
 
@@ -104,11 +104,28 @@ def load_dataset_info(data: Path, split: str) -> DatasetInfo:
     if not root.is_absolute():
         root = (data.parent / root).resolve()
     images_dir = root / str(doc[key])
-    labels_dir = root / str(doc[key]).replace("images", "labels", 1)
-    netlists_dir = root / str(doc[key]).replace("images", "netlists", 1)
     if not images_dir.is_dir():
         raise FileNotFoundError(f"Split images directory missing: {images_dir}")
-    return DatasetInfo(root=root, names=names, images_dir=images_dir, labels_dir=labels_dir, netlists_dir=netlists_dir)
+    return DatasetInfo(root=root, names=names, images_dir=images_dir, labels_dir=sibling_dir(images_dir, "labels"), netlists_dir=sibling_dir(images_dir, "netlists"))
+
+
+def sibling_dir(images_dir: Path, name: str) -> Path:
+    """
+    The directory beside a split's images, found the way ultralytics finds labels: the last 'images' path component is swapped.
+
+    Args:
+        images_dir: The split's images directory.
+        name: Replacement component ('labels', 'netlists').
+    Returns:
+        The sibling directory path.
+    Raises:
+        ValueError: If images_dir has no 'images' path component.
+    """
+    parts = list(images_dir.parts)
+    if "images" not in parts:
+        raise ValueError(f"{images_dir}: the split directory must have an 'images' path component")
+    parts[len(parts) - 1 - parts[::-1].index("images")] = name
+    return Path(*parts)
 
 
 def read_labels(label_file: Path, width: int, height: int) -> np.ndarray:
@@ -411,14 +428,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--iou", type=float, default=IOU_MATCH_THRESHOLD)
     p.add_argument("--small-px", type=float, default=DEFAULT_SMALL_PX, help="GT boxes with longest side <= this are 'small objects'")
     p.add_argument("--device", default="cpu")
-    p.add_argument("--threads", type=int, default=4, help="CPU threads for torch/OpenMP")
     p.add_argument("--domain-rule", action="append", default=[], metavar="PREFIX=NAME", help="Extra filename-prefix domain rule (repeatable)")
-    p.add_argument("--skip-detection", action="store_true", help="Only run the end-to-end metrics")
     p.add_argument("--skip-legacy", action="store_true", help="Skip the ultralytics validation block")
     p.add_argument("--gt-netlists", type=Path, help="Directory of ground-truth netlists (<image stem>.json)")
     p.add_argument("--pred-netlists", type=Path, help="Directory of predicted netlists (<image stem>.json)")
-    p.add_argument("--match-mode", choices=["auto", "bbox", "id"], default="auto")
-    p.add_argument("--score-bulk", action="store_true", help="Also score MOSFET bulk pins")
     p.add_argument("--no-truth-table", action="store_true", help="Skip simulator-based truth-table equivalence")
     p.add_argument("--reproduce", type=Path, help="Reference eval JSON (e.g. the old eval_test.json) the legacy block must match")
     p.add_argument("--tolerance", type=float, default=DEFAULT_TOLERANCE)
@@ -441,7 +454,7 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = build_parser()
     args = parser.parse_args(argv)
-    os.environ.setdefault("OMP_NUM_THREADS", str(args.threads))
+    os.environ.setdefault("OMP_NUM_THREADS", OMP_THREADS)
     try:
         rules = (*(parse_domain_rule(r) for r in args.domain_rule), *DEFAULT_DOMAIN_RULES)
     except ValueError as exc:
@@ -478,7 +491,7 @@ def main(argv: list[str] | None = None) -> int:
             "name": args.run_name or args.frozen_name or f"{info.root.name}_{args.split}",
             "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
             "git_commit": git_commit(),
-            "weights": None if args.skip_detection else {"name": args.weights.name, "sha256": file_sha256(args.weights) if args.weights.exists() else None},
+            "weights": {"name": args.weights.name, "sha256": file_sha256(args.weights) if args.weights.exists() else None},
             "dataset": {
                 "frozen_name": args.frozen_name,
                 "split": args.split,
@@ -492,20 +505,19 @@ def main(argv: list[str] | None = None) -> int:
         },
     }
     status = 0
-    if not args.skip_detection:
-        report["detection"] = evaluate_detection(info, args.weights, args.imgsz, args.conf, args.iou, args.small_px, args.device, rules)
-        if not args.skip_legacy:
-            report["legacy"] = evaluate(args.weights, args.data, args.split, args.imgsz, args.out_dir / "ultralytics_val", args.device)
-            print_report(report["legacy"])
-            if args.reproduce:
-                repro = reproduction_check(report["legacy"], json.loads(args.reproduce.read_text()), args.tolerance, args.reproduce.name)
-                report["reproduction"] = repro
-                if not repro["ok"]:
-                    status = EXIT_REPRODUCTION
-        elif args.reproduce:
-            parser.error("--reproduce needs the legacy block (drop --skip-legacy)")
+    report["detection"] = evaluate_detection(info, args.weights, args.imgsz, args.conf, args.iou, args.small_px, args.device, rules)
+    if not args.skip_legacy:
+        report["legacy"] = evaluate(args.weights, args.data, args.split, args.imgsz, args.out_dir / "ultralytics_val", args.device)
+        print_report(report["legacy"])
+        if args.reproduce:
+            repro = reproduction_check(report["legacy"], json.loads(args.reproduce.read_text()), args.tolerance, args.reproduce.name)
+            report["reproduction"] = repro
+            if not repro["ok"]:
+                status = EXIT_REPRODUCTION
+    elif args.reproduce:
+        parser.error("--reproduce needs the legacy block (drop --skip-legacy)")
     if args.gt_netlists:
-        report["end_to_end"] = evaluate_netlists(args.gt_netlists, args.pred_netlists, not args.no_truth_table, args.match_mode, args.score_bulk, rules)
+        report["end_to_end"] = evaluate_netlists(args.gt_netlists, args.pred_netlists, not args.no_truth_table, rules)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stem = report["run"]["name"]

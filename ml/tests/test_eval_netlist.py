@@ -66,13 +66,13 @@ def test_nets_sharing_a_pin_are_merged() -> None:
     assert net == [frozenset({"A:out", "MP1:g", "MN1:g"})]
 
 
-def test_bulk_pins_are_not_scored_by_default() -> None:
-    """A bulk connection is ignored unless score_bulk is set."""
+def test_bulk_pins_are_not_scored() -> None:
+    """A MOSFET bulk connection is ignored when nets are reduced to scored pins."""
     raw = nand_netlist()
     raw["nets"][2].append("MP1:b")
     netlist = parse_netlist(raw)
+    assert any("MP1:b" in net for net in netlist.nets)
     assert all("MP1:b" not in net for net in scored_nets(netlist))
-    assert any("MP1:b" in net for net in scored_nets(netlist, score_bulk=True))
 
 
 def test_match_by_bbox_survives_renamed_ids_and_small_shifts() -> None:
@@ -82,8 +82,9 @@ def test_match_by_bbox_survives_renamed_ids_and_small_shifts() -> None:
     mapping = match_components(gt, pred)
     assert mapping == {f"p_{c}": c for c in gt.components}
     assert pin_pairs(remap_pins(scored_nets(pred), mapping)) == pin_pairs(scored_nets(gt))
-    with pytest.raises(ValueError):
-        match_components(parse_netlist(nand_netlist()), pred, "bbox")
+    unboxed = parse_netlist(nand_netlist())
+    assert match_components(unboxed, parse_netlist(nand_netlist())) == {c: c for c in unboxed.components}
+    assert match_components(unboxed, pred) == {}
 
 
 def run_one(tmp_path: Path, pred: dict | None, gt: dict | None = None, **kwargs) -> dict:

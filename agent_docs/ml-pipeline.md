@@ -61,7 +61,8 @@ Current phase: `ml/experiments/current_phase.txt`
   T8 must emit predictions in it) gives net precision/recall/F1 over pin pairs (MOSFET bulk pins unscored), netlist exact-match rate, and truth-table
   equivalence of the rebuilt circuit under DigiSim's own `simulate()` (`ml/sim_bridge/truth_table.cjs`; needs `cd frontend && npm install`; `--no-truth-table` skips it).
 - **Frozen sets:** the SHA-256 of the split's images and labels directories as resolved from `data.yaml`, its netlists directory (`--gt-netlists` when given) and class names must equal the entry in `ml/frozen_sets.json`, otherwise the run exits 3 and writes nothing.
-  Register a new set once with `--freeze --frozen-name NAME --freeze-note "..."`; tooling never overwrites an entry.
+  Register a new set once with `--freeze --frozen-name NAME --freeze-note "..."`; tooling never overwrites an entry. `--freeze` exists because the hash check needs a
+  recorded hash to compare against, and every later dataset task (T4 onwards) registers its frozen entry this way. A split with no registered set runs unchecked and the report says "(not frozen - unverified)".
 - **Baselines:** `ml/baselines/gate12.json` is the old 12-class model on the gate-era test split (`gate12_test`); compare a new run with `--baseline ml/baselines/gate12.json`.
 
 ## Dataset
