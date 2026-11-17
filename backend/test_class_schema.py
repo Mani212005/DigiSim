@@ -67,18 +67,15 @@ def test_generated_files_are_fresh():
 
 
 def test_legacy_names_resolve_for_old_weights():
-    """The 12 gate-era names an old model predicts all resolve and keep their node types."""
+    """The 12 upper-case gate-era names an old model predicts keep their node types."""
     legacy = ["AND", "OR", "NOT", "NAND", "NOR", "XOR", "XNOR", "SWITCH", "INPUT", "OUTPUT", "LED", "JUNCTION"]
-    assert all(detector.resolve_class_name(n) is not None for n in legacy)
+    assert all(n in CLASS_TO_NODE_TYPE for n in legacy)
     assert CLASS_TO_NODE_TYPE["AND"] == "andGate"
     assert CLASS_TO_NODE_TYPE["SWITCH"] == "input"
     assert CLASS_TO_NODE_TYPE["INPUT"] == "input"
     assert CLASS_TO_NODE_TYPE["OUTPUT"] == "output"
     assert CLASS_TO_NODE_TYPE["LED"] == "output"
     assert CLASS_TO_NODE_TYPE["JUNCTION"] == "junction"
-    assert detector.resolve_class_name("switch") == "INPUT_PORT"
-    assert detector.resolve_class_name("nmos") == "NMOS"
-    assert detector.resolve_class_name("banana") is None
 
 
 def test_data_yaml_uses_tier_a_by_default(tmp_path):

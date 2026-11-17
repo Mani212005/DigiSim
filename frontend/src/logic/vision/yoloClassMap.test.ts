@@ -12,7 +12,6 @@ import {
   YOLO_CLASS_MAP,
   YOLO_CLASS_NAMES,
   YOLO_LEGACY_CLASS_NAMES,
-  resolveYoloClassName,
 } from './yoloDetector';
 
 interface SchemaClass {
@@ -65,13 +64,15 @@ describe('YOLO class map matches ml/classes.yaml', () => {
     expect([...YOLO_LEGACY_CLASS_NAMES]).toEqual(schema.legacy_order);
   });
 
-  it('resolves legacy gate-era names so old weights still load', () => {
-    ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR'].forEach((n) => expect(resolveYoloClassName(n)).toBe(n));
-    expect(resolveYoloClassName('SWITCH')).toBe('INPUT_PORT');
-    expect(resolveYoloClassName('input')).toBe('INPUT_PORT');
-    expect(resolveYoloClassName('LED')).toBe('OUTPUT_PORT');
-    expect(resolveYoloClassName('Junction')).toBe('JUNCTION');
-    expect(resolveYoloClassName('not-a-class')).toBeNull();
+  it('keeps every legacy gate-era class name resolvable to its node type', () => {
+    const legacy = ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR', 'SWITCH', 'INPUT', 'OUTPUT', 'LED', 'JUNCTION'];
+    legacy.forEach((n) => expect(YOLO_CLASS_MAP[n]).toBeDefined());
+    expect(YOLO_CLASS_MAP.AND).toBe('andGate');
+    expect(YOLO_CLASS_MAP.SWITCH).toBe('input');
+    expect(YOLO_CLASS_MAP.INPUT).toBe('input');
+    expect(YOLO_CLASS_MAP.OUTPUT).toBe('output');
+    expect(YOLO_CLASS_MAP.LED).toBe('output');
+    expect(YOLO_CLASS_MAP.JUNCTION).toBe('junction');
   });
 
   it('covers the transistor-first vocabulary', () => {

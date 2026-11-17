@@ -20,7 +20,6 @@ __all__ = [
     "CLASS_TO_NODE_TYPE",
     "Detection",
     "GateDetector",
-    "resolve_class_name",
 ]
 
 
@@ -49,21 +48,6 @@ class Detection:
             self.x + self.width / 2,
             self.y + self.height / 2,
         )
-
-
-def resolve_class_name(class_name: str) -> str | None:
-    """
-    Resolve a model class name (canonical or legacy alias, any case) to its canonical name.
-
-    Args:
-        class_name: Class name as emitted by a model, e.g. 'NMOS' or the legacy 'SWITCH'.
-    Returns:
-        The canonical class name, or None if the name is not in the vocabulary.
-    """
-    upper = class_name.strip().upper()
-    if upper in CLASS_NAMES:
-        return upper
-    return CLASS_ALIASES.get(upper)
 
 
 class GateDetector:

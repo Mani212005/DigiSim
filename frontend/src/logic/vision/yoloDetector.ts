@@ -31,17 +31,6 @@ export interface YoloDetection {
 export { YOLO_CLASS_ALIASES, YOLO_CLASS_MAP, YOLO_CLASS_NAMES, YOLO_LEGACY_CLASS_NAMES };
 
 /**
- * Resolve a model class name (canonical or legacy alias, any case) to its canonical name.
- * @param className - Class name as emitted by a model, e.g. 'NMOS' or the legacy 'SWITCH'
- * @returns The canonical class name, or null if it is not in the vocabulary
- */
-export function resolveYoloClassName(className: string): string | null {
-  const upper = className.trim().toUpperCase();
-  if (YOLO_CLASS_NAMES.includes(upper)) return upper;
-  return YOLO_CLASS_ALIASES[upper] ?? null;
-}
-
-/**
  * Pick the class-name table (index = YOLO class id) for a model with the given class count.
  * Legacy 12-class gate-era weights use their own id order; every other model uses the canonical order.
  * @param numClasses - Number of classes in the model output

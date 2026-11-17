@@ -46,8 +46,8 @@ classes:
   - {name: CLOCK, id: 19, tier: B, node_type: clockSource, terminals: [out], default_size: [70, 50]}
 
 # Legacy class names -> canonical class. The 12-class gate-era weights (AND OR NOT NAND NOR XOR XNOR
-# SWITCH INPUT OUTPUT LED JUNCTION) predict these names, so they must keep resolving. Lookups are
-# case-insensitive. A SWITCH acts as a toggleable input and an LED as an output indicator.
+# SWITCH INPUT OUTPUT LED JUNCTION) predict these names, so they must keep resolving. Old weights
+# emit these names upper-case, matching the keys here. A SWITCH acts as a toggleable input and an LED as an output indicator.
 aliases:
   SWITCH: INPUT_PORT
   INPUT: INPUT_PORT
