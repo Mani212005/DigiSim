@@ -356,6 +356,59 @@ def test_kaggle_resume_keeps_real_oversampling(fake_yolo: type[FakeYOLO], smoke_
     assert json.loads((out / "metrics.json").read_text())["dataset"]["real_oversample"] == 4
 
 
+def test_kaggle_resume_of_relocated_mixed_run_keeps_data_config_and_metrics(fake_yolo: type[FakeYOLO], monkeypatch: pytest.MonkeyPatch, smoke_data: Path, real_images: Path, tmp_path: Path) -> None:
+    """
+    Resuming a copied Kaggle stage-B run still trains on the oversampled mix and records the true config and metrics.
+
+    ultralytics resumes on the dataset yaml stored in the checkpoint and, when that file is gone, on whatever `data` the resume
+    call passes (its default is coco8). The fake below reproduces exactly that rule.
+    """
+    loaded: list[str] = []
+
+    class RecordingYOLO(FakeYOLO):
+        """FakeYOLO that also remembers which weights each YOLO() call loaded."""
+
+        def __init__(self, weights: str) -> None:
+            """
+            Record the requested weights.
+
+            Args:
+                weights: Checkpoint path or name the harness asked for.
+            """
+            super().__init__(weights)
+            loaded.append(weights)
+
+    monkeypatch.setattr(sys.modules["ultralytics"], "YOLO", RecordingYOLO)
+    parser = train_kaggle.build_parser()
+    mixed_run = ["--data", str(smoke_data), "--real-train", str(real_images), "--batch", "8", "--device", "cpu", "--out", str(tmp_path / "kaggle")]
+    first = train_kaggle.build_plan(parser.parse_args(["--preset", "stage-b", "--model", "stage_a_best.pt", *mixed_run]))
+    out = train_kaggle.run(first, install=False)
+    original_lines = (out / "train_mixed.txt").read_text().split()
+    original_data = Path(str(kinds(fake_yolo, "train")[0]["data"]))
+    assert original_data == out / "data.yaml"
+    (out / "train" / "weights").mkdir(parents=True)
+    (out / "train" / "weights" / "last.pt").write_bytes(b"pt")  # the interrupt left a checkpoint behind
+    moved = tmp_path / "moved" / "kaggle"
+    moved.parent.mkdir()
+    out.rename(moved)
+
+    plan = train_kaggle.build_plan(parser.parse_args(["--resume", str(moved), "--device", "cpu"]))
+    train_kaggle.run(plan, install=False)
+
+    resume_call = kinds(fake_yolo, "train")[1]
+    last = str(moved / "train" / "weights" / "last.pt")
+    assert resume_call["resume"] is True and loaded[2] == last
+    effective = original_data if original_data.exists() else Path(str(resume_call.get("data", "coco8.yaml")))  # ultralytics' check_resume rule
+    assert effective == moved / "data.yaml"
+    assert (moved / "train_mixed.txt").read_text().split() == original_lines
+    saved = yaml.safe_load((moved / "config.yaml").read_text())
+    assert (saved["model"], saved["batch_total"], saved["real_oversample"], saved["real_train"]) == ("stage_a_best.pt", 8, 4, [str(real_images)])
+    assert saved["resume"] == last and saved["data_effective"] == str(moved / "data.yaml")
+    metrics = json.loads((moved / "metrics.json").read_text())
+    assert metrics["resumed_from"] == last and metrics["dataset"]["data_effective"] == saved["data_effective"]
+    assert (metrics["settings"]["model"], metrics["settings"]["batch"], metrics["dataset"]["real_oversample"]) == ("stage_a_best.pt", 8, 4)
+
+
 def test_kaggle_cli_ignores_only_the_jupyter_kernel_arguments(smoke_data: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """`-f kernel.json` is dropped, but a mistyped option fails loudly instead of silently starting the wrong run."""
     assert train_kaggle.strip_kernel_args(["--device", "cpu", "-f", "/tmp/kernel.json", "--dry-run"]) == ["--device", "cpu", "--dry-run"]
