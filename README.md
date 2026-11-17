@@ -146,8 +146,9 @@ What is true today:
   It does not recognise NMOS/PMOS transistors or supply symbols, and it detects
   nothing useful on transistor-level schematics.
 - **Retraining on transistor-level classes is in progress.** The class schema
-  (`ml/classes.yaml`) is in place; it still needs a synthetic transistor-level
-  generator, real hand-drawn data (see [Data and licences](#-data-and-licences)),
+  (`ml/classes.yaml`) and a synthetic transistor and gate generator
+  (`backend/data_gen/generate_v2.py`, see [`docs/synth_v2/README.md`](docs/synth_v2/README.md)) are in place; it still needs
+  real hand-drawn data (see [Data and licences](#-data-and-licences)),
   a GPU training run and net tracing that no longer assumes left-to-right gates. Until that lands,
   treat detection results on transistor schematics as unsupported.
 - **Training is transfer learning only** (pretrained COCO weights, never random
