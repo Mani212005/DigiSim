@@ -17,6 +17,7 @@ from types import ModuleType, SimpleNamespace
 
 import numpy as np
 import pytest
+import yaml
 
 import make_smoke_dataset
 import train
@@ -128,11 +129,188 @@ def test_workers_default_follows_cpu_count(monkeypatch: pytest.MonkeyPatch) -> N
     assert parse(["--workers", "2"]).workers == 2
 
 
-def test_no_hardcoded_cpu_in_train_calls() -> None:
-    """Regression guard for the old train.py:52,65,76 - the only literal device="cpu" left is the ONNX export (always CPU)."""
-    for path in (ML_DIR / "train.py", KAGGLE_PATH):
-        text = path.read_text()
-        assert text.count('device="cpu"') == 1 and 'format="onnx"' in text.split('device="cpu"')[0].splitlines()[-1]
+class FakeYOLO:
+    """Stand-in for ultralytics.YOLO that records every train/val/export call and writes the artifacts they would."""
+
+    calls: list[tuple[str, dict[str, object]]] = []
+    root: Path = Path()
+
+    def __init__(self, weights: str) -> None:
+        """
+        Remember the weights and expose the attributes the harness reads.
+
+        Args:
+            weights: Checkpoint path or name the harness asked for.
+        """
+        self.weights = weights
+        self.names = {0: "NMOS"}
+        self.trainer = SimpleNamespace(best=str(self.root / "best.pt"), last=str(self.root / "last.pt"), save_dir=str(self.root))
+
+    def train(self, **kwargs: object) -> None:
+        """
+        Record a training call.
+
+        Args:
+            **kwargs: Arguments the harness passed to ultralytics.
+        """
+        type(self).calls.append(("train", kwargs))
+
+    def val(self, **kwargs: object) -> SimpleNamespace:
+        """
+        Record a validation call and return an empty-but-valid metrics object.
+
+        Args:
+            **kwargs: Arguments the harness passed to ultralytics.
+        Returns:
+            A result with the attributes the harness reads.
+        """
+        type(self).calls.append(("val", kwargs))
+        box = SimpleNamespace(map50=0.5, map=0.4, mp=0.6, mr=0.7, ap_class_index=np.array([], dtype=int))
+        return SimpleNamespace(box=box, confusion_matrix=None, nt_per_class=None)
+
+    def export(self, **kwargs: object) -> str:
+        """
+        Record an export call and write a placeholder ONNX file.
+
+        Args:
+            **kwargs: Arguments the harness passed to ultralytics.
+        Returns:
+            Path of the placeholder file.
+        """
+        type(self).calls.append(("export", kwargs))
+        onnx = self.root / "model.onnx"
+        onnx.write_bytes(b"onnx")
+        return str(onnx)
+
+
+@pytest.fixture
+def fake_yolo(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> type[FakeYOLO]:
+    """
+    Replace the ultralytics package with FakeYOLO so train()/run() execute for real without training.
+
+    Args:
+        monkeypatch: pytest monkeypatch.
+        tmp_path: Per-test temp dir that holds the fake checkpoints.
+    Returns:
+        The FakeYOLO class (its `calls` list is fresh for each test).
+    """
+    root = tmp_path / "fake_ultralytics"
+    root.mkdir()
+    for name in ("best.pt", "last.pt"):
+        (root / name).write_bytes(b"pt")
+    FakeYOLO.calls = []
+    FakeYOLO.root = root
+    module = ModuleType("ultralytics")
+    module.YOLO = FakeYOLO  # type: ignore[attr-defined]
+    module.__version__ = "0.0-test"  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "ultralytics", module)
+    return FakeYOLO
+
+
+def kinds(fake: type[FakeYOLO], kind: str) -> list[dict[str, object]]:
+    """
+    Arguments of every recorded call of one kind.
+
+    Args:
+        fake: The FakeYOLO class.
+        kind: 'train', 'val' or 'export'.
+    Returns:
+        The keyword-argument dicts, in call order.
+    """
+    return [kw for k, kw in fake.calls if k == kind]
+
+
+@pytest.mark.parametrize(("device", "val_device"), [("cpu", "cpu"), ("0", "0"), ("0,1,2,3", "0")])
+def test_device_reaches_ultralytics_and_export_stays_on_cpu(device: str, val_device: str, fake_yolo: type[FakeYOLO], smoke_data: Path, tmp_path: Path) -> None:
+    """Both scripts hand --device to training, validate single-process on the first GPU, and always export on the CPU."""
+    cfg = parse(["--preset", "smoke", "--data", str(smoke_data), "--device", device, "--project", str(tmp_path / "runs"), "--name", "a"])
+    run_dir = train.train(cfg)
+    plan = train_kaggle.build_plan(train_kaggle.build_parser().parse_args(["--preset", "smoke", "--data", str(smoke_data), "--device", device, "--out", str(tmp_path / "kaggle")]))
+    kaggle_dir = train_kaggle.run(plan, install=False)
+    for out in (run_dir, kaggle_dir):
+        assert (out / "metrics.json").is_file() and (out / "best.onnx").is_file()
+    trains, vals, exports = kinds(fake_yolo, "train"), kinds(fake_yolo, "val"), kinds(fake_yolo, "export")
+    assert [kw["device"] for kw in trains] == [device, device]
+    assert [kw["device"] for kw in vals] == [val_device, val_device]
+    assert [kw["device"] for kw in exports] == ["cpu", "cpu"] and all(kw["format"] == "onnx" for kw in exports)
+
+
+def write_resumable_stage_b_run(run_dir: Path, real_dir: Path, data: Path) -> None:
+    """
+    Lay out an interrupted stage-B run: a last.pt checkpoint plus the config.yaml both scripts write.
+
+    Args:
+        run_dir: The run folder to create.
+        real_dir: The real-image folder that was oversampled.
+        data: The dataset yaml the run trained on.
+    """
+    last = run_dir / "train" / "weights" / "last.pt"
+    last.parent.mkdir(parents=True)
+    last.write_bytes(b"pt")
+    saved = {"preset": "stage-b", "data": str(data), "data_yaml": str(data), "imgsz": 320, "epochs": 9, "patience": 7, "lr0": 0.003, "seed": 5, "real_train": [str(real_dir)], "real_oversample": 4}
+    (run_dir / "config.yaml").write_text(yaml.safe_dump(saved))
+
+
+@pytest.fixture
+def real_images(tmp_path: Path) -> Path:
+    """
+    Three throwaway real-image files outside the dataset.
+
+    Args:
+        tmp_path: Per-test temp dir.
+    Returns:
+        The folder holding them.
+    """
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    for i in range(3):
+        (real_dir / f"real_{i}.jpg").write_bytes(b"x")
+    return real_dir
+
+
+def test_resume_keeps_real_oversampling(fake_yolo: type[FakeYOLO], smoke_data: Path, real_images: Path, tmp_path: Path) -> None:
+    """Resuming a stage-B run restores real_train, oversample, patience, lr0 and seed instead of silently dropping the mix."""
+    run_dir = tmp_path / "runs" / "b"
+    write_resumable_stage_b_run(run_dir, real_images, smoke_data)
+    cfg = parse(["--resume", str(run_dir), "--device", "cpu"])
+    assert cfg.real_train == (real_images,) and cfg.real_oversample == 4
+    assert (cfg.patience, cfg.lr0, cfg.seed) == (7, 0.003, 5)
+    overridden = parse(["--resume", str(run_dir), "--device", "cpu", "--real-train", str(tmp_path), "--real-oversample", "2", "--seed", "0"])
+    assert overridden.real_train == (tmp_path,) and overridden.real_oversample == 2 and overridden.seed == 0
+    train.train(cfg)
+    assert kinds(fake_yolo, "train")[0]["resume"] is True
+    lines = (run_dir / "train_mixed.txt").read_text().split()
+    assert lines.count(str((real_images / "real_0.jpg").resolve())) == 4
+    saved = yaml.safe_load((run_dir / "config.yaml").read_text())
+    assert saved["real_train"] == [str(real_images)] and saved["real_oversample"] == 4
+    assert json.loads((run_dir / "metrics.json").read_text())["dataset"]["real_oversample"] == 4
+
+
+def test_kaggle_resume_keeps_real_oversampling(fake_yolo: type[FakeYOLO], smoke_data: Path, real_images: Path, tmp_path: Path) -> None:
+    """The Kaggle twin restores the saved mix on --resume and never rewrites data.yaml without the oversampled train list."""
+    out = tmp_path / "kaggle"
+    write_resumable_stage_b_run(out, real_images, smoke_data)
+    plan = train_kaggle.build_plan(train_kaggle.build_parser().parse_args(["--resume", str(out), "--device", "cpu"]))
+    assert plan["real_train"] == [str(real_images)] and plan["real_oversample"] == 4
+    assert (plan["epochs"], plan["patience"], plan["lr0"], plan["seed"]) == (9, 7, 0.003, 5)
+    train_kaggle.run(plan, install=False)
+    assert kinds(fake_yolo, "train")[0]["resume"] is True
+    assert train_kaggle.read_yaml(out / "data.yaml")["train"] == str(out / "train_mixed.txt")
+    assert (out / "train_mixed.txt").read_text().split().count(str((real_images / "real_0.jpg").resolve())) == 4
+    saved = yaml.safe_load((out / "config.yaml").read_text())
+    assert saved["real_oversample"] == 4 and saved["real_train"] == [str(real_images)]
+    assert json.loads((out / "metrics.json").read_text())["dataset"]["real_oversample"] == 4
+
+
+def test_kaggle_cli_ignores_only_the_jupyter_kernel_arguments(smoke_data: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """`-f kernel.json` is dropped, but a mistyped option fails loudly instead of silently starting the wrong run."""
+    assert train_kaggle.strip_kernel_args(["--device", "cpu", "-f", "/tmp/kernel.json", "--dry-run"]) == ["--device", "cpu", "--dry-run"]
+    assert train_kaggle.main(["--data", str(smoke_data), "--device", "cpu", "-f", "/tmp/kernel.json", "--dry-run"]) == 0
+    assert json.loads(capsys.readouterr().out)["device"] == "cpu"
+    for typo in ("--real_train", "--dataset_hint", "--bogus"):
+        with pytest.raises(SystemExit) as exc:
+            train_kaggle.main(["--dry-run", typo, "x"])
+        assert exc.value.code == 2
 
 
 def test_presets_match_between_train_and_kaggle() -> None:

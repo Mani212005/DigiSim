@@ -422,8 +422,11 @@ def resolve_config(args: argparse.Namespace) -> TrainConfig:
     model = str(resume) if resume else (args.model or preset.model)
     if model is None:
         raise ValueError(f"preset {preset.name} fine-tunes earlier weights: pass --model path/to/stage_a/best.pt")
-    real_train = tuple(args.real_train)
-    oversample = args.real_oversample if args.real_oversample is not None else (preset.real_oversample if real_train else 1)
+    saved_real = [Path(str(p)) for p in saved.get("real_train") or []]
+    real_train = tuple(args.real_train or saved_real)
+    inherited = not args.real_train and bool(saved_real)
+    default_oversample = int(saved.get("real_oversample") or 1) if inherited else (preset.real_oversample if real_train else 1)
+    oversample = args.real_oversample if args.real_oversample is not None else default_oversample
     if oversample > 1 and not real_train:
         raise ValueError("--real-oversample needs at least one --real-train folder")
     return TrainConfig(
@@ -437,13 +440,13 @@ def resolve_config(args: argparse.Namespace) -> TrainConfig:
         batch=resolve_batch(args.batch, preset.batch_per_device, plan),
         device=plan,
         workers=args.workers if args.workers is not None else default_workers(),
-        patience=args.patience if args.patience is not None else preset.patience,
-        lr0=args.lr0 if args.lr0 is not None else preset.lr0,
+        patience=args.patience if args.patience is not None else int(saved.get("patience") or preset.patience),
+        lr0=args.lr0 if args.lr0 is not None else float(saved.get("lr0") or preset.lr0),
         lrf=preset.lrf,
         warmup_epochs=preset.warmup_epochs,
         close_mosaic=preset.close_mosaic,
         plots=preset.plots if args.plots is None else args.plots,
-        seed=args.seed,
+        seed=args.seed if args.seed is not None else int(saved.get("seed") or SEED),
         real_train=real_train,
         real_oversample=oversample,
         resume=resume,
@@ -719,7 +722,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--workers", type=int, default=None, help="dataloader workers (default: usable CPU count, max 8)")
     p.add_argument("--patience", type=int, default=None)
     p.add_argument("--lr0", type=float, default=None)
-    p.add_argument("--seed", type=int, default=SEED)
+    p.add_argument("--seed", type=int, default=None, help=f"default {SEED} (or the resumed run's seed)")
     p.add_argument("--plots", action=argparse.BooleanOptionalAction, default=None)
     p.add_argument("--real-train", type=Path, action="append", default=[], help="real training image folder/list to oversample (repeatable)")
     p.add_argument("--real-oversample", type=int, default=None, help="times each real image repeats per epoch (stage-b default 4)")
