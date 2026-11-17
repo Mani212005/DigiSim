@@ -7,7 +7,13 @@
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
-import { YOLO_CLASS_ALIASES, YOLO_CLASS_MAP, YOLO_CLASS_NAMES, resolveYoloClassName } from './yoloDetector';
+import {
+  YOLO_CLASS_ALIASES,
+  YOLO_CLASS_MAP,
+  YOLO_CLASS_NAMES,
+  YOLO_LEGACY_CLASS_NAMES,
+  resolveYoloClassName,
+} from './yoloDetector';
 
 interface SchemaClass {
   name: string;
@@ -19,6 +25,7 @@ interface SchemaClass {
 interface Schema {
   classes: SchemaClass[];
   aliases: Record<string, string>;
+  legacy_order: string[];
 }
 
 /**
@@ -52,6 +59,10 @@ describe('YOLO class map matches ml/classes.yaml', () => {
 
   it('keeps the legacy aliases from the YAML', () => {
     expect(YOLO_CLASS_ALIASES).toEqual(schema.aliases);
+  });
+
+  it('keeps the legacy class order from the YAML', () => {
+    expect([...YOLO_LEGACY_CLASS_NAMES]).toEqual(schema.legacy_order);
   });
 
   it('resolves legacy gate-era names so old weights still load', () => {

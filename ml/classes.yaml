@@ -53,3 +53,7 @@ aliases:
   INPUT: INPUT_PORT
   OUTPUT: OUTPUT_PORT
   LED: OUTPUT_PORT
+
+# Class order of the 12-class gate-era weights (index = their YOLO id). A model whose output has
+# exactly this many classes is decoded with this table instead of the canonical id order above.
+legacy_order: [AND, OR, NOT, NAND, NOR, XOR, XNOR, SWITCH, INPUT, OUTPUT, LED, JUNCTION]

@@ -31,6 +31,9 @@ Generated: `backend/pipeline/class_map.py` (`CLASS_TO_NODE_TYPE`, re-exported by
 
 Legacy aliases (old 12-class gate-era weights): `SWITCH`, `INPUT` -> `INPUT_PORT`; `OUTPUT`, `LED` -> `OUTPUT_PORT`;
 the gate names and `JUNCTION` are unchanged. Lookups are case-insensitive (`resolve_class_name`).
+Legacy ids differ from the canonical ids, so the frontend ONNX decoder uses `legacy_order` from `classes.yaml`
+(AND=0 ... JUNCTION=11) when the model output has exactly 12 classes, and the canonical order otherwise.
+The backend is unaffected because it reads class names from the model weights.
 
 ## Training Phases
 

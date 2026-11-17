@@ -31,6 +31,22 @@ export const YOLO_CLASS_NAMES: readonly string[] = [
   'CLOCK',
 ];
 
+/** Class order of the 12-class gate-era weights; the index is their YOLO class id. */
+export const YOLO_LEGACY_CLASS_NAMES: readonly string[] = [
+  'AND',
+  'OR',
+  'NOT',
+  'NAND',
+  'NOR',
+  'XOR',
+  'XNOR',
+  'SWITCH',
+  'INPUT',
+  'OUTPUT',
+  'LED',
+  'JUNCTION',
+];
+
 /** Legacy (gate-era) class names mapped to their canonical class. */
 export const YOLO_CLASS_ALIASES: Record<string, string> = {
   SWITCH: 'INPUT_PORT',

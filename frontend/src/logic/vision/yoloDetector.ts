@@ -7,7 +7,12 @@
 
 import * as ort from 'onnxruntime-web';
 import type { YoloNodeType } from '../../types';
-import { YOLO_CLASS_ALIASES, YOLO_CLASS_MAP, YOLO_CLASS_NAMES } from './yoloClassMap.generated';
+import {
+  YOLO_CLASS_ALIASES,
+  YOLO_CLASS_MAP,
+  YOLO_CLASS_NAMES,
+  YOLO_LEGACY_CLASS_NAMES,
+} from './yoloClassMap.generated';
 
 export interface YoloDetection {
   className: string;
@@ -23,7 +28,7 @@ export interface YoloDetection {
   y2: number;     // Box bottom-right Y
 }
 
-export { YOLO_CLASS_ALIASES, YOLO_CLASS_MAP, YOLO_CLASS_NAMES };
+export { YOLO_CLASS_ALIASES, YOLO_CLASS_MAP, YOLO_CLASS_NAMES, YOLO_LEGACY_CLASS_NAMES };
 
 /**
  * Resolve a model class name (canonical or legacy alias, any case) to its canonical name.
@@ -34,6 +39,16 @@ export function resolveYoloClassName(className: string): string | null {
   const upper = className.trim().toUpperCase();
   if (YOLO_CLASS_NAMES.includes(upper)) return upper;
   return YOLO_CLASS_ALIASES[upper] ?? null;
+}
+
+/**
+ * Pick the class-name table (index = YOLO class id) for a model with the given class count.
+ * Legacy 12-class gate-era weights use their own id order; every other model uses the canonical order.
+ * @param numClasses - Number of classes in the model output
+ * @returns The class names indexed by YOLO class id
+ */
+export function classNamesForModel(numClasses: number): readonly string[] {
+  return numClasses === YOLO_LEGACY_CLASS_NAMES.length ? YOLO_LEGACY_CLASS_NAMES : YOLO_CLASS_NAMES;
 }
 
 const DEFAULT_MODEL_URL = '/models/yolo_circuit.onnx';
@@ -139,6 +154,74 @@ export function preprocessImage(
   return { tensor, originalWidth: origWidth, originalHeight: origHeight };
 }
 
+/**
+ * Decode a raw YOLO output tensor ([1, 4 + numClasses, numBoxes]) into NMS-filtered detections.
+ * @param outputTensor - Raw model output tensor
+ * @param origW - Original image width in pixels
+ * @param origH - Original image height in pixels
+ * @param confidenceThreshold - Minimum class score to keep a box
+ * @returns Detections in original image space
+ */
+export function decodeYoloOutput(
+  outputTensor: ort.Tensor,
+  origW: number,
+  origH: number,
+  confidenceThreshold: number
+): YoloDetection[] {
+  const rawData = outputTensor.data as Float32Array;
+  const dims = outputTensor.dims;
+
+  const rawDetections: YoloDetection[] = [];
+
+  if (dims.length === 3) {
+    const numCols = dims[2];
+    const numChannels = dims[1];
+    const classNames = classNamesForModel(numChannels - 4);
+
+    const scaleX = origW / 640;
+    const scaleY = origH / 640;
+
+    for (let i = 0; i < numCols; i++) {
+      const cx = rawData[0 * numCols + i] * scaleX;
+      const cy = rawData[1 * numCols + i] * scaleY;
+      const w = rawData[2 * numCols + i] * scaleX;
+      const h = rawData[3 * numCols + i] * scaleY;
+
+      let maxScore = 0;
+      let maxClassIdx = 0;
+
+      for (let c = 4; c < numChannels; c++) {
+        const score = rawData[c * numCols + i];
+        if (score > maxScore) {
+          maxScore = score;
+          maxClassIdx = c - 4;
+        }
+      }
+
+      if (maxScore >= confidenceThreshold) {
+        const className = classNames[maxClassIdx] ?? 'AND';
+        const nodeType = YOLO_CLASS_MAP[className] ?? 'andGate';
+
+        rawDetections.push({
+          className,
+          nodeType,
+          confidence: maxScore,
+          x: cx,
+          y: cy,
+          width: w,
+          height: h,
+          x1: cx - w / 2,
+          y1: cy - h / 2,
+          x2: cx + w / 2,
+          y2: cy + h / 2,
+        });
+      }
+    }
+  }
+
+  return applyNMS(rawDetections, 0.45);
+}
+
 /** YOLO Circuit Detector instance. */
 export class YoloCircuitDetector {
   private session: ort.InferenceSession | null = null;
@@ -235,57 +318,7 @@ export class YoloCircuitDetector {
     origH: number,
     confidenceThreshold: number
   ): YoloDetection[] {
-    const rawData = outputTensor.data as Float32Array;
-    const dims = outputTensor.dims;
-
-    const rawDetections: YoloDetection[] = [];
-
-    if (dims.length === 3) {
-      const numCols = dims[2];
-      const numChannels = dims[1];
-
-      const scaleX = origW / 640;
-      const scaleY = origH / 640;
-
-      for (let i = 0; i < numCols; i++) {
-        const cx = rawData[0 * numCols + i] * scaleX;
-        const cy = rawData[1 * numCols + i] * scaleY;
-        const w = rawData[2 * numCols + i] * scaleX;
-        const h = rawData[3 * numCols + i] * scaleY;
-
-        let maxScore = 0;
-        let maxClassIdx = 0;
-
-        for (let c = 4; c < numChannels; c++) {
-          const score = rawData[c * numCols + i];
-          if (score > maxScore) {
-            maxScore = score;
-            maxClassIdx = c - 4;
-          }
-        }
-
-        if (maxScore >= confidenceThreshold) {
-          const className = YOLO_CLASS_NAMES[maxClassIdx] ?? 'AND';
-          const nodeType = YOLO_CLASS_MAP[className] ?? 'andGate';
-
-          rawDetections.push({
-            className,
-            nodeType,
-            confidence: maxScore,
-            x: cx,
-            y: cy,
-            width: w,
-            height: h,
-            x1: cx - w / 2,
-            y1: cy - h / 2,
-            x2: cx + w / 2,
-            y2: cx + h / 2,
-          });
-        }
-      }
-    }
-
-    return applyNMS(rawDetections, 0.45);
+    return decodeYoloOutput(outputTensor, origW, origH, confidenceThreshold);
   }
 
   /** Generates realistic mock detections when ONNX WASM model file is absent. */

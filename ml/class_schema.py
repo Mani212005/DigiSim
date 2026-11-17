@@ -48,6 +48,7 @@ class ClassSchema:
 
     classes: tuple[ClassSpec, ...]
     aliases: dict[str, str]
+    legacy_order: tuple[str, ...]
 
     @property
     def names(self) -> tuple[str, ...]:
@@ -125,7 +126,8 @@ def load_schema(path: Path = SCHEMA_PATH) -> ClassSchema:
         classes.append(spec)
 
     aliases = {str(k): str(v) for k, v in (raw.get("aliases") or {}).items()}
-    schema = ClassSchema(classes=tuple(classes), aliases=aliases)
+    legacy_order = tuple(str(n) for n in raw.get("legacy_order") or [])
+    schema = ClassSchema(classes=tuple(classes), aliases=aliases, legacy_order=legacy_order)
     _validate(schema)
     return schema
 
@@ -160,6 +162,12 @@ def _validate(schema: ClassSchema) -> None:
             raise ValueError(f"Alias {alias} points at unknown class {canonical}")
         if alias.upper() in upper_names:
             raise ValueError(f"Alias {alias} collides with a canonical class name")
+    known = set(names) | set(schema.aliases)
+    if len(set(schema.legacy_order)) != len(schema.legacy_order):
+        raise ValueError("Duplicate names in legacy_order")
+    for name in schema.legacy_order:
+        if name not in known:
+            raise ValueError(f"legacy_order entry {name} is neither a class nor an alias")
 
 
 def render_backend_map(schema: ClassSchema) -> str:
@@ -221,6 +229,11 @@ def render_frontend_map(schema: ClassSchema) -> str:
         "/** Canonical class names; the index is the YOLO class id. */",
         "export const YOLO_CLASS_NAMES: readonly string[] = [",
         *[f"  '{n}'," for n in schema.names],
+        "];",
+        "",
+        "/** Class order of the 12-class gate-era weights; the index is their YOLO class id. */",
+        "export const YOLO_LEGACY_CLASS_NAMES: readonly string[] = [",
+        *[f"  '{n}'," for n in schema.legacy_order],
         "];",
         "",
         "/** Legacy (gate-era) class names mapped to their canonical class. */",

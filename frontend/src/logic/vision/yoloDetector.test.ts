@@ -1,4 +1,5 @@
-import { applyNMS, YoloCircuitDetector, YOLO_CLASS_MAP } from './yoloDetector';
+import * as ort from 'onnxruntime-web';
+import { applyNMS, decodeYoloOutput, YoloCircuitDetector, YOLO_CLASS_MAP } from './yoloDetector';
 import type { YoloDetection } from './yoloDetector';
 
 describe('yoloDetector', () => {
@@ -67,5 +68,43 @@ describe('yoloDetector', () => {
     expect(detections.length).toBeGreaterThan(0);
     expect(detections[0]).toHaveProperty('confidence');
     expect(detections[0]).toHaveProperty('nodeType');
+  });
+
+  describe('decodeYoloOutput class tables', () => {
+    /**
+     * Build a [1, 4 + numClasses, 1] output tensor with a single box scoring 0.9 for one class.
+     * @param numClasses - Number of classes in the fake model
+     * @param classIdx - Class id that scores highest
+     * @returns The ONNX tensor
+     */
+    function singleBoxTensor(numClasses: number, classIdx: number): ort.Tensor {
+      const data = new Float32Array(4 + numClasses);
+      data.set([320, 320, 100, 80], 0);
+      data[4 + classIdx] = 0.9;
+      return new ort.Tensor('float32', data, [1, 4 + numClasses, 1]);
+    }
+
+    it('decodes a legacy 12-class model with the gate-era class order', () => {
+      const legacy = ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR', 'SWITCH', 'INPUT', 'OUTPUT', 'LED', 'JUNCTION'];
+      legacy.forEach((name, idx) => {
+        const [det] = decodeYoloOutput(singleBoxTensor(12, idx), 640, 640, 0.5);
+        expect(det.className).toBe(name);
+        expect(det.nodeType).toBe(YOLO_CLASS_MAP[name]);
+      });
+    });
+
+    it('decodes a 20-class model with the canonical class order', () => {
+      const [nmos] = decodeYoloOutput(singleBoxTensor(20, 0), 640, 640, 0.5);
+      expect(nmos.className).toBe('NMOS');
+      expect(nmos.nodeType).toBe('nmos');
+      const [and] = decodeYoloOutput(singleBoxTensor(20, 7), 640, 640, 0.5);
+      expect(and.className).toBe('AND');
+      expect(and.nodeType).toBe('andGate');
+    });
+
+    it('computes box corners from the box center and size', () => {
+      const [det] = decodeYoloOutput(singleBoxTensor(20, 0), 640, 640, 0.5);
+      expect([det.x1, det.y1, det.x2, det.y2]).toEqual([270, 280, 370, 360]);
+    });
   });
 });
