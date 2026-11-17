@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = REPO_ROOT / "ml" / "classes.yaml"
 
 from pipeline import detector  # noqa: E402
-from pipeline.class_map import CLASS_ALIASES, CLASS_NAMES, CLASS_TO_NODE_TYPE  # noqa: E402
+from pipeline.class_map import CLASS_ALIASES, CLASS_NAMES, CLASS_TERMINALS, CLASS_TO_NODE_TYPE  # noqa: E402
 
 
 def _load_class_schema_module():
@@ -58,6 +58,12 @@ def test_class_names_follow_yolo_ids():
     assert list(CLASS_NAMES) == [c["name"] for c in sorted(doc["classes"], key=lambda c: c["id"])]
     assert [c["id"] for c in doc["classes"]] == list(range(len(doc["classes"])))
     assert CLASS_ALIASES == doc["aliases"]
+
+
+def test_class_terminals_equal_yaml():
+    """CLASS_TERMINALS (the net tracer's pin vocabulary) lists every canonical class's YAML terminals in order."""
+    doc = _yaml_doc()
+    assert CLASS_TERMINALS == {c["name"]: tuple(c["terminals"]) for c in doc["classes"]}
 
 
 def test_generated_files_are_fresh():

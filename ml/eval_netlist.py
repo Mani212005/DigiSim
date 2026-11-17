@@ -6,11 +6,14 @@ Purpose: End-to-end (image -> circuit) metrics for the evaluation harness. Compa
          predicted circuit is rebuilt as a DigiSim canvas and simulated by DigiSim's own simulator
          (frontend/src/logic/simulation, driven through ml/sim_bridge/truth_table.cjs).
 
-Netlist JSON schema (ground truth and predictions use the same shape; T2 emits it, T8 will emit it):
+Netlist JSON schema (ground truth and predictions use the same shape; the T8 exporter emits it):
     {
       "components": [{"id": "MP1", "type": "pmos", "bbox": [x1, y1, x2, y2]}, ...],
       "nets": [["MP1:d", "MN1:d", "Y:a"], ["IN:out", "MP1:g", "MN1:g"], ...]
     }
+    - A net may also be an object {"pins": [...], ...} (the exporter's schema 2 form, which adds id and label).
+    - The T2 generator's netlist.json (components with "node_type" and a "pins" terminal -> net-name map,
+      "nets" as a list of names) is accepted too and converted by from_pin_map().
     - type is a frontend node type from ml/classes.yaml (nmos, pmos, vsource, ground, input, output,
       andGate, ...). bbox is optional and, when present on every component of both sides, is used to
       pair predicted components with ground-truth ones (same type, greedy IoU >= 0.5); otherwise
@@ -78,6 +81,45 @@ def node_terminals() -> dict[str, tuple[str, ...]]:
     return {c.node_type: c.terminals for c in load_schema().classes if c.node_type != "junction"}
 
 
+def from_pin_map(raw: Mapping[str, object]) -> dict[str, object]:
+    """
+    Convert a pin-map netlist (the T2 generator's netlist.json) into the nets-of-pins schema.
+
+    Args:
+        raw: Netlist whose components carry "pins": {terminal: net name} and a "node_type" (or "type").
+            Pins of an unconnected terminal are not listed, so every listed pin joins its named net.
+    Returns:
+        {"components": [{"id", "type", "bbox"?}], "nets": [[pins], ...]} with one net per net name.
+    Raises:
+        NetlistError: If a component is malformed.
+    """
+    components: list[dict[str, object]] = []
+    by_net: dict[str, list[str]] = {}
+    for entry in raw.get("components") or []:
+        if not isinstance(entry, dict) or not isinstance(entry.get("pins"), dict):
+            raise NetlistError(f"malformed pin-map component {entry!r}")
+        comp: dict[str, object] = {"id": entry.get("id"), "type": entry.get("type", entry.get("node_type"))}
+        if entry.get("bbox") is not None:
+            comp["bbox"] = entry["bbox"]
+        components.append(comp)
+        for term, net in sorted(entry["pins"].items()):
+            by_net.setdefault(str(net), []).append(f"{entry.get('id')}:{term}")
+    return {"components": components, "nets": [sorted(pins) for _, pins in sorted(by_net.items())]}
+
+
+def _is_pin_map(raw: Mapping[str, object]) -> bool:
+    """
+    Whether a netlist dict uses the pin-map shape (components with a "pins" dict).
+
+    Args:
+        raw: Parsed netlist JSON.
+    Returns:
+        True for the T2 generator's shape.
+    """
+    comps = raw.get("components")
+    return isinstance(comps, list) and bool(comps) and all(isinstance(c, dict) and isinstance(c.get("pins"), dict) and all(isinstance(v, str) for v in c["pins"].values()) for c in comps)
+
+
 def parse_netlist(raw: Mapping[str, object], terminals: Mapping[str, Sequence[str]] | None = None) -> Netlist:
     """
     Validate a netlist dict and normalise its nets.
@@ -91,6 +133,8 @@ def parse_netlist(raw: Mapping[str, object], terminals: Mapping[str, Sequence[st
         NetlistError: On unknown types, duplicate ids, malformed pins, or pins on unknown components/terminals.
     """
     terms = terminals if terminals is not None else node_terminals()
+    if _is_pin_map(raw):
+        raw = from_pin_map(raw)
     comps_raw = raw.get("components")
     nets_raw = raw.get("nets")
     if not isinstance(comps_raw, list) or not isinstance(nets_raw, list):
@@ -122,6 +166,8 @@ def parse_netlist(raw: Mapping[str, object], terminals: Mapping[str, Sequence[st
         return pin
 
     for net in nets_raw:
+        if isinstance(net, dict):
+            net = net.get("pins")
         if not isinstance(net, list) or not all(isinstance(p, str) for p in net):
             raise NetlistError(f"malformed net {net!r}")
         for pin in net:

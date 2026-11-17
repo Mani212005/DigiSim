@@ -4,16 +4,31 @@
 Photo of a circuit → structured JSON → DigiSim recreates the circuit automatically.
 
 ## 4 Stages (strictly sequential)
-Image → [Stage 1: YOLO Detection] → [Stage 2: OpenCV Wire Extraction]
+Image → [Stage 1: YOLO Detection] → [Stage 2: OpenCV Net Tracing (wire extraction)]
 
-→ [Stage 3: NetworkX Graph] → [Stage 4: DigiSim JSON Export]
+→ [Stage 3: NetworkX Net Graph] → [Stage 4: DigiSim JSON Export]
 
 | Stage | File | Method | Output |
 |-------|------|--------|--------|
-| 1 | `backend/pipeline/detector.py` | YOLOv8 transfer learning | Bounding boxes + class labels |
-| 2 | `backend/pipeline/wire_extractor.py` | OpenCV only — no neural net | Wire segments as pixel pairs |
-| 3 | `backend/pipeline/graph_builder.py` | NetworkX DiGraph | Directed circuit graph |
-| 4 | `backend/pipeline/circuit_exporter.py` | JSON serialization | DigiSim-importable JSON |
+| 1 | `backend/pipeline/detector.py` | YOLOv8 transfer learning | Boxes + class labels (+ optional per-terminal keypoints) |
+| 2 | `backend/pipeline/net_tracer.py` (+ `ink.py`, `skeleton_graph.py`, `pin_assignment.py`, `label_attach.py`) | OpenCV/scikit-image only, no neural net | Components with resolved pins, undirected nets, labels |
+| 3 | `backend/pipeline/graph_builder.py` | NetworkX bipartite component/net MultiGraph | Net-based circuit graph |
+| 4 | `backend/pipeline/circuit_exporter.py` | JSON serialization | Schema 2 JSON (components with pins, nets, ReactFlow edges, legacy `connections`) |
+
+## Net Tracing (stage 2)
+- Ink is binarised against a morphological paper-background estimate; symbol boxes are erased (plus a margin), junction dots are kept;
+  the wire ink is skeletonised into edges and branch clusters. A cluster whose centre lies in a `JUNCTION` box connects all its wires;
+  a dotless 4-way cluster is a crossover (straight-through pairs only); any other branch point connects. VDD symbols share one global net,
+  GND symbols another. Every threshold scales with the measured stroke width and the median symbol size (`TraceConfig`).
+- Pins: wire ends at a symbol box are its contacts. With detector keypoints (`Detection.keypoints`: keypoint i = terminal i of the class in
+  `ml/classes.yaml`, the contract for a T7 pose head) contacts are matched to keypoints; without them a classical rule set assigns terminals
+  (MOSFET drain/source by electrical distance to the supply, gates by input side) and estimates the 8-way orientation.
+- Labels: names beside ports and supplies are cropped and read with RapidOCR's recogniser; nets take their port's name.
+- Bench: `cd backend && uv run python data_gen/generate_v2.py --count 300 --seed 1 --out DIR && uv run python bench_tracing.py --data DIR --truth-table`
+  drives the tracer from perturbed ground-truth detections and scores it with `ml/eval_netlist.py` per render style (clean = cad/textbook,
+  hand_drawn = hand/photo); it exits 1 unless net F1 >= 0.90 for both styles, exact match >= 70% clean / >= 50% hand-drawn, and p95 runtime < 2 s.
+- Not yet: the T3 screenshot round-trip check, and the frontend importer (T9) still reads only the legacy `connections` (gate-level); wiring
+  transistor-level imports means consuming `nets`/`edges` (handles `t:`/`s:` + terminal) and `library_cell` in `App.tsx importCircuit`.
 
 ## Class Vocabulary
 Single source of truth: `ml/classes.yaml` (name, tier, YOLO id, frontend node type, terminals, default size, legacy aliases).
@@ -57,8 +72,8 @@ Current phase: `ml/experiments/current_phase.txt`
   Classes with fewer than 30 GT instances are labelled `low n` instead of judged. Models are scored in the dataset's vocabulary: predictions map by
   class name, then by legacy alias (`ml/classes.yaml`); predictions with no counterpart are counted as `unmapped`.
 - **Legacy block:** the original ultralytics validation numbers (mAP, max-F1 per class, confusion-matrix accuracy); `--reproduce OLD_eval_test.json` checks them.
-- **End-to-end (optional):** `--gt-netlists DIR --pred-netlists DIR` (files `<image stem>.json`, schema in `ml/eval_netlist.py`; T2 emits the ground truth,
-  T8 must emit predictions in it) gives net precision/recall/F1 over pin pairs (MOSFET bulk pins unscored), netlist exact-match rate, and truth-table
+- **End-to-end (optional):** `--gt-netlists DIR --pred-netlists DIR` (files `<image stem>.json`, schema in `ml/eval_netlist.py`; the T2 generator's
+  pin-map netlists are read as ground truth directly, and the stage 4 exporter output is a valid prediction) gives net precision/recall/F1 over pin pairs (MOSFET bulk pins unscored), netlist exact-match rate, and truth-table
   equivalence of the rebuilt circuit under DigiSim's own `simulate()` (`ml/sim_bridge/truth_table.cjs`; needs `cd frontend && npm install`; `--no-truth-table` skips it).
 - **Frozen sets:** the SHA-256 of the split's images and labels directories as resolved from `data.yaml`, its netlists directory (`--gt-netlists` when given) and class names must equal the entry in `ml/frozen_sets.json`, otherwise the run exits 3 and writes nothing.
   Register a new set once with `--freeze --frozen-name NAME --freeze-note "..."`; tooling never overwrites an entry. `--freeze` exists because the hash check needs a

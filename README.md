@@ -43,7 +43,7 @@ should use the seeded cells or package their own.
 - **🔍 ⌘K Component Search**: Instant search and filtering across the entire component palette.
 - **⚙️ Real-time Simulation Engine**: Relaxation-based digital gate evaluation, a switch-level CMOS solver (NMOS/PMOS + supplies resolve to correct truth tables), and Modified Nodal Analysis (MNA) solver for analog nodes with live signal propagation (HIGH/LOW/Z/X).
 - **📸 ML Image-to-Circuit Detection**:
-  - **YOLOv8 Schematic Detection**: Detects schematic symbols and uses OpenCV line transforms (Hough) to extract wire paths into a NetworkX graph. See [Machine learning status](#-machine-learning-status) for what the detector currently recognises.
+  - **YOLOv8 Schematic Detection**: Detects schematic symbols, then traces wires classically (OpenCV skeleton nets, junction vs crossover, pin assignment) into a net-based NetworkX graph. See [Machine learning status](#-machine-learning-status) for what the detector currently recognises.
   - **DINOv2 Physical Board Analysis**: Physical board photo component recognition using DINOv2 embeddings and OCR.
 - **📄 Human & LLM-Parsable Netlist JSON Schema**: Export and import circuits using an intuitive, semantic JSON format (`input_A.out -> and_1.a`) with 100% loss-free round-trip reconstruction.
 
@@ -133,8 +133,8 @@ deploy steps and required secrets: [`docs/deploy-vercel-render.md`](docs/deploy-
 ## 🧠 Machine Learning Status
 
 The image-to-circuit pipeline is four strictly sequential stages: YOLOv8 detection
-(`backend/pipeline/detector.py`), classical OpenCV wire extraction
-(`wire_extractor.py`, no neural network), NetworkX graph building
+(`backend/pipeline/detector.py`), classical OpenCV net tracing
+(`net_tracer.py`, no neural network), net-based NetworkX graph building
 (`graph_builder.py`) and DigiSim JSON export (`circuit_exporter.py`). Details:
 [`agent_docs/ml-pipeline.md`](agent_docs/ml-pipeline.md).
 
@@ -149,7 +149,7 @@ What is true today:
   (`ml/classes.yaml`) and a synthetic transistor and gate generator
   (`backend/data_gen/generate_v2.py`, see [`docs/synth_v2/README.md`](docs/synth_v2/README.md)) are in place; it still needs
   real hand-drawn data (see [Data and licences](#-data-and-licences)),
-  a GPU training run and net tracing that no longer assumes left-to-right gates. Until that lands,
+  and a GPU training run (net tracing for transistor-level schematics is in place). Until that lands,
   treat detection results on transistor schematics as unsupported.
 - **Training is transfer learning only** (pretrained COCO weights, never random
   init), with the gate: F1 >= 0.95 and accuracy >= 0.95 per class before a phase
