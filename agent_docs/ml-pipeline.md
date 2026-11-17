@@ -67,7 +67,8 @@ Current phase: `ml/experiments/current_phase.txt`
 
 ## Dataset
 - **Source:** Synthetic screenshots from DigiSim (primary) + hand-drawn images (supplement)
-- **Generation:** `backend/data_gen/screenshot_pipeline.py`
+- **Generation:** `backend/data_gen/generate_v2.py` (tier A, transistor + gate domains, pins/orientation/netlists,
+  topology-hash splits, held-out test styles; see `docs/synth_v2/README.md`); legacy gate-era `backend/data_gen/screenshot_pipeline.py`
 - **Augmentation:** `backend/data_gen/augmentation.py`
 - **Minimum size:** Phase 1 → 500 images. Phase 2+ → 2000 images
 - **Format:** YOLO `.txt` per image — `<class_id> <x_center> <y_center> <width> <height>` (normalized)
