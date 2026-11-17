@@ -17,7 +17,7 @@ Conventions:
 
 import math
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -319,19 +319,3 @@ def f1_record(tp: int, fp: int, fn: int) -> dict[str, object]:
         Dict with value, ci95 and n (as in rate()).
     """
     return rate(2 * tp, 2 * tp + fp + fn)
-
-
-def split_by_domain(image_names: Iterable[str], rules: Sequence[tuple[str, str]] = DEFAULT_DOMAIN_RULES) -> dict[str, list[str]]:
-    """
-    Group image names by their domain.
-
-    Args:
-        image_names: Image file names.
-        rules: Ordered (prefix, domain) rules.
-    Returns:
-        Mapping domain -> image names, domains in first-seen order.
-    """
-    groups: dict[str, list[str]] = {}
-    for name in image_names:
-        groups.setdefault(domain_for(name, rules), []).append(name)
-    return groups
