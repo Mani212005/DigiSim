@@ -73,6 +73,18 @@ Current phase: `ml/experiments/current_phase.txt`
 - **Format:** YOLO `.txt` per image — `<class_id> <x_center> <y_center> <width> <height>` (normalized)
 - **Class balance:** no class under 10% — check before every training run
 
+### Real data and the frozen eval set (`ml/real_data/`)
+Fetched and converted data live in `ml/data_real/` (gitignored); committed: scripts, `ml/data_manifest.json` (SHA-256 of every
+image and label, split membership, per-split frozen hashes), `ml/REAL_DATA_REPORT.md` (per-class real counts vs the plan, with the
+`real count too low, synthetic-only claim` flag for any class under 30 real test instances), `ml/DATA_LICENSES.md` and our own
+labels in `ml/real_data/labels/`.
+- Sources: CGHD pilot (drafters 16, 19, 20, 25, HF mirror pinned to a revision), the 46-image Roboflow export, and the 4 spare `Sampleimages/` (held-out qualitative split `heldout_qual`).
+- Splits are by **drafter** (CGHD) or source image, never by image; the leakage check also compares content hashes and near-duplicate hashes.
+- `transistor.fet` has no polarity in CGHD: NMOS/PMOS comes from `labels/fet_polarity.json` (our manual pass, propagated across photos); uncertain ones are not labels.
+- Boxes that are not labels (unmapped classes, undecided transistors/terminals) are kept as ignore regions in `data_real/yolo/ignore/` so evaluation can mask them.
+- Commands (from `ml/`): `python -m real_data.build fetch | sheets | convert | verify | report`; tests: `pytest tests`.
+- The test split hash is frozen: change the pilot or the labels and `convert` produces a new hash, which is a new eval set (record it, do not tune on it).
+
 ## Key Principle
 Dataset quality > annotation correctness > pipeline correctness > model architecture.
 Fix data before changing models.

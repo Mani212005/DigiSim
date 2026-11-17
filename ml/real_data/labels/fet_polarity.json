@@ -1,0 +1,225 @@
+{
+ "_comment": "Our own NMOS/PMOS decisions for CGHD transistor.fet, made by eye on one reference photo per drawing (key = drafter_N/<image stem>, value = {ordinal of the transistor among that image's transistor.fet objects in XML order: polarity}). Other photos of the same drawing are labelled by position matching in real_data/fet_polarity.py. Cues used: part numbers (IRF630 N, IRF9630 P, 2N7000/2N7002 N, Si9407 P, STD12NE06 N), supply topology, and the arrow/bubble convention of each drafter. UNCERTAIN = JFET symbols (gate arrow), symbols without a legible arrow, or cues that disagree; those are kept out of the labels.",
+ "reference": {
+  "drafter_16/C181_D1_P1": {
+   "0": "NMOS",
+   "1": "PMOS"
+  },
+  "drafter_16/C181_D2_P1": {
+   "0": "PMOS",
+   "1": "NMOS"
+  },
+  "drafter_16/C183_D1_P1": {
+   "0": "NMOS"
+  },
+  "drafter_16/C183_D2_P1": {
+   "0": "NMOS"
+  },
+  "drafter_16/C186_D1_P1": {
+   "0": "NMOS",
+   "1": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS"
+  },
+  "drafter_16/C186_D2_P1": {
+   "0": "NMOS",
+   "1": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS"
+  },
+  "drafter_16/C187_D1_P1": {
+   "0": "NMOS",
+   "1": "NMOS"
+  },
+  "drafter_16/C187_D2_P1": {
+   "0": "NMOS",
+   "1": "NMOS"
+  },
+  "drafter_16/C188_D1_P1": {
+   "0": "NMOS"
+  },
+  "drafter_16/C188_D2_P1": {
+   "0": "NMOS"
+  },
+  "drafter_16/C189_D1_P1": {
+   "0": "PMOS",
+   "1": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS"
+  },
+  "drafter_16/C189_D2_P1": {
+   "0": "PMOS",
+   "1": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS"
+  },
+  "drafter_19/C220_D1_P1": {
+   "0": "NMOS",
+   "1": "NMOS",
+   "10": "PMOS",
+   "11": "NMOS",
+   "12": "PMOS",
+   "13": "NMOS",
+   "14": "UNCERTAIN",
+   "2": "NMOS",
+   "3": "NMOS",
+   "4": "NMOS",
+   "5": "NMOS",
+   "6": "NMOS",
+   "7": "NMOS",
+   "8": "PMOS",
+   "9": "NMOS"
+  },
+  "drafter_19/C220_D2_P1": {
+   "0": "NMOS",
+   "1": "NMOS",
+   "10": "PMOS",
+   "11": "NMOS",
+   "12": "PMOS",
+   "13": "NMOS",
+   "14": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS",
+   "4": "NMOS",
+   "5": "PMOS",
+   "6": "NMOS",
+   "7": "NMOS",
+   "8": "NMOS",
+   "9": "NMOS"
+  },
+  "drafter_19/C221_D1_P1": {
+   "0": "UNCERTAIN"
+  },
+  "drafter_19/C221_D2_P1": {
+   "0": "UNCERTAIN"
+  },
+  "drafter_19/C225_D1_P1": {
+   "0": "NMOS",
+   "1": "NMOS",
+   "10": "PMOS",
+   "11": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS",
+   "4": "PMOS",
+   "5": "PMOS",
+   "6": "PMOS",
+   "7": "PMOS",
+   "8": "PMOS",
+   "9": "PMOS"
+  },
+  "drafter_19/C225_D2_P1": {
+   "0": "PMOS",
+   "1": "NMOS",
+   "10": "PMOS",
+   "11": "PMOS",
+   "2": "NMOS",
+   "3": "NMOS",
+   "4": "PMOS",
+   "5": "PMOS",
+   "6": "PMOS",
+   "7": "NMOS",
+   "8": "NMOS",
+   "9": "PMOS"
+  },
+  "drafter_19/C226_D1_P1": {
+   "0": "UNCERTAIN",
+   "1": "UNCERTAIN"
+  },
+  "drafter_19/C226_D2_P1": {
+   "0": "UNCERTAIN",
+   "1": "UNCERTAIN"
+  },
+  "drafter_19/C228_D1_P1": {
+   "0": "PMOS"
+  },
+  "drafter_19/C228_D2_P1": {
+   "0": "PMOS"
+  },
+  "drafter_20/C230_D1_P1": {
+   "0": "UNCERTAIN",
+   "1": "UNCERTAIN"
+  },
+  "drafter_20/C230_D2_P1": {
+   "0": "UNCERTAIN",
+   "1": "UNCERTAIN"
+  },
+  "drafter_20/C234_D1_P1": {
+   "0": "PMOS",
+   "1": "PMOS",
+   "10": "NMOS",
+   "11": "UNCERTAIN",
+   "12": "NMOS",
+   "13": "PMOS",
+   "14": "PMOS",
+   "15": "PMOS",
+   "16": "PMOS",
+   "17": "PMOS",
+   "18": "NMOS",
+   "2": "PMOS",
+   "3": "NMOS",
+   "4": "PMOS",
+   "5": "NMOS",
+   "6": "PMOS",
+   "7": "NMOS",
+   "8": "NMOS",
+   "9": "NMOS"
+  },
+  "drafter_20/C234_D2_P1": {
+   "0": "UNCERTAIN",
+   "1": "NMOS",
+   "10": "NMOS",
+   "11": "PMOS",
+   "12": "NMOS",
+   "13": "PMOS",
+   "14": "PMOS",
+   "15": "NMOS",
+   "16": "PMOS",
+   "17": "PMOS",
+   "18": "NMOS",
+   "2": "PMOS",
+   "3": "PMOS",
+   "4": "PMOS",
+   "5": "NMOS",
+   "6": "PMOS",
+   "7": "PMOS",
+   "8": "NMOS",
+   "9": "UNCERTAIN"
+  },
+  "drafter_20/C238_D1_P1": {
+   "0": "PMOS"
+  },
+  "drafter_20/C238_D2_P1": {
+   "0": "PMOS"
+  },
+  "drafter_20/C239_D1_P1": {
+   "0": "NMOS",
+   "1": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS",
+   "4": "NMOS",
+   "5": "NMOS",
+   "6": "NMOS",
+   "7": "NMOS"
+  },
+  "drafter_20/C239_D2_P1": {
+   "0": "NMOS",
+   "1": "NMOS",
+   "2": "NMOS",
+   "3": "NMOS",
+   "4": "NMOS",
+   "5": "NMOS",
+   "6": "NMOS",
+   "7": "NMOS"
+  },
+  "drafter_25/C291_D1_P1": {
+   "0": "NMOS",
+   "1": "PMOS",
+   "2": "NMOS"
+  },
+  "drafter_25/C291_D2_P1": {
+   "0": "PMOS",
+   "1": "NMOS",
+   "2": "NMOS"
+  }
+ }
+}
