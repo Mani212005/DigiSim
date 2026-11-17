@@ -65,7 +65,7 @@ Reviewer agent runs this checklist before approving anything.
 
 ### Phase 3 (Wire Extraction + Graph)
 - [ ] Wire extraction correctly traces connections on 5 test images
-- [ ] Graph builder produces a valid `networkx.DiGraph` with correct node/edge count
+- [ ] Graph builder produces a valid bipartite component/net `networkx.MultiGraph` with correct node/edge count
 - [ ] No isolated nodes in output graph (every component is connected)
 - [ ] Training run logged
 - [ ] `current_phase.txt` updated to `4`
