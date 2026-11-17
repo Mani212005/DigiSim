@@ -24,9 +24,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from data_gen.symbols import (  # noqa: E402
     CLASS_NAMES,
     CLASS_TO_ID,
+    SCHEMA,
     DrawnSymbol,
     draw_symbol,
     hand_stroke,
+    render_data_yaml,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -145,7 +147,7 @@ def generate_circuit_image(rng: np.random.Generator, counts: Counter) -> tuple[n
         """Draw one symbol, record its annotation, and return it."""
         sym = draw_symbol(img, name, cx, cy, s * rng.uniform(0.88, 1.12), color, thickness, rng)
         symbols.append(sym)
-        counts[name] += 1
+        counts[CLASS_NAMES[CLASS_TO_ID[name]]] += 1
         return sym
 
     # Sources on the left: INPUT boxes or SWITCH symbols.
@@ -253,7 +255,7 @@ def _write_yolo_label(
 def _convert_roboflow_split(split_src: str, split_dst: str, out_dir: Path, counts: Counter) -> int:
     """
     Copy one Roboflow split into the merged dataset, converting polygon labels
-    to bounding boxes and remapping class ids to the canonical 12-class list.
+    to bounding boxes and remapping class ids to the canonical class list (ml/classes.yaml).
 
     Args:
         split_src: Roboflow split directory name ('train', 'valid', 'test').
@@ -343,8 +345,7 @@ def build_dataset(out_dir: Path, count: int, seed: int) -> None:
         print(f"roboflow {split}: {n} images merged")
     counts.update(rf_counts)
 
-    yaml_text = f"path: {out_dir.resolve()}\ntrain: images/train\nval: images/valid\ntest: images/test\nnc: {len(CLASS_NAMES)}\nnames: {CLASS_NAMES}\n"
-    (out_dir / "data.yaml").write_text(yaml_text)
+    (out_dir / "data.yaml").write_text(render_data_yaml(SCHEMA, out_dir))
 
     total = sum(counts.values())
     max_count = max(counts.values())

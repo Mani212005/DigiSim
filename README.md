@@ -145,10 +145,10 @@ What is true today:
   AND, OR, NOT, NAND, NOR, XOR, XNOR, Switch, Input, Output, LED, Junction).
   It does not recognise NMOS/PMOS transistors or supply symbols, and it detects
   nothing useful on transistor-level schematics.
-- **Retraining on transistor-level classes is in progress.** It needs a new
-  class schema, a synthetic transistor-level generator, real hand-drawn data
-  (see [Data and licences](#-data-and-licences)), a GPU training run and
-  net tracing that no longer assumes left-to-right gates. Until that lands,
+- **Retraining on transistor-level classes is in progress.** The class schema
+  (`ml/classes.yaml`) is in place; it still needs a synthetic transistor-level
+  generator, real hand-drawn data (see [Data and licences](#-data-and-licences)),
+  a GPU training run and net tracing that no longer assumes left-to-right gates. Until that lands,
   treat detection results on transistor schematics as unsupported.
 - **Training is transfer learning only** (pretrained COCO weights, never random
   init), with the gate: F1 >= 0.95 and accuracy >= 0.95 per class before a phase

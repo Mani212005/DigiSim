@@ -21,6 +21,7 @@ dependencies = [
     "onnxslim>=0.1.96",
     "pytest>=9.1.1",
     "google-generativeai>=0.8.6",
+    "pyyaml>=6.0",
 ]
 
 [dependency-groups]

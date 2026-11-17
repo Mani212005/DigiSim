@@ -15,16 +15,36 @@ Image → [Stage 1: YOLO Detection] → [Stage 2: OpenCV Wire Extraction]
 | 3 | `backend/pipeline/graph_builder.py` | NetworkX DiGraph | Directed circuit graph |
 | 4 | `backend/pipeline/circuit_exporter.py` | JSON serialization | DigiSim-importable JSON |
 
+## Class Vocabulary
+Single source of truth: `ml/classes.yaml` (name, tier, YOLO id, frontend node type, terminals, default size, legacy aliases).
+Never hand-edit the generated files; after editing the YAML run `cd ml && uv run python class_schema.py generate`
+(`check` verifies nothing is stale; pytest `backend/test_class_schema.py` and Jest `yoloClassMap.test.ts` assert the backend and frontend maps equal the YAML).
+
+| Tier | Classes (YOLO ids in file order) |
+|------|----------------------------------|
+| A (required, 14) | `NMOS PMOS VDD GND INPUT_PORT OUTPUT_PORT JUNCTION AND OR NOT NAND NOR XOR XNOR` |
+| B (next, analog) | `RESISTOR CAPACITOR INDUCTOR BJT_NPN BJT_PNP CLOCK` |
+
+Generated: `backend/pipeline/class_map.py` (`CLASS_TO_NODE_TYPE`, re-exported by `detector.py`),
+`frontend/src/logic/vision/yoloClassMap.generated.ts` (`YOLO_CLASS_MAP`), dataset `data.yaml`
+(`class_schema.py data-yaml --path DIR`, tier A by default; `screenshot_pipeline.py` uses the same renderer).
+
+Legacy aliases (old 12-class gate-era weights): `SWITCH`, `INPUT` -> `INPUT_PORT`; `OUTPUT`, `LED` -> `OUTPUT_PORT`;
+the gate names and `JUNCTION` are unchanged. Old weights emit these names upper-case, matching the alias keys.
+Legacy ids differ from the canonical ids, so the frontend ONNX decoder uses `legacy_order` from `classes.yaml`
+(AND=0 ... JUNCTION=11) when the model output has exactly 12 classes, and the canonical order otherwise.
+The backend is unaffected because it reads class names from the model weights.
+
 ## Training Phases
 
 | Phase | Classes Active | Stages Active | Threshold |
 |-------|---------------|---------------|-----------|
-| 1 | AND, OR, NOT | 1 only | F1 ≥ 0.95, acc ≥ 0.95 per class |
-| 2 | All 12 | 1 only | same |
-| 3 | All 12 | 1 + 2 + 3 | same |
-| 4 | All 12 | 1 + 2 + 3 + 4 | same |
+| 1 | NMOS, PMOS, VDD, GND | 1 only | F1 >= 0.95, acc >= 0.95 per class |
+| 2 | All 14 tier A | 1 only | same on synthetic held-out-style test; real held-out set F1 >= 0.85 per class with >= 30 test instances; JUNCTION recall >= 0.90 |
+| 3 | All 14 tier A | 1 + 2 + 3 | same |
+| 4 | All 14 tier A | 1 + 2 + 3 + 4 | same |
 
-All 12 classes: `AND OR NOT NAND NOR XOR XNOR Switch Input Output LED Junction`
+Tier B classes are trained after phase 4.
 
 Current phase: `ml/experiments/current_phase.txt`
 
