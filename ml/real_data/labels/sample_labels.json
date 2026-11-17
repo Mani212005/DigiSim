@@ -1,0 +1,249 @@
+{
+ "_comment": "Our own manual box labels (pixel x1,y1,x2,y2) for the 4 spare Sampleimages not in the Roboflow export. Labelled by symbol shape. The annotations are DigiSim project work; the images have unverified provenance and must not be redistributed.",
+ "images": {
+  "eighth_iamge.jpg": {
+   "width": 763,
+   "height": 277,
+   "note": "Half adder: gates labelled 7486 are XOR (double input arc), 7408 AND, 7432 OR.",
+   "boxes": [
+    {
+     "class": "XOR",
+     "xyxy": [
+      175,
+      28,
+      275,
+      95
+     ]
+    },
+    {
+     "class": "AND",
+     "xyxy": [
+      195,
+      138,
+      272,
+      206
+     ]
+    },
+    {
+     "class": "XOR",
+     "xyxy": [
+      448,
+      45,
+      528,
+      111
+     ]
+    },
+    {
+     "class": "AND",
+     "xyxy": [
+      440,
+      153,
+      530,
+      222
+     ]
+    },
+    {
+     "class": "OR",
+     "xyxy": [
+      555,
+      175,
+      627,
+      232
+     ]
+    }
+   ]
+  },
+  "seventh_image.jpg": {
+   "width": 856,
+   "height": 483,
+   "note": "Textbook AND/OR network; bubbled inputs on two gates are not separate NOT symbols.",
+   "boxes": [
+    {
+     "class": "OR",
+     "xyxy": [
+      160,
+      7,
+      262,
+      85
+     ]
+    },
+    {
+     "class": "OR",
+     "xyxy": [
+      160,
+      132,
+      262,
+      212
+     ]
+    },
+    {
+     "class": "AND",
+     "xyxy": [
+      393,
+      97,
+      487,
+      178
+     ]
+    },
+    {
+     "class": "OR",
+     "xyxy": [
+      625,
+      230,
+      727,
+      308
+     ]
+    },
+    {
+     "class": "OR",
+     "xyxy": [
+      160,
+      348,
+      262,
+      430
+     ]
+    },
+    {
+     "class": "AND",
+     "xyxy": [
+      390,
+      370,
+      487,
+      450
+     ]
+    }
+   ]
+  },
+  "fortythree_image.jpg": {
+   "width": 1040,
+   "height": 1600,
+   "note": "Phone photo of a hand-drawn NAND array, drawn rotated 90 degrees (outputs point down).",
+   "boxes": [
+    {
+     "class": "NAND",
+     "xyxy": [
+      105,
+      278,
+      190,
+      385
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      275,
+      367,
+      372,
+      505
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      498,
+      528,
+      585,
+      650
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      768,
+      445,
+      865,
+      565
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      785,
+      708,
+      870,
+      812
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      515,
+      843,
+      590,
+      960
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      795,
+      1097,
+      875,
+      1200
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      415,
+      1232,
+      585,
+      1328
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      492,
+      1410,
+      600,
+      1515
+     ]
+    },
+    {
+     "class": "NAND",
+     "xyxy": [
+      703,
+      1500,
+      760,
+      1560
+     ]
+    }
+   ]
+  },
+  "thirtythree_image.jpg": {
+   "width": 727,
+   "height": 475,
+   "note": "Stylised slide with misleading text inside the symbols; labelled by symbol shape only (OR-shaped bodies, bubble = NOR). The plain triangles are buffers (no class) and are left unlabelled.",
+   "boxes": [
+    {
+     "class": "NOR",
+     "xyxy": [
+      185,
+      45,
+      300,
+      140
+     ]
+    },
+    {
+     "class": "OR",
+     "xyxy": [
+      440,
+      190,
+      525,
+      275
+     ]
+    },
+    {
+     "class": "NOR",
+     "xyxy": [
+      185,
+      265,
+      300,
+      360
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -53,3 +53,5 @@ backend/data/*
 backend/*.pt
 backend/*.onnx
 backend/*.ts
+# Real-data pilot (fetched CGHD, converted YOLO dataset, review sheets) - never committed
+ml/data_real/
