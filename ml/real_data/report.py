@@ -126,7 +126,7 @@ def render_report(manifest: dict) -> str:
         "",
         "## Ignored regions",
         "",
-        "Unmapped CGHD classes and undecided transistors/terminals are not labels. Their boxes are stored as ignore regions "
+        "Unmapped CGHD classes and undecided transistors, terminals and supply symbols are not labels. Their boxes are stored as ignore regions "
         "(`data_real/yolo/ignore/`) so the evaluator can mask them instead of counting a correct detection as a false positive.",
         "",
         "| Reason | Boxes |",
@@ -142,7 +142,8 @@ def render_report(manifest: dict) -> str:
         "XNOR does not exist in CGHD at all. Fetching more drafters is a one-line change to `real_data/config.py` (`CGHD_PILOT_SPLITS`) and changes the frozen hash.",
         "- `terminal` boxes become INPUT_PORT, OUTPUT_PORT, VDD or GND only when the neighbouring text label says so (explicit in/out/supply names; "
         "component designators like R1 or Q1 never count). Terminals without such a label are ignore regions, not labels.",
-        "- CGHD `vss` (a rail arrow) is mapped to VDD and `voltage.dc` to VDD; `gnd` to GND. Batteries, AC sources, BJTs (no polarity relabel yet), "
+        "- CGHD `vss` and `voltage.dc` are not remapped directly: like terminals they become VDD or GND only when the neighbouring text label says so "
+        "(vss/gnd/0V is GND, vdd/vcc/+V is VDD), otherwise they are `uncertain_supply` ignore regions; `gnd` maps to GND. Batteries, AC sources, BJTs (no polarity relabel yet), "
         "diodes, op-amps and the other CGHD classes are ignore regions.",
         "- JFET symbols (gate arrow) share the CGHD `transistor.fet` class and are left UNCERTAIN rather than called NMOS.",
         "- The Roboflow and Sampleimages gate labels come from the source (polygons converted to boxes) and our own box labels; their images have unverified provenance.",

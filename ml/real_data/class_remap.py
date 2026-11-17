@@ -20,8 +20,6 @@ CGHD_DIRECT: dict[str, str] = {
     "xor": "XOR",
     "gnd": "GND",
     "junction": "JUNCTION",
-    "voltage.dc": "VDD",
-    "vss": "VDD",
     "resistor": "RESISTOR",
     "capacitor.unpolarized": "CAPACITOR",
     "capacitor.polarized": "CAPACITOR",
@@ -32,6 +30,8 @@ CGHD_DIRECT: dict[str, str] = {
 CGHD_FET = "transistor.fet"
 CGHD_TERMINAL = "terminal"
 CGHD_TEXT = "text"
+# Supply symbols whose polarity (rail or ground) the drawing does not fix; the neighbouring text label decides.
+CGHD_SUPPLY = frozenset({"vss", "voltage.dc"})
 
 # Roboflow export class names (data.yaml `names`) -> DigiSim class.
 ROBOFLOW_NAMES: dict[str, str] = {
@@ -79,17 +79,33 @@ def classify_terminal(text: str | None) -> str | None:
     if not text:
         return None
     norm = _normalise_text(text)
+    if _GND_TEXT.match(norm):
+        return "GND"
     if _VDD_TEXT.match(norm):
         return "VDD"
     if _VOLTAGE_TEXT.match(norm):
-        return "VDD" if float(norm.strip("+v")) <= MAX_RAIL_VOLTS else None
-    if _GND_TEXT.match(norm):
-        return "GND"
+        volts = float(norm.strip("+v"))
+        if volts == 0:
+            return "GND"
+        return "VDD" if volts <= MAX_RAIL_VOLTS else None
     if _INPUT_TEXT.match(norm):
         return "INPUT_PORT"
     if _OUTPUT_TEXT.match(norm):
         return "OUTPUT_PORT"
     return None
+
+
+def classify_supply(text: str | None) -> str | None:
+    """
+    Decide whether a CGHD supply symbol (`vss`, `voltage.dc`) is a rail or a ground from its label.
+
+    Args:
+        text: Label of the nearest text object, or None when there is none.
+    Returns:
+        VDD or GND, or None when the label does not say (input/output port names never decide a supply).
+    """
+    result = classify_terminal(text)
+    return result if result in ("VDD", "GND") else None
 
 
 def validate_remaps(schema: ClassSchema) -> None:

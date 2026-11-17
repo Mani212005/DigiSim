@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
-from real_data.class_remap import CGHD_DIRECT, CGHD_FET, CGHD_TERMINAL, CGHD_TEXT, classify_terminal
+from real_data.class_remap import CGHD_DIRECT, CGHD_FET, CGHD_SUPPLY, CGHD_TERMINAL, CGHD_TEXT, classify_supply, classify_terminal
 
 # A terminal's label must sit within this many terminal-box diagonals of the terminal.
 TERMINAL_TEXT_REACH = 3.0
@@ -163,13 +163,17 @@ def convert_annotation(ann: VocAnnotation, fet_polarity: dict[str, str], key_pre
             objects) to NMOS, PMOS or UNCERTAIN. A missing key counts as UNCERTAIN.
         key_prefix: Image identity used in the polarity keys, e.g. "drafter_20/C46_D1_P1".
     Returns:
-        The labelled boxes and the ignored boxes (reason `unmapped`, `uncertain_fet` or `uncertain_terminal`).
+        The labelled boxes and the ignored boxes (reason `unmapped`, `uncertain_fet`, `uncertain_terminal` or `uncertain_supply`).
     """
     texts = [o for o in ann.objects if o.name == CGHD_TEXT]
     boxes: list[LabelBox] = []
     ignored: list[IgnoredBox] = []
     fet_seen = 0
     for obj in ann.objects:
+        decision = "UNCERTAIN"
+        if obj.name == CGHD_FET:
+            decision = fet_polarity.get(f"{key_prefix}#{fet_seen}", "UNCERTAIN")
+            fet_seen += 1
         if obj.xmax - obj.xmin < MIN_BOX_SIDE or obj.ymax - obj.ymin < MIN_BOX_SIDE:
             continue
         target: str | None = None
@@ -177,10 +181,11 @@ def convert_annotation(ann: VocAnnotation, fet_polarity: dict[str, str], key_pre
         if obj.name in CGHD_DIRECT:
             target = CGHD_DIRECT[obj.name]
         elif obj.name == CGHD_FET:
-            decision = fet_polarity.get(f"{key_prefix}#{fet_seen}", "UNCERTAIN")
-            fet_seen += 1
             target = decision if decision in ("NMOS", "PMOS") else None
             reason = "uncertain_fet"
+        elif obj.name in CGHD_SUPPLY:
+            target = classify_supply(nearest_text(obj, texts))
+            reason = "uncertain_supply"
         elif obj.name == CGHD_TERMINAL:
             target = classify_terminal(nearest_text(obj, texts))
             reason = "uncertain_terminal"

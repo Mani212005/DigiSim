@@ -89,6 +89,11 @@ def test_roboflow_source_name() -> None:
         ("VDD", "VDD"),
         ("+5V", "VDD"),
         ("12 V", "VDD"),
+        ("0V", "GND"),
+        ("0v", "GND"),
+        ("0.0V", "GND"),
+        ("+0V", "GND"),
+        ("0", "GND"),
         ("230V", None),
         ("R1", None),
         ("Q1", None),
@@ -107,6 +112,49 @@ def test_classify_terminal(text: str | None, expected: str | None) -> None:
         expected: Expected class name, or None when the label must not decide.
     """
     assert classify_terminal(text) == expected
+
+
+@pytest.mark.parametrize("source_class", ["vss", "voltage.dc"])
+def test_supply_symbols_are_resolved_by_text_or_ignored(source_class: str) -> None:
+    """
+    vss and voltage.dc take their class from the neighbouring label and are ignore regions otherwise.
+
+    Args:
+        source_class: CGHD supply class under test.
+    """
+    assert source_class not in CGHD_DIRECT
+
+    def convert(label: str | None) -> tuple[list[str], list[tuple[str, str]]]:
+        objects = [_obj(0, source_class, (100, 100, 150, 150))]
+        if label is not None:
+            objects.append(_obj(1, "text", (160, 100, 220, 150), label))
+        out = convert_annotation(VocAnnotation("x.jpg", 1000, 1000, tuple(objects)), {}, "drafter_1/x")
+        return [b.class_name for b in out.boxes], [(i.reason, i.source_class) for i in out.ignored]
+
+    assert convert("VSS") == (["GND"], [])
+    assert convert("0V") == (["GND"], [])
+    assert convert("VDD") == (["VDD"], [])
+    assert convert("+5V") == (["VDD"], [])
+    assert convert("Vin") == ([], [("uncertain_supply", source_class)])
+    assert convert("R1") == ([], [("uncertain_supply", source_class)])
+    assert convert(None) == ([], [("uncertain_supply", source_class)])
+
+
+def test_tiny_transistor_does_not_shift_later_polarity_keys() -> None:
+    """A sub-minimum transistor is skipped but still consumes its ordinal, so later FETs keep their own decision."""
+    ann = VocAnnotation(
+        "x.jpg",
+        1000,
+        1000,
+        (
+            _obj(0, "transistor.fet", (10, 10, 12, 12)),
+            _obj(1, "transistor.fet", (100, 10, 160, 80)),
+            _obj(2, "transistor.fet", (200, 10, 260, 80)),
+        ),
+    )
+    polarity = {"drafter_1/x#0": "NMOS", "drafter_1/x#1": "PMOS", "drafter_1/x#2": "NMOS"}
+    out = convert_annotation(ann, polarity, "drafter_1/x")
+    assert [(b.class_name, b.xmin) for b in out.boxes] == [("PMOS", 100), ("NMOS", 200)]
 
 
 def test_nearest_text_respects_reach() -> None:

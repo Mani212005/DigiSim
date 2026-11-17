@@ -42,6 +42,7 @@
  },
  "ignored_totals": {
   "uncertain_fet": 86,
+  "uncertain_supply": 81,
   "uncertain_terminal": 1667,
   "unmapped": 6941
  },
@@ -226,17 +227,18 @@
     "NMOS": 1,
     "PMOS": 1,
     "RESISTOR": 4,
-    "VDD": 3
+    "VDD": 2
    },
    "dhash": "687a6f0162f869b6452c44ac44a54e5554dd554dd2d8b49b955b959bb4abb52b",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 1,
     "unmapped": 8
    },
-   "label_sha256": "6eee09a842995c503dae77aac23c2b0f684b577bc20a6361f05b52fe5659520f",
+   "label_sha256": "b35220dd4f911ce3ce677daded53af51b3317cd36c36f151ac3552c4dfbb3515",
    "name": "cghd_d16_C181_D2_P4",
    "sha256": "e312025dcdafca2be17b3820e5d154b3158363e937ffe40e8fa5412c7467a4c0",
    "source": "cghd",
@@ -818,18 +820,18 @@
     "JUNCTION": 14,
     "NAND": 2,
     "OUTPUT_PORT": 1,
-    "RESISTOR": 2,
-    "VDD": 2
+    "RESISTOR": 2
    },
    "dhash": "aaa1b0a9ce4dce55dd55d995cd4dd571d549d2c9dbc9ca4bdb89dd959a16cc94",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 1,
     "unmapped": 3
    },
-   "label_sha256": "0230e4f685f958bab2d383946304a0be3d3c63e1410f3ef58e09ababfac50425",
+   "label_sha256": "e20e1ddedacc4b7f757c818da055018ed9564e3a30f9cc33e8c45f1d92fd5790",
    "name": "cghd_d16_C185_D1_P1",
    "sha256": "67e74d20e0e51028d6ed387ffb112165f24bc1444a39bae3bc5e9e2c759e0d1b",
    "source": "cghd",
@@ -843,18 +845,18 @@
     "JUNCTION": 14,
     "NAND": 2,
     "OUTPUT_PORT": 1,
-    "RESISTOR": 2,
-    "VDD": 2
+    "RESISTOR": 2
    },
    "dhash": "89e9aeb5bc09ad1da92cfb2efb2af3faf2aaf2a0f2ac36a4b6b6d5b855a94520",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 1,
     "unmapped": 3
    },
-   "label_sha256": "ab44d80105a27bdc23dd44e0b03021d171bbfa118a4a55e3c940d598e036f650",
+   "label_sha256": "e1cda05d553046be29625ce2f3de3a210672cb782d6b0ce1ab18a1a9eb2d9b0f",
    "name": "cghd_d16_C185_D1_P2",
    "sha256": "c71f33d73a190ad5fdf2c882e22b016ce318f81e651dea4bf90b27dff80fd604",
    "source": "cghd",
@@ -868,18 +870,18 @@
     "JUNCTION": 14,
     "NAND": 2,
     "OUTPUT_PORT": 1,
-    "RESISTOR": 2,
-    "VDD": 2
+    "RESISTOR": 2
    },
    "dhash": "a9a8aca5ec5be441dc4dcec4d4c4d555dd45dc50dc46dc4adc4adc59f889cf81",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 1,
     "unmapped": 3
    },
-   "label_sha256": "2945ae1ebf1cb838a7d7da362a744b94ec64e1e8a1252f262b892aced526133b",
+   "label_sha256": "106978b8874e1c5eb70714f7e19082fa32916c83a2d9ac2749b1f961fd371696",
    "name": "cghd_d16_C185_D1_P3",
    "sha256": "a27d7f68010a3d7534efd36f9753fc86920aba4916524fe596b5f6ad9eed6f45",
    "source": "cghd",
@@ -893,18 +895,18 @@
     "JUNCTION": 14,
     "NAND": 2,
     "OUTPUT_PORT": 1,
-    "RESISTOR": 2,
-    "VDD": 2
+    "RESISTOR": 2
    },
    "dhash": "0922c544b1a55889ac95a4d0a496a659a65a6a494ad4928b66ea86ae06ac0698",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 1,
     "unmapped": 3
    },
-   "label_sha256": "f99c90a337fbbb9c3071780f86d5935f58ce80ca969fcd84c9b7d4d2152cea40",
+   "label_sha256": "5a2881932cbb2d809fcdbc3fa0d2db98d9a4983b8e408c3b8e14dd914ae84c30",
    "name": "cghd_d16_C185_D1_P4",
    "sha256": "21dc196e92be7008e15315a230dde90e8b545287a24a616d9c6e0202ed5560ff",
    "source": "cghd",
@@ -2160,16 +2162,17 @@
     "JUNCTION": 44,
     "NOT": 1,
     "RESISTOR": 5,
-    "VDD": 2
+    "VDD": 1
    },
    "dhash": "f2d8f6a1e8b9dda1a255b99bacabaaa9adaab55ad7d4caa8aa22a5a4ccc597de",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "unmapped": 8
    },
-   "label_sha256": "bdfde1f36c2d52c9bae80bb279f91070bd3cf47ed6ad7719d9e0471e5c5c5707",
+   "label_sha256": "75415ec82b3ac9b6855d686a5a53a4c05e18477846e367a7a05ec117e9c77ebc",
    "name": "cghd_d16_C192_D1_P1",
    "sha256": "8824d3e5f75fa58fcd4a2493272e099e456ed01416083424dfaaa0edf9f36cba",
    "source": "cghd",
@@ -2184,16 +2187,17 @@
     "JUNCTION": 44,
     "NOT": 1,
     "RESISTOR": 5,
-    "VDD": 2
+    "VDD": 1
    },
    "dhash": "f3e2e08aacb2770df131d9aaa2a6e258525556a5e4a5a4b5b48a945cd4d99cce",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "unmapped": 8
    },
-   "label_sha256": "72f8b2ed0b2c6b2b6f6894d938cfd7b5720ec792cbbb362bdd749684c09330c6",
+   "label_sha256": "c459d70178fb0e372ccfb171c0fb3607b8a0b83eef2cc2272e0b1211a13a8ba5",
    "name": "cghd_d16_C192_D1_P2",
    "sha256": "95036895cf8a531179f0e6b7b7c670b0547a362dfc0231cbff2befb788fa314c",
    "source": "cghd",
@@ -2208,16 +2212,17 @@
     "JUNCTION": 44,
     "NOT": 1,
     "RESISTOR": 5,
-    "VDD": 2
+    "VDD": 1
    },
    "dhash": "eb66ddb6add2aeeab6aab2539559b4a9eca1ca9d5a5a935ab9b9b493a245a14d",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "unmapped": 8
    },
-   "label_sha256": "8688ded55f90af0da5cff9150ca001c86d1496a83158e7cdfe2d95312af40f1e",
+   "label_sha256": "7175bd865992da07822a98924c5478b05dffa63a158f5a59a9c88f8b27ab1dca",
    "name": "cghd_d16_C192_D1_P3",
    "sha256": "e476dbbb548fd66d10e39760e45f6ae3da574399813552d96329c01ad7de526e",
    "source": "cghd",
@@ -2232,16 +2237,17 @@
     "JUNCTION": 44,
     "NOT": 1,
     "RESISTOR": 5,
-    "VDD": 2
+    "VDD": 1
    },
    "dhash": "bdd7aedba6cb97599b51a95d8d499b65cb36aa92b54c8956ac9bb251c15d84a8",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "unmapped": 8
    },
-   "label_sha256": "9143c2223cfebd4fd2dcb03ce37e269db0cd0610ceb0d8c0c73c00b6e0a7d2c7",
+   "label_sha256": "c684450718086f2650d1bd97fd8023062822a7b6021d7f5cb903c727bfa4bec2",
    "name": "cghd_d16_C192_D1_P4",
    "sha256": "697541a938c0829bc6d976e0b84314298433d20bbe49ce18c527ef5870d4cf77",
    "source": "cghd",
@@ -2256,16 +2262,17 @@
     "JUNCTION": 41,
     "NOT": 1,
     "RESISTOR": 6,
-    "VDD": 3
+    "VDD": 1
    },
    "dhash": "ac626e317ef156b1529d567b6a525a737a934a5356a550a965a966b15ca57749",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "unmapped": 6
    },
-   "label_sha256": "3ec0d0d9c01254a0dd56c64f1936863d70b100455ed27d127c9318a623c0e588",
+   "label_sha256": "76ef1b52d6a97010c640375ac8ba7c546fe901d00d7421f48edc38bb0b10416f",
    "name": "cghd_d16_C192_D2_P1",
    "sha256": "4232e803be61f043d8a7dcff870a27673a2ad026a409d6a4f714c6adc265cb0e",
    "source": "cghd",
@@ -2280,16 +2287,17 @@
     "JUNCTION": 41,
     "NOT": 1,
     "RESISTOR": 6,
-    "VDD": 3
+    "VDD": 1
    },
    "dhash": "bd33be793ecfacc9ad9ba9919331b762a64d6cd5c89c999e69192243b65e4ce2",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "unmapped": 6
    },
-   "label_sha256": "248d53e5dc3bfd93615f53b931c9cd19c28343dd0129d0b7b446bdb53da8b657",
+   "label_sha256": "dd305393454dc09aec530bc50668f0bd6a2bd9ce67ec1db4601c2d4d3a265763",
    "name": "cghd_d16_C192_D2_P2",
    "sha256": "0e0779aa1f721dcd040d2685ea8cf3c25c4217e39e411556eef40933fffd2ae5",
    "source": "cghd",
@@ -2304,16 +2312,17 @@
     "JUNCTION": 41,
     "NOT": 1,
     "RESISTOR": 6,
-    "VDD": 3
+    "VDD": 1
    },
    "dhash": "fce9858e5ca94ea976da26928db39a75b7c2ae5c49f48bd7cb55aa55a6559cd1",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "unmapped": 6
    },
-   "label_sha256": "8e378fb67915d4257a12b92678098837bd3f30d62ae7914bb94a4f396b7c3ff6",
+   "label_sha256": "ac1e41d2f741373a2bc4430929f023f2936f3edf115e0012372e4042b677c0dc",
    "name": "cghd_d16_C192_D2_P3",
    "sha256": "e949e237a55b35e90f89aceba3e10d533b4a555f15d6323b5ec17136843cd99e",
    "source": "cghd",
@@ -2328,16 +2337,17 @@
     "JUNCTION": 41,
     "NOT": 1,
     "RESISTOR": 6,
-    "VDD": 3
+    "VDD": 1
    },
    "dhash": "257aad552d556d544d5a9ed364a1363516c3b67a93528a539a539a539253ab52",
    "exif_baked": false,
    "group": "drafter_16",
    "height": 1134,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "unmapped": 6
    },
-   "label_sha256": "d3c30b27fc29ae266b0d71f9a76da73b3db5a6d3d1a13faca7a0c6c2a99328a0",
+   "label_sha256": "926470e6f4008d8aada17b616a8ee0efc0ee0275758a4d8fbb1c0a6e94f92b4d",
    "name": "cghd_d16_C192_D2_P4",
    "sha256": "72bac5447a96e1335d5d86617c20bb1ad2f8b087d43eb4164ded91cc2fa7a55f",
    "source": "cghd",
@@ -2570,7 +2580,7 @@
     "INDUCTOR": 3,
     "JUNCTION": 38,
     "RESISTOR": 6,
-    "VDD": 4,
+    "VDD": 3,
     "XOR": 1
    },
    "dhash": "d4ba968a428cb4febe84aad2a6da2e4b63f13e44ab46c1734b7637721772b736",
@@ -2578,10 +2588,11 @@
    "group": "drafter_19",
    "height": 4608,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 3,
     "unmapped": 9
    },
-   "label_sha256": "a37ccfec4aecff798a1d6741c55023fea75f66a6000b5ca114b38d347ca65c4d",
+   "label_sha256": "00b7e61dfbc98c08ced7f350626626a83a47f61d2c1ef8201e8faa74b0fd6787",
    "name": "cghd_d19_C218_D1_P2",
    "sha256": "afd01a4ca66a38b1c60aa7bda8d4e491f199ec027fe6530d430aacb7d8054acd",
    "source": "cghd",
@@ -2674,7 +2685,7 @@
     "INDUCTOR": 3,
     "JUNCTION": 38,
     "RESISTOR": 6,
-    "VDD": 4,
+    "VDD": 3,
     "XOR": 1
    },
    "dhash": "b4e88ceae6d4afacb17aab262b6a284aa7608ceab568d16cb4e3a7d370506a58",
@@ -2682,10 +2693,11 @@
    "group": "drafter_19",
    "height": 2198,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 3,
     "unmapped": 9
    },
-   "label_sha256": "1ca966630a523e9bdbce89c51a18fc91e779be1a282151fa1e0d9cfa1af9087c",
+   "label_sha256": "ddefe2a67a970287b4aabb4fd3b0382737dc536c7e0febc7a5b1cadce4edd9f1",
    "name": "cghd_d19_C218_D2_P2",
    "sha256": "3356fef39626d74796c76ec4b42d5c31ff5be67b6464dd2a3fb06e1874d26a30",
    "source": "cghd",
@@ -2700,7 +2712,7 @@
     "INDUCTOR": 3,
     "JUNCTION": 38,
     "RESISTOR": 6,
-    "VDD": 4,
+    "VDD": 3,
     "XOR": 1
    },
    "dhash": "5ad2d324b5cdb7e79ab88e23b1aeb569b671a5ad899995c934cb6a939c959ab5",
@@ -2708,10 +2720,11 @@
    "group": "drafter_19",
    "height": 2171,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 3,
     "unmapped": 9
    },
-   "label_sha256": "4a7d34c8147d0aabf04beeb55f35cb2b8de172f69050a480c6cf1ba5cb54a217",
+   "label_sha256": "1fa4dff04bfa4e8f6a42a6fbddeec7c5bf2d984c7ade87a3b8fb9f1e9a5ea2e3",
    "name": "cghd_d19_C218_D2_P3",
    "sha256": "d5bee002cd09cf350628d3e950e25f06753f4034b4a2fc2da51494b6d8f8ed14",
    "source": "cghd",
@@ -2952,8 +2965,7 @@
     "JUNCTION": 34,
     "NMOS": 11,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "000077eeafb696ae6c965966d6c6c4a228a6d4a269c6e966f9aeb16ef64698ce",
    "exif_baked": true,
@@ -2961,10 +2973,11 @@
    "height": 1924,
    "ignored_counts": {
     "uncertain_fet": 1,
+    "uncertain_supply": 2,
     "uncertain_terminal": 24,
     "unmapped": 4
    },
-   "label_sha256": "9ec2132ce164f3ae5e20cc8fc6be1ff44cfa7896d1cf7a04bd9936de4b401cbf",
+   "label_sha256": "8ac5953ecab16bf1d33c109cec85eaaa28376bd95b44d3b593969f787a48662d",
    "name": "cghd_d19_C220_D1_P1",
    "sha256": "5c2bf16b91705bca9cd8d63e59477646b3c39dd609b8cb4aa5695eab70e7157f",
    "source": "cghd",
@@ -2981,8 +2994,7 @@
     "JUNCTION": 34,
     "NMOS": 11,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "aa92a69596a5b6a896897265371254e66c967ad63a539659bacda4e75766d752",
    "exif_baked": true,
@@ -2990,10 +3002,11 @@
    "height": 2938,
    "ignored_counts": {
     "uncertain_fet": 1,
+    "uncertain_supply": 2,
     "uncertain_terminal": 23,
     "unmapped": 4
    },
-   "label_sha256": "104e1796829ae203f3c7a339eb6b348d56e5611e3bda915a36a9fa7e5088a718",
+   "label_sha256": "e8ebc9784f9ad371de4f12d6484dc51bcc0f3f7429cdb9ff30d59df03213ddfb",
    "name": "cghd_d19_C220_D1_P2",
    "sha256": "1e6bc0587628a69a2b6fd336a2b6f62fd1826dafe7b257fb2514fadfe1740998",
    "source": "cghd",
@@ -3010,8 +3023,7 @@
     "JUNCTION": 36,
     "NMOS": 11,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "e95da53294aaa4a2b5969c2aa52b552779559d2b692be1add5ad95b6a592ec9c",
    "exif_baked": true,
@@ -3019,10 +3031,11 @@
    "height": 2303,
    "ignored_counts": {
     "uncertain_fet": 1,
+    "uncertain_supply": 2,
     "uncertain_terminal": 21,
     "unmapped": 4
    },
-   "label_sha256": "2bfd7afb27abe79ea30dc9193e55976ab50b5cedb13e2ccdc8387f3743d4eaba",
+   "label_sha256": "79284e1d07e75a7f83230e5c1991c0303c0d9c49d55c43c96805efcc531b65ad",
    "name": "cghd_d19_C220_D1_P3",
    "sha256": "3e169d82bb22fae94cc6dbf447c0ba027525c914d015a9799f83d57ed7284aa3",
    "source": "cghd",
@@ -3039,8 +3052,7 @@
     "JUNCTION": 34,
     "NMOS": 11,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "19c6752b8d726496552b852347343de15b0e53b04690159c36ab2f0926df5c03",
    "exif_baked": true,
@@ -3048,10 +3060,11 @@
    "height": 2811,
    "ignored_counts": {
     "uncertain_fet": 1,
+    "uncertain_supply": 2,
     "uncertain_terminal": 24,
     "unmapped": 4
    },
-   "label_sha256": "c617950ea7bdd44f1ca615346d08942e90b747da708c45b9df2a5282a59ad5ec",
+   "label_sha256": "c74157236efb94044e757fe8e79800e81c724a86caa668c76640b11e37403f79",
    "name": "cghd_d19_C220_D1_P4",
    "sha256": "f6436f45edf6070750e86ab674793c37bbb5aecded6d23c0a09811f3e6735f35",
    "source": "cghd",
@@ -3068,18 +3081,18 @@
     "JUNCTION": 35,
     "NMOS": 12,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "5ab53ca702aaaba3965b9a27964bbb4b8a2b8b3bb8db8a47badb0b1f15570dc9",
    "exif_baked": true,
    "group": "drafter_19",
    "height": 1892,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 22,
     "unmapped": 4
    },
-   "label_sha256": "64ae60ad4b3fead164c9e8aca6edede8d376f594cac336aad930c5c1f22846e2",
+   "label_sha256": "a8f1fd2ef2074b542e8af9039a5709d7b638661d5c8bf9e92ca3afac8e0bdffc",
    "name": "cghd_d19_C220_D2_P1",
    "sha256": "c2cee105dc58b7afcdf62aac7d8a6b1b4da8216fc62a7056d5b6004b79ecb25f",
    "source": "cghd",
@@ -3096,18 +3109,18 @@
     "JUNCTION": 35,
     "NMOS": 12,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "80a68e1691a6852e966ea64ab5328b238a7b9b93225212cc6a28527745bf9a60",
    "exif_baked": true,
    "group": "drafter_19",
    "height": 1702,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 23,
     "unmapped": 4
    },
-   "label_sha256": "064b6ba8d13a44183d44b11e43cec2437a575e393e086c5ef7300ea1a5112c87",
+   "label_sha256": "f50ee7a80bee290b1da340fd1dbce2ecf0c4f4a1e07f85015328bb236539ba32",
    "name": "cghd_d19_C220_D2_P2",
    "sha256": "a0b0dbe88e7f36f13dc88bed722cfa984ad8f4e21bc89a7bea8f1235b1860f3a",
    "source": "cghd",
@@ -3124,18 +3137,18 @@
     "JUNCTION": 31,
     "NMOS": 12,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "246e2666266b156f346f964d8b77ab5493569b52bb52ab5bbb1baa9a9b9a9b0b",
    "exif_baked": true,
    "group": "drafter_19",
    "height": 2304,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 23,
     "unmapped": 4
    },
-   "label_sha256": "d03f59058b32a9bd5de8993be8d16346cfe61727dd072ebd6944d560596ea846",
+   "label_sha256": "fd1823ca65d72e8ecb2f16c4031054be9c61b6066e5739e9dd2ff3ba72d293fd",
    "name": "cghd_d19_C220_D2_P3",
    "sha256": "cbebbcb724c1e06d67830b46b7bd59d0ab40da915342904da0003fad619b64d1",
    "source": "cghd",
@@ -3152,18 +3165,18 @@
     "JUNCTION": 32,
     "NMOS": 12,
     "NOT": 3,
-    "PMOS": 3,
-    "VDD": 2
+    "PMOS": 3
    },
    "dhash": "7790b61a5535652ad71636eed65a2d2c292b68ba34c74caa9da42ca564af6e84",
    "exif_baked": true,
    "group": "drafter_19",
    "height": 2498,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 24,
     "unmapped": 4
    },
-   "label_sha256": "6513162b15d64fb4d488e1afd8179679e4788a1da56b4f0ad4b8e8081adec08c",
+   "label_sha256": "84ddcc28551f2d9a721df5843ddb9af046a94b547fb67915efbd5ad1b549fe93",
    "name": "cghd_d19_C220_D2_P4",
    "sha256": "f91df157b7196448e326c46d6b57b0d4cdbd35954a63f4a4deb48f861951b9fe",
    "source": "cghd",
@@ -3571,17 +3584,18 @@
     "JUNCTION": 34,
     "OUTPUT_PORT": 1,
     "RESISTOR": 10,
-    "VDD": 3
+    "VDD": 2
    },
    "dhash": "9ff720ff6e074df8865f9977376222de2296b56e094e835c60ad9c2d070dc1c9",
    "exif_baked": true,
    "group": "drafter_19",
    "height": 2648,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 1,
     "unmapped": 6
    },
-   "label_sha256": "8b324ec5bccc2725752a2f9394241dc35734b570c472a05ad46f35581c85c270",
+   "label_sha256": "e7321c5572303edcf849824629e1e18ef794c49381e77a42fbc391df78408fe2",
    "name": "cghd_d19_C223_D1_P2",
    "sha256": "03b24bc1e041fb0c3064576b99f70dd18ae13735435f9ad8e0c54da81fb7ea09",
    "source": "cghd",
@@ -4134,7 +4148,7 @@
     "JUNCTION": 24,
     "OUTPUT_PORT": 1,
     "RESISTOR": 10,
-    "VDD": 5
+    "VDD": 3
    },
    "dhash": "62add0af5d08d18999549374b6a6ee4c2db9d18db92bd7add268554ad743a957",
    "exif_baked": false,
@@ -4142,9 +4156,10 @@
    "height": 3456,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 2,
     "unmapped": 3
    },
-   "label_sha256": "a0cb84ed59ec63ec9dc14775e95ae2d2a87bda5aed02938652070c04ff35a536",
+   "label_sha256": "b967e3cac63eb09e375b42c5de0e1bba0135108a3db56982d1e581fe38f5fca7",
    "name": "cghd_d19_C226_D1_P1",
    "sha256": "a9f3368ec172e3132abcbfcc6fc52c9cb64bb7cdd249af1f5ecc767da4099086",
    "source": "cghd",
@@ -4160,7 +4175,7 @@
     "JUNCTION": 23,
     "OUTPUT_PORT": 1,
     "RESISTOR": 10,
-    "VDD": 5
+    "VDD": 3
    },
    "dhash": "d9d5525a51b253525176522166086b34cbab179975b2555c5187531a514a63c8",
    "exif_baked": false,
@@ -4168,9 +4183,10 @@
    "height": 3456,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 2,
     "unmapped": 3
    },
-   "label_sha256": "059619f902055a0f130f4fb77bf2d96f562b351e9a83ee972a6deb00db4188cd",
+   "label_sha256": "dc758e06c849b5c339f1acdcdad0507d1186494a5bf502085b1ff53b70edd457",
    "name": "cghd_d19_C226_D1_P2",
    "sha256": "d7be943f8697cb466d6206756be165c6c96b45c28480b75c650652350d431936",
    "source": "cghd",
@@ -4186,7 +4202,7 @@
     "JUNCTION": 23,
     "OUTPUT_PORT": 1,
     "RESISTOR": 10,
-    "VDD": 5
+    "VDD": 3
    },
    "dhash": "b46fa56f956bc55295375351cd1665494d2a493a75536692d59a15565b544a9d",
    "exif_baked": true,
@@ -4194,9 +4210,10 @@
    "height": 2603,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 2,
     "unmapped": 3
    },
-   "label_sha256": "080a341368de235b36511a3e9f9ff601b8fbdb47260b3241c597ecc636178323",
+   "label_sha256": "de7d01e2bf9a4f73b2a3c75eff7cb5b4b565aa25f07569baf6e8a9dc9161c32e",
    "name": "cghd_d19_C226_D1_P3",
    "sha256": "3f0b20120765806b839f402aa86c847b1cb5707d217d86046eec4ae96488ae22",
    "source": "cghd",
@@ -4212,7 +4229,7 @@
     "JUNCTION": 24,
     "OUTPUT_PORT": 1,
     "RESISTOR": 10,
-    "VDD": 5
+    "VDD": 3
    },
    "dhash": "46ad69266d336dbb99296af6a8a6d6ace2b3a89c8ab32d496ba5a9ad356e480a",
    "exif_baked": false,
@@ -4220,9 +4237,10 @@
    "height": 3456,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 2,
     "unmapped": 3
    },
-   "label_sha256": "05a55e8f5e49e8f50dba48180ff70a801e60bae7bc4a8e2d5d25fd70510000ab",
+   "label_sha256": "91132c3977709b2cdddba6fd6927b183f281d3e3b37dcf07fd741f4fd78805e5",
    "name": "cghd_d19_C226_D1_P4",
    "sha256": "a3eb207f24c19b2a2ddf11769c908e4a1aaf1ff016eb79d2916b936a5472c72a",
    "source": "cghd",
@@ -4238,7 +4256,7 @@
     "JUNCTION": 25,
     "OUTPUT_PORT": 1,
     "RESISTOR": 11,
-    "VDD": 5
+    "VDD": 3
    },
    "dhash": "a44e923169b6d9adcaad9badae92c8966d942a986b616a8d2ab4e2d516d7f298",
    "exif_baked": false,
@@ -4246,9 +4264,10 @@
    "height": 3456,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 2,
     "unmapped": 2
    },
-   "label_sha256": "fa19f82277629441dedc164e629e92015cf60be88d55ccb6f22132d688a45de4",
+   "label_sha256": "36d6ba9c51ec14fcc2cd13c3dcb0e408561ae0ab9d4b22cff11a97cdd08b0b50",
    "name": "cghd_d19_C226_D2_P1",
    "sha256": "a1b51810141085a939aa27f69cada8b4d497fc26b79bff8a24fa20bab04ea7f1",
    "source": "cghd",
@@ -4264,7 +4283,7 @@
     "JUNCTION": 25,
     "OUTPUT_PORT": 1,
     "RESISTOR": 11,
-    "VDD": 5
+    "VDD": 2
    },
    "dhash": "bb802bff698bd9a9eaadca8de4adf3a1241f6a8ceae1a8192841694360ec73ed",
    "exif_baked": false,
@@ -4272,9 +4291,10 @@
    "height": 3456,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 3,
     "unmapped": 2
    },
-   "label_sha256": "4c97adf6cf6fc3957f92c045ed2e6119be0bd3cc39e1e681e14a041b180b17a4",
+   "label_sha256": "f735499a5f6ddd38a5c2e675811caec15132d2cc638aa5ab64a5547a45fada1f",
    "name": "cghd_d19_C226_D2_P2",
    "sha256": "98156f6518aef5c8d7388cd3d4304813dbcd4328712fe818260235bef9f1a8e8",
    "source": "cghd",
@@ -4290,7 +4310,7 @@
     "JUNCTION": 25,
     "OUTPUT_PORT": 1,
     "RESISTOR": 11,
-    "VDD": 6
+    "VDD": 4
    },
    "dhash": "b4b6949214929492b412b452b4d2b4da9492d4dab452d66ac66ad76a556ad56a",
    "exif_baked": false,
@@ -4298,9 +4318,10 @@
    "height": 3456,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 2,
     "unmapped": 2
    },
-   "label_sha256": "7846c4640cbb920bff781f01c92ec98509d197bf23ecb6a88c7e9d47062b6b1f",
+   "label_sha256": "df88c660ed2398956ed1303eafebf7fadd0e8de0965748af1cb8cf1704343a6c",
    "name": "cghd_d19_C226_D2_P3",
    "sha256": "e66b405eccac2ec47b2d5265eb421b053fb36f740deb623b3cba63a587cd8519",
    "source": "cghd",
@@ -4316,7 +4337,7 @@
     "JUNCTION": 25,
     "OUTPUT_PORT": 1,
     "RESISTOR": 11,
-    "VDD": 5
+    "VDD": 3
    },
    "dhash": "847e7582a987edb709d5a887e797accd26174837caef6aa7482b6ab3fb030596",
    "exif_baked": false,
@@ -4324,9 +4345,10 @@
    "height": 3456,
    "ignored_counts": {
     "uncertain_fet": 2,
+    "uncertain_supply": 2,
     "unmapped": 2
    },
-   "label_sha256": "516b21bd3241662bf270c45d94d2d13fd595ca47370082ce3c84e2c79d24a7fd",
+   "label_sha256": "5e45413c68c73ebface5d88ccda0a228708b6c36ec7b1b1111d732cea1292d1b",
    "name": "cghd_d19_C226_D2_P4",
    "sha256": "7c830c34e8992792cc5ec3bc0f125d6f33c4d3872a877684f880a0ea83bb5374",
    "source": "cghd",
@@ -6675,21 +6697,22 @@
   },
   {
    "class_counts": {
-    "GND": 7,
+    "GND": 15,
     "JUNCTION": 18,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 12
+    "VDD": 3
    },
    "dhash": "18c8bf15cad5e5d954add54d5a4c52ce496a4cc954e635aab4ae58ac90a4ed57",
    "exif_baked": false,
    "group": "drafter_20",
    "height": 2048,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 11,
     "unmapped": 7
    },
-   "label_sha256": "0bea071bf94ec11a3a8e530fe27bb3642ab35b2f8b11b5dfc208c464579d260a",
+   "label_sha256": "0c32449592e3143679a500284f77d5de16952be65931d3793c77ec1193a1dd0d",
    "name": "cghd_d20_C239_D1_P1",
    "sha256": "c4ace8a4b79dce30b4916195cf195b589abd94ca1c7dc3240d2bee4ee9b6d732",
    "source": "cghd",
@@ -6699,11 +6722,11 @@
   },
   {
    "class_counts": {
-    "GND": 6,
+    "GND": 14,
     "JUNCTION": 18,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 11
+    "VDD": 3
    },
    "dhash": "bb2e20cf4568d5698d5625362526b56536b55269aaabb275c295d2573256e05c",
    "exif_baked": false,
@@ -6713,7 +6736,7 @@
     "uncertain_terminal": 13,
     "unmapped": 7
    },
-   "label_sha256": "9dd95e91156cf1a4dfcc332a36c6f6e6d97f70fdc224d2afcd7bb9bd9308c291",
+   "label_sha256": "cb149987b1c3c669f5a2c46113fec2083fd073e723be36aee4e9c086061c6e77",
    "name": "cghd_d20_C239_D1_P2",
    "sha256": "722b892ae15ba27c39d81a34c45a6841665b01f3110faa6276267a494948192a",
    "source": "cghd",
@@ -6723,11 +6746,11 @@
   },
   {
    "class_counts": {
-    "GND": 6,
+    "GND": 14,
     "JUNCTION": 18,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 11
+    "VDD": 3
    },
    "dhash": "daa49977a60467bf466e8eacaa442926af272d27b6d38b6ab651c2aa52aa349a",
    "exif_baked": false,
@@ -6737,7 +6760,7 @@
     "uncertain_terminal": 13,
     "unmapped": 7
    },
-   "label_sha256": "5c8f5611a5f30417f10ffe92d15d3f398a7b477a14258e153ffefb2fe473c64d",
+   "label_sha256": "824e0f3046e22040281d696ab5932083e5a0d89bdb6aee0b00b9c00dd2a6db62",
    "name": "cghd_d20_C239_D1_P3",
    "sha256": "ed0ab81bc3197efd09535c9f9a88e6ef971f6cd48fbd0d4bb22731e9aa556b25",
    "source": "cghd",
@@ -6747,21 +6770,22 @@
   },
   {
    "class_counts": {
-    "GND": 6,
+    "GND": 11,
     "JUNCTION": 18,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 10
+    "VDD": 3
    },
    "dhash": "219ecd659d66baab5b2b5abb5545d5499ad1432a4f5524b6d52b5262138edb62",
    "exif_baked": true,
    "group": "drafter_20",
    "height": 2048,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 14,
     "unmapped": 7
    },
-   "label_sha256": "5c54257c92011dd587eff62ea431f7f2306fa211f4f7c54dbd5caa4fe9de3818",
+   "label_sha256": "db621c7c854ab4e1113254aa9e93ec5b59c9ec88c88c9900f26986a159483ffd",
    "name": "cghd_d20_C239_D1_P4",
    "sha256": "ef746dc49e7e1b7ae7877b9da7ba887c4c797495bdcce6aa9da375af381fb99b",
    "source": "cghd",
@@ -6771,11 +6795,11 @@
   },
   {
    "class_counts": {
-    "GND": 11,
+    "GND": 16,
     "JUNCTION": 21,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 8
+    "VDD": 3
    },
    "dhash": "52c0b4ad35ad188ab54a8d5a5555919526b262a6ada2a5527463b1ecd54aa911",
    "exif_baked": true,
@@ -6785,7 +6809,7 @@
     "uncertain_terminal": 8,
     "unmapped": 7
    },
-   "label_sha256": "d295461654dad989668803855f81278e1f5679a973f3f8777fa1d63b032623d7",
+   "label_sha256": "921bdb8157e19a7f0b71c8331ab10bc048ac1ccc5d8db67ff1016ce47f14e877",
    "name": "cghd_d20_C239_D2_P1",
    "sha256": "cbc992528064c8fbaba4d530db26702fb3e77a20405b086aa4b22d2e4ccb0e61",
    "source": "cghd",
@@ -6795,11 +6819,11 @@
   },
   {
    "class_counts": {
-    "GND": 8,
+    "GND": 12,
     "JUNCTION": 22,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 6
+    "VDD": 2
    },
    "dhash": "39d1a237f75ab99eaed6ef06fce24d9ae78c779a33103b267a6632cee49feca8",
    "exif_baked": true,
@@ -6809,7 +6833,7 @@
     "uncertain_terminal": 10,
     "unmapped": 7
    },
-   "label_sha256": "a8a910d0a43a11e9d9a333a8487b8bba5fc30a668dbce24644974f60446379ad",
+   "label_sha256": "b019197676f090e85c32b9d0255eb90d1bb9ac946a433b36d7914171ddfdf422",
    "name": "cghd_d20_C239_D2_P2",
    "sha256": "8ee94ff282549e7ce80996e18e75abd2e4ae4261db06ac4e728771d3abada9b8",
    "source": "cghd",
@@ -6819,11 +6843,11 @@
   },
   {
    "class_counts": {
-    "GND": 8,
+    "GND": 12,
     "JUNCTION": 20,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 7
+    "VDD": 3
    },
    "dhash": "e473692b70021bbea72a2d6ed54e9d535457635326522aa215564663019c00f9",
    "exif_baked": true,
@@ -6833,7 +6857,7 @@
     "uncertain_terminal": 10,
     "unmapped": 7
    },
-   "label_sha256": "0a4dbeb82199debb643a3c332cd2f32074745b8a0243fd428a0996e2a4634af0",
+   "label_sha256": "56651601717787e8535eca20c4a8c516066dfa9ae475f846f513814ce245bb8d",
    "name": "cghd_d20_C239_D2_P3",
    "sha256": "a08fcbf8bacfca6bf3b4e2a878b36b16238ca76e97e2075e27cc295da21411b7",
    "source": "cghd",
@@ -6843,11 +6867,11 @@
   },
   {
    "class_counts": {
-    "GND": 8,
+    "GND": 14,
     "JUNCTION": 21,
     "NMOS": 8,
     "RESISTOR": 10,
-    "VDD": 9
+    "VDD": 3
    },
    "dhash": "46a528d0b5691d2475db955d757e610536b2a2b665a674759422000cfbfe8a00",
    "exif_baked": true,
@@ -6857,7 +6881,7 @@
     "uncertain_terminal": 10,
     "unmapped": 7
    },
-   "label_sha256": "a08b0167c30f15adf23017c5dcf456a626c3955dfc628a79f0f81f1310a7047e",
+   "label_sha256": "a01e24df1f4c0c5aa12dab1846a7236b7987cb582de7d0d31f9a3239b5251b5a",
    "name": "cghd_d20_C239_D2_P4",
    "sha256": "2798d2d066eb3ba494ac95dfbdc4ea6d1a9f0744aad1adafe1676b1f42511cdb",
    "source": "cghd",
@@ -7888,18 +7912,18 @@
   {
    "class_counts": {
     "INDUCTOR": 2,
-    "JUNCTION": 19,
-    "VDD": 1
+    "JUNCTION": 19
    },
    "dhash": "37339ab53a9528948ee5aa650e94eae62d32aa5a5ad5ab696a652a726b22aaaa",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 902,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 8,
     "unmapped": 14
    },
-   "label_sha256": "fa8f5e2d7f17c344554a16ab40c7ed48039f8155582a131c7c6ff8dcbe550b58",
+   "label_sha256": "c648a5c60d65043c3f036842ef6c4c7517b2a132a2b9f62efc7dffa424fdd3c5",
    "name": "cghd_d25_C293_D2_P1",
    "sha256": "9d874d6ebfab023ea718d5dd8f3e21d2d63a052c0fee2c438df77d2035646c30",
    "source": "cghd",
@@ -7910,18 +7934,18 @@
   {
    "class_counts": {
     "INDUCTOR": 2,
-    "JUNCTION": 19,
-    "VDD": 1
+    "JUNCTION": 19
    },
    "dhash": "e1cc295b2b42ac5a23ba55326db26562abb3a32a692b3923a59d2da31f1519a8",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 907,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 8,
     "unmapped": 14
    },
-   "label_sha256": "7dd583dc35206b9fa9d579f6745fa1973b5f9e94d05ff7ab2a466b1ba8115e2d",
+   "label_sha256": "c229d71c586def30d7be77d3829141257861055574728e713fbaa28a07370dd5",
    "name": "cghd_d25_C293_D2_P2",
    "sha256": "a0d8f9ecfefc989e0ca60dcad914ae6c21cdb684e23c8014c6d1426d5d173332",
    "source": "cghd",
@@ -7932,18 +7956,18 @@
   {
    "class_counts": {
     "INDUCTOR": 2,
-    "JUNCTION": 19,
-    "VDD": 1
+    "JUNCTION": 19
    },
    "dhash": "33b22b372b33ae1bab5fa74a35abef2dc5ab2caac5afa9c7d58db1bbb59594ab",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 931,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 8,
     "unmapped": 14
    },
-   "label_sha256": "4da79d649f8bae4a529cb0b9ca13441d37ad0b21f7798886a542b3dac76ee520",
+   "label_sha256": "1f2645c39b411b9f698c0a4b3b5579122d0d28b3df1b55f578ee889a5dfa0117",
    "name": "cghd_d25_C293_D2_P3",
    "sha256": "da7549fc5368b39ff355c4886df99e7cb2be38e8a3c81200faefe32a52a187b2",
    "source": "cghd",
@@ -7954,18 +7978,18 @@
   {
    "class_counts": {
     "INDUCTOR": 2,
-    "JUNCTION": 19,
-    "VDD": 1
+    "JUNCTION": 19
    },
    "dhash": "6198259bad9a299e259b34fb2de365632993b4a3a579a2a99d21a4f130ad5b45",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 874,
    "ignored_counts": {
+    "uncertain_supply": 1,
     "uncertain_terminal": 8,
     "unmapped": 14
    },
-   "label_sha256": "c528502246e62cb10be5568dca27e1365ae54fa305d05dc729abc99a385b9fcc",
+   "label_sha256": "49d87fc46445538d0f8d1196bf3d239fa31c9a29967922ea743c3d82b7d44661",
    "name": "cghd_d25_C293_D2_P4",
    "sha256": "cf2d8b796c377812387b08856474cdd57c1ad3955285feee45f0491886967339",
    "source": "cghd",
@@ -7979,18 +8003,18 @@
     "GND": 2,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "e0023036aadb68d88959d935b355955555578d4d9565b525b525b565fd380600",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 794,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "1cc4f7caff9e0a79afe12554076e8582169e84c7abef6ad8d0ad1603bbaf3392",
+   "label_sha256": "c960d9601f25b2186039e3421e0bc3d5d6681219de29ba56737439a5e79e14eb",
    "name": "cghd_d25_C294_D1_P1",
    "sha256": "df29fa1490d002eb7c87bb29159345118a6d71c5fa2a48b62c2b85eb78691337",
    "source": "cghd",
@@ -8004,18 +8028,18 @@
     "GND": 2,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "116d4bf4dd592cd06b55295529554ad55ad746534b532b572955257729572adb",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 799,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "09bc7827dca903ae49514dee8b0f968bf41d8a77a20027c1618de8249230edba",
+   "label_sha256": "c38b8625d7a700827134b4bb5248b8291e6166dd0136bff78d93ffde47a17246",
    "name": "cghd_d25_C294_D1_P2",
    "sha256": "114231403edaebc07e979ad376b6cd5de13d02cfdfc10d62ce686fa62751ff7d",
    "source": "cghd",
@@ -8029,18 +8053,18 @@
     "GND": 2,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "e0f07174aadb68d0c959d935d35495505d568d4c9565b525b525b5657d380200",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 793,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "5a5d67958498967c732a56ec8b1f7baba2cacfd05ed2ac98ef361bbf8ea3203d",
+   "label_sha256": "7e14a6f0627c4d4087dc22816aae95fb7146dda043102ac0ce5284cbfadd7f85",
    "name": "cghd_d25_C294_D1_P3",
    "sha256": "6b15ee509c63aac0fab627e2ce01564d9bb1430d951fed239c08f03541a073c1",
    "source": "cghd",
@@ -8054,18 +8078,18 @@
     "GND": 2,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "13b9668e4d4b6cd06b511b59495549554a5516574b511b552b552d6dad65b958",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 749,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "3f0e69506213a617aebcc49ca8f542fe4e65478b04afbac878844beac02bc465",
+   "label_sha256": "deeae9b4b5c50d146352d7243d8111d5ff13ff3d47e9f3bf438d06f7c0460f3b",
    "name": "cghd_d25_C294_D1_P4",
    "sha256": "7c1ae5478eae516c7b47751264bd3f886c84015cda354dcfa509224edf2f0b63",
    "source": "cghd",
@@ -8078,18 +8102,18 @@
     "CAPACITOR": 3,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "1e012fff916d2ce451b15229d5a96ea1ceaa94aa9cea9462b4eb34fa70a270e5",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 769,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "e475b4811503f368fffab636f89448225cbeac169e2a78db6d417cf1fe9b461b",
+   "label_sha256": "37d9a7b1be467ccdf6a981c2870aa863536bc8c15dc08a7b7653672a7a06d897",
    "name": "cghd_d25_C294_D2_P1",
    "sha256": "355a31cfb2fd8eafb316e010cd63fc508a4a469b794f008d48802a93f8de9f8e",
    "source": "cghd",
@@ -8102,18 +8126,18 @@
     "CAPACITOR": 3,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "1e012fff125b2a551aa752ad912d2ad78695b2952cedb4a5b4a5442e35732532",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 781,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "f046d51961d3f694e998f507a59a98349c049a0810f0e066b68719371b5e87bb",
+   "label_sha256": "159e43d9a2ae6130408a9f7ccb4e4fbb6e163e6cbafd5ab1188b7a5a25aa23ed",
    "name": "cghd_d25_C294_D2_P2",
    "sha256": "b368b91986cabf38b8291cbec7f5d1999c83b840808a1d9beb6f376b37c1a087",
    "source": "cghd",
@@ -8126,18 +8150,18 @@
     "CAPACITOR": 3,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "900067fe52d34a555ad95a9d526556970eb5d2cd36cc44ac55aa732a49d7369e",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 869,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "7c6b2c81ba4a073d26b7059dfd32215fa6182392a6e36533be624cd688460b20",
+   "label_sha256": "b868847bef77105ea7cf43a0e5d2d9a7d3d75577691c622913e7cfb934ac66ab",
    "name": "cghd_d25_C294_D2_P3",
    "sha256": "aae3d0eb4925ad2c203f7d0df33faed0547f581da74cbb663a523017175fa53d",
    "source": "cghd",
@@ -8150,18 +8174,18 @@
     "CAPACITOR": 3,
     "INDUCTOR": 1,
     "JUNCTION": 21,
-    "RESISTOR": 3,
-    "VDD": 2
+    "RESISTOR": 3
    },
    "dhash": "f53853164bcc1a4e746e12a85569cda9aca164a3c4cb6ebb2aa90aa94c811cd1",
    "exif_baked": false,
    "group": "drafter_25",
    "height": 761,
    "ignored_counts": {
+    "uncertain_supply": 2,
     "uncertain_terminal": 2,
     "unmapped": 8
    },
-   "label_sha256": "0b18c1ef4cb8502b7a87dadfdc5ee21a9a632d203dac087ce32e04653812c5c1",
+   "label_sha256": "de2f19f340fc84cc1f6670746a2f43167099261534ccaae7559cb93a47518091",
    "name": "cghd_d25_C294_D2_P4",
    "sha256": "6682c5d681d7befd26f0a826f81525ac342c28fedc5498f6ce72de8df8b16f9c",
    "source": "cghd",
@@ -10321,7 +10345,7 @@
     "BJT_PNP": 0,
     "CAPACITOR": 462,
     "CLOCK": 0,
-    "GND": 503,
+    "GND": 551,
     "INDUCTOR": 24,
     "INPUT_PORT": 52,
     "JUNCTION": 5124,
@@ -10333,7 +10357,7 @@
     "OUTPUT_PORT": 28,
     "PMOS": 78,
     "RESISTOR": 1128,
-    "VDD": 191,
+    "VDD": 140,
     "XNOR": 0,
     "XOR": 1
    },
@@ -10343,7 +10367,7 @@
     "roboflow/fourth_image.jpg",
     "roboflow/sixteen_image.jpg"
    ],
-   "hash": "7be56e5f7edd262e3a3615a961c47a9673e2e7a89af5ed5bdf63b48e12a8d7fa",
+   "hash": "f54365743dac2bc7dcec22e4196a55c68eb85bb0430df8a51bb73506d3601fb7",
    "images": 99,
    "sources": {
     "cghd": 96,
@@ -10369,7 +10393,7 @@
     "OUTPUT_PORT": 45,
     "PMOS": 89,
     "RESISTOR": 904,
-    "VDD": 241,
+    "VDD": 184,
     "XNOR": 0,
     "XOR": 119
    },
@@ -10416,7 +10440,7 @@
     "roboflow/twentysixth_image .jpg",
     "roboflow/twentytwo_image.jpg"
    ],
-   "hash": "807728ed9839ba8868b94a83c432c98d6542353541cf8becf05a388dcc0de900",
+   "hash": "67805bf4217ca3117ce900121587d28baf0287b04420a3d715de6ddbc38c1b43",
    "images": 231,
    "sources": {
     "cghd": 192,
@@ -10442,7 +10466,7 @@
     "OUTPUT_PORT": 12,
     "PMOS": 16,
     "RESISTOR": 600,
-    "VDD": 153,
+    "VDD": 132,
     "XNOR": 0,
     "XOR": 0
    },
@@ -10453,7 +10477,7 @@
     "roboflow/twenth_image.jpg",
     "roboflow/twentythird_iamge.jpg"
    ],
-   "hash": "f815858293fac702f2e2405aff4a667a14db7c34afd349299494ebd41172ba73",
+   "hash": "660e8c65f3814af7f915efed8ac49b93b8d6bb1a70605e648629c7982703ae3d",
    "images": 100,
    "sources": {
     "cghd": 96,
