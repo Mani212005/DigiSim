@@ -48,6 +48,22 @@ Tier B classes are trained after phase 4.
 
 Current phase: `ml/experiments/current_phase.txt`
 
+## Evaluation (harness v2)
+`cd ml && uv run python evaluate.py --weights W.pt --data DATASET/data.yaml --frozen-name NAME` writes one JSON and one Markdown report
+(`ml/experiments/eval/<run>.json|.md`, gitignored) with:
+- **Detection:** per-class and per-domain precision / recall / F1 / accuracy with Wilson 95% CIs, confusion matrix, small-object (junction) recall,
+  at one operating confidence (default 0.35). "accuracy" = TP / GT instances of the class (the phase-gate number). Domains come from the image file
+  name prefix (`syn_` synthetic, `rf_` roboflow_real, `cghd_` cghd_real, `dss_` digisim_screenshot; add more with `--domain-rule PREFIX=name`).
+  Classes with fewer than 30 GT instances are labelled `low n` instead of judged. Models are scored in the dataset's vocabulary: predictions map by
+  class name, then by legacy alias (`ml/classes.yaml`); predictions with no counterpart are counted as `unmapped`.
+- **Legacy block:** the original ultralytics validation numbers (mAP, max-F1 per class, confusion-matrix accuracy); `--reproduce OLD_eval_test.json` checks them.
+- **End-to-end (optional):** `--gt-netlists DIR --pred-netlists DIR` (files `<image stem>.json`, schema in `ml/eval_netlist.py`; T2 emits the ground truth,
+  T8 must emit predictions in it) gives net precision/recall/F1 over pin pairs (MOSFET bulk pins unscored), netlist exact-match rate, and truth-table
+  equivalence of the rebuilt circuit under DigiSim's own `simulate()` (`ml/sim_bridge/truth_table.cjs`; needs `cd frontend && npm install`; `--no-truth-table` skips it).
+- **Frozen sets:** the test split's SHA-256 (images, labels, netlists, class names) must equal the entry in `ml/frozen_sets.json`, otherwise the run exits 3 and writes nothing.
+  Register a new set once with `--freeze --frozen-name NAME --freeze-note "..."`; tooling never overwrites an entry.
+- **Baselines:** `ml/baselines/gate12.json` is the old 12-class model on the gate-era test split (`gate12_test`); compare a new run with `--baseline ml/baselines/gate12.json`.
+
 ## Dataset
 - **Source:** Synthetic screenshots from DigiSim (primary) + hand-drawn images (supplement)
 - **Generation:** `backend/data_gen/screenshot_pipeline.py`
