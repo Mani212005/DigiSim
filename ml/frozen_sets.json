@@ -1,0 +1,24 @@
+{
+  "gate12_test": {
+    "classes": [
+      "AND",
+      "OR",
+      "NOT",
+      "NAND",
+      "NOR",
+      "XOR",
+      "XNOR",
+      "SWITCH",
+      "INPUT",
+      "OUTPUT",
+      "LED",
+      "JUNCTION"
+    ],
+    "images": 78,
+    "labels": 78,
+    "netlists": 0,
+    "note": "Legacy 12-class gate-era test split (75 synthetic + 3 Roboflow real images), copied from the pre-T1 checkout; the split the old weights' reported numbers came from.",
+    "sha256": "c261f9d325c708eceb1d54978d611685ed6be8464b3068926c100208025b83ca",
+    "split": "test"
+  }
+}
