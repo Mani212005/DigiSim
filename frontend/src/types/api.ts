@@ -33,6 +33,26 @@ export type CircuitNodeType =
  */
 export type YoloNodeType = CircuitNodeType | 'junction';
 
+/** One terminal of a detected component (export schema 2): its image point and the net it is wired to. */
+export interface CircuitPin {
+  x: number | null;
+  y: number | null;
+  /** Net id from CircuitExportJSON.nets, or null when the terminal is unwired. */
+  net: string | null;
+}
+
+/** Symbol orientation: mirror (x -> -x) first, then `rotation` degrees clockwise. */
+export interface CircuitOrientation {
+  rotation: 0 | 90 | 180 | 270;
+  mirror: boolean;
+}
+
+/** Seeded standard cell a gate symbol maps to, with detector terminal -> cell pin id. */
+export interface CircuitLibraryCell {
+  id: string;
+  pins: Record<string, string>;
+}
+
 /** One detected component placed on the canvas. */
 export interface CircuitComponent {
   id: string;
@@ -43,6 +63,36 @@ export interface CircuitComponent {
   y: number;
   /** Detector confidence in [0, 1]. */
   confidence: number;
+  /** Schema 2: detector class name (ml/classes.yaml). */
+  class?: string;
+  /** Schema 2: box size and corners in source-image pixels. */
+  width?: number;
+  height?: number;
+  bbox?: [number, number, number, number];
+  /** Schema 2: estimated symbol orientation. */
+  orientation?: CircuitOrientation | null;
+  /** Schema 2: 'keypoints' (detector pin points) or 'geometry' (classical fallback). */
+  pin_source?: 'keypoints' | 'geometry' | null;
+  /** Schema 2: terminal name (handle naming of ml/classes.yaml) -> pin. */
+  pins?: Record<string, CircuitPin>;
+  /** Schema 2: seeded standard cell for gate symbols (null when none exists, e.g. XNOR). */
+  library_cell?: CircuitLibraryCell | null;
+}
+
+/** An undirected electrical net (export schema 2): the "<component id>:<terminal>" pins it joins. */
+export interface CircuitNet {
+  id: string;
+  label: string | null;
+  pins: string[];
+}
+
+/** A net realised as a ReactFlow edge with the app's handle ids (export schema 2). */
+export interface CircuitEdge {
+  id: string;
+  source: string;
+  sourceHandle: string | null;
+  target: string;
+  targetHandle: string | null;
 }
 
 /** One directed wire between two components. */
@@ -71,12 +121,20 @@ export interface DetectGatesResponse {
   predictions?: GateDetection[];
 }
 
-/** Success payload of POST /detect_circuit. */
+/**
+ * Success payload of POST /detect_circuit. Schema 2 (backend/pipeline/circuit_exporter.py) adds nets,
+ * edges and per-component pins; `connections` stays the legacy gate-level list the importer reads today.
+ */
 export interface CircuitExportJSON {
   status: 'ok';
   components: CircuitComponent[];
   connections: CircuitConnection[];
   detections: GateDetection[];
+  schema_version?: number;
+  image?: { width: number; height: number };
+  nets?: CircuitNet[];
+  edges?: CircuitEdge[];
+  warnings?: string[];
 }
 
 /** 503 payload of POST /detect_circuit while weights are missing. */

@@ -14,17 +14,12 @@ Do not stop and report — diagnose, fix, and re-evaluate in the same session un
 | Stage | Input | Method | Output |
 |-------|-------|--------|--------|
 | 1 — Detection | Circuit image | YOLOv8 (transfer learning) | Bounding boxes + class labels |
-| 2 — Wire Extraction | Image | OpenCV only — no neural net | Wire segments as pixel coordinate pairs |
-| 3 — Graph | Detections + wires | NetworkX DiGraph | Directed circuit graph |
+| 2 - Wire Extraction (net tracing) | Image + detections | OpenCV only, no neural net | Components with pins + undirected nets |
+| 3 - Graph | Net trace | NetworkX component/net MultiGraph | Net-based circuit graph |
 | 4 — Export | Graph | JSON serialization | DigiSim-importable JSON |
 
-**Stage 4 output format:**
-```json
-{
-  "components": [{ "id": "gate_0", "type": "AND", "x": 120, "y": 80 }],
-  "connections": [{ "from": "gate_0", "to": "gate_1", "fromPort": "output", "toPort": "input_a" }]
-}
-```
+**Stage 4 output format:** schema 2 (components with pins, undirected `nets`, ReactFlow `edges`, legacy gate-level
+`connections`), documented in the `backend/pipeline/circuit_exporter.py` module docstring.
 
 ## Training Phases (do not advance without hitting threshold)
 

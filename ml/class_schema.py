@@ -170,6 +170,19 @@ def _validate(schema: ClassSchema) -> None:
             raise ValueError(f"legacy_order entry {name} is neither a class nor an alias")
 
 
+def _py_tuple(items: tuple[str, ...]) -> str:
+    """
+    Python source of a tuple of strings, formatted the way ruff format writes it.
+
+    Args:
+        items: Strings.
+    Returns:
+        Source text such as ("a",) or ("a", "b").
+    """
+    quoted = ", ".join(f'"{t}"' for t in items)
+    return f"({quoted},)" if len(items) == 1 else f"({quoted})"
+
+
 def render_backend_map(schema: ClassSchema) -> str:
     """
     Render backend/pipeline/class_map.py (ruff-format clean).
@@ -184,7 +197,8 @@ def render_backend_map(schema: ClassSchema) -> str:
         "Module: class_map.py",
         "Purpose: AUTO-GENERATED from ml/classes.yaml by ml/class_schema.py - do not edit by hand.",
         "         Class vocabulary data for the detector: canonical names by YOLO id, legacy aliases",
-        "         that old weights still predict, and the class-to-frontend-node-type map.",
+        "         that old weights still predict, the class-to-frontend-node-type map and the",
+        "         terminal names of each class (the net tracer's pin vocabulary).",
         "         Regenerate with `cd ml && uv run python class_schema.py generate`.",
         '"""',
         "",
@@ -201,6 +215,11 @@ def render_backend_map(schema: ClassSchema) -> str:
         "# Class name (canonical and legacy) -> ReactFlow node type used by the frontend.",
         "CLASS_TO_NODE_TYPE: dict[str, str] = {",
         *[f'    "{n}": "{t}",' for n, t in schema.node_type_map().items()],
+        "}",
+        "",
+        "# Canonical class name -> terminal names, in the frontend handle naming (t:<name> / s:<name>).",
+        "CLASS_TERMINALS: dict[str, tuple[str, ...]] = {",
+        *[f'    "{c.name}": {_py_tuple(c.terminals)},' for c in schema.classes],
         "}",
         "",
     ]

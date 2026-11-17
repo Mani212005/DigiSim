@@ -1,6 +1,7 @@
 """
 Module: test_eval_netlist.py
-Purpose: Tests for ml/eval_netlist.py - netlist validation, component matching (by bbox and by id),
+Purpose: Tests for ml/eval_netlist.py - netlist validation (nets-of-pins, net objects and the T2
+         generator's pin-map shape), component matching (by bbox and by id),
          pin-pair net precision/recall, exact match, bulk-pin handling, conversion to a DigiSim
          canvas, and truth-table equivalence through DigiSim's real simulator (skipped when node or
          the frontend dependencies are unavailable).
@@ -17,6 +18,7 @@ from eval_netlist import (
     BridgeError,
     NetlistError,
     evaluate_netlists,
+    from_pin_map,
     match_components,
     parse_netlist,
     pin_pairs,
@@ -175,3 +177,27 @@ def test_truth_table_of_ground_truth_nand_is_correct() -> None:
     table = run_truth_tables({"nand": to_digisim(parse_netlist(nand_netlist()))})["nand"]
     assert table["inputs"] == ["A", "B"] and table["outputs"] == ["Y"]
     assert table["rows"] == [[0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 0]]
+
+
+def test_net_objects_are_accepted() -> None:
+    """Nets given as objects with a "pins" list (the exporter's schema 2 form) parse like plain pin lists."""
+    raw = nand_netlist()
+    as_objects = {**raw, "nets": [{"id": f"n{i}", "label": None, "pins": pins} for i, pins in enumerate(raw["nets"])]}
+    assert parse_netlist(as_objects).nets == parse_netlist(raw).nets
+
+
+def test_pin_map_netlist_from_the_generator() -> None:
+    """The T2 generator's netlist.json (components with a terminal -> net-name map) converts to nets of pins."""
+    t2 = {
+        "components": [
+            {"id": "IN_A", "class": "INPUT_PORT", "node_type": "input", "pins": {"out": "A"}},
+            {"id": "M1", "class": "NMOS", "node_type": "nmos", "pins": {"d": "Y", "g": "A", "s": "GND"}},
+            {"id": "GND1", "class": "GND", "node_type": "ground", "pins": {"gnd": "GND"}},
+            {"id": "OUT_Y", "class": "OUTPUT_PORT", "node_type": "output", "pins": {"a": "Y"}},
+        ],
+        "nets": ["A", "GND", "Y"],
+    }
+    assert from_pin_map(t2)["nets"] == [["IN_A:out", "M1:g"], ["GND1:gnd", "M1:s"], ["M1:d", "OUT_Y:a"]]
+    parsed = parse_netlist(t2)
+    assert {c.type for c in parsed.components.values()} == {"input", "nmos", "ground", "output"}
+    assert set(parsed.nets) == {frozenset({"IN_A:out", "M1:g"}), frozenset({"GND1:gnd", "M1:s"}), frozenset({"M1:d", "OUT_Y:a"})}

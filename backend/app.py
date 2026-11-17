@@ -8,6 +8,7 @@ import os
 import tempfile
 from pathlib import Path
 
+import cv2
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -19,7 +20,8 @@ from library import library_bp
 from pipeline.circuit_exporter import CircuitExporter
 from pipeline.detector import GateDetector
 from pipeline.graph_builder import GraphBuilder
-from pipeline.wire_extractor import WireExtractor
+from pipeline.label_attach import rapidocr_recognizer
+from pipeline.net_tracer import NetTracer
 from projects import projects_bp
 from recognition import recognition_bp
 
@@ -116,11 +118,12 @@ def detect_gates() -> tuple:
 @require_auth
 def detect_circuit() -> tuple:
     """
-    Run the full local pipeline: detection → wire extraction → graph → JSON export.
+    Run the full local pipeline: detection → net tracing → net graph → JSON export.
 
     Returns:
-        JSON with 'components' and 'connections' (CircuitExportJSON) on success,
-        503 while model weights are missing, or an 'error' key on failure.
+        JSON in the exporter's schema_version 2 (components with pins, nets, edges, plus the legacy
+        'connections' list CircuitExportJSON reads) on success, 503 while model weights are missing,
+        or an 'error' key on failure.
     Raises:
         400: When no image file is included in the request.
         500: When any pipeline stage fails.
@@ -149,10 +152,11 @@ def detect_circuit() -> tuple:
             temp_path = Path(tmp.name)
 
         detections = detector.detect(temp_path)
-        gate_boxes = [d.box for d in detections if d.class_name != "JUNCTION"]
-        wires = WireExtractor().extract(temp_path, exclude_boxes=gate_boxes)
-        graph = GraphBuilder().build(detections, wires)
-        payload = CircuitExporter().export(graph)
+        image = cv2.imread(str(temp_path))
+        if image is None:
+            return jsonify({"error": "Could not decode the uploaded image"}), 400
+        trace = NetTracer(ocr=rapidocr_recognizer).trace(image, detections)
+        payload = CircuitExporter().export(GraphBuilder().build(trace))
         payload["status"] = "ok"
         payload["detections"] = [
             {
