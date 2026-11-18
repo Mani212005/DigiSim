@@ -20,5 +20,59 @@
     "note": "Legacy 12-class gate-era test split (75 synthetic + 3 Roboflow real images), copied from the pre-T1 checkout; the split the old weights' reported numbers came from.",
     "sha256": "c261f9d325c708eceb1d54978d611685ed6be8464b3068926c100208025b83ca",
     "split": "test"
+  },
+  "real_t4_test": {
+    "classes": [
+      "NMOS",
+      "PMOS",
+      "VDD",
+      "GND",
+      "INPUT_PORT",
+      "OUTPUT_PORT",
+      "JUNCTION",
+      "AND",
+      "OR",
+      "NOT",
+      "NAND",
+      "NOR",
+      "XOR",
+      "XNOR",
+      "RESISTOR",
+      "CAPACITOR",
+      "INDUCTOR",
+      "BJT_NPN",
+      "BJT_PNP",
+      "CLOCK"
+    ],
+    "images": 99,
+    "labels": 99,
+    "netlists": 0,
+    "note": "T4 real held-out test split: CGHD drafter_20 (96 photos) + 3 Roboflow source images, tier A+B labels, uncertain_* ignore regions included in the hash; built by python -m real_data.build convert at data_manifest.json split hash f54365743dac2bc7",
+    "sha256": "863a43e5d84a824839786b17db87f0218e3a6f1259035603c91ed8dae0c21514",
+    "split": "test"
+  },
+  "synth_v2_seed1_n8000_test": {
+    "classes": [
+      "NMOS",
+      "PMOS",
+      "VDD",
+      "GND",
+      "INPUT_PORT",
+      "OUTPUT_PORT",
+      "JUNCTION",
+      "AND",
+      "OR",
+      "NOT",
+      "NAND",
+      "NOR",
+      "XOR",
+      "XNOR"
+    ],
+    "images": 812,
+    "labels": 812,
+    "netlists": 812,
+    "note": "Synthetic held-out test: backend/data_gen/generate_v2.py --count 8000 --seed 1 test split (topology-hash split, about half in held-out render styles), manifest.json sha256 fdecdb6af9d5f49d5905e5f6f11f16a8caa494c66315543dc265cbb3c1257d3c",
+    "sha256": "118ae2c024ffe9f01690abe25119a1bce2f1223177910a5af32d28874fb06ffc",
+    "split": "test"
   }
 }

@@ -18,12 +18,22 @@ from test_eval_frozen import make_dataset
 import evaluate
 from eval_metrics import DetectionAccumulator
 from eval_report import render_markdown
-from evaluate import DatasetInfo, build_class_map, load_dataset_info, main, read_labels, reproduction_check, sibling_dir
+from evaluate import DatasetInfo, build_class_map, evaluate_detection, load_dataset_info, main, read_labels, reproduction_check, sibling_dir
 
 DETECTOR_CALLS: list[Path] = []
 
 
-def stub_detection(info: DatasetInfo, weights: Path, imgsz: int, conf: float, iou: float, small_px: float, device: str, domain_rules: tuple[tuple[str, str], ...]) -> dict:
+def stub_detection(
+    info: DatasetInfo,
+    weights: Path,
+    imgsz: int,
+    conf: float,
+    iou: float,
+    small_px: float,
+    device: str,
+    domain_rules: tuple[tuple[str, str], ...],
+    ignore_reasons: tuple[str, ...] = (),
+) -> dict:
     """
     Stand-in for evaluate_detection: an empty but schema-complete detection block, recording that it ran.
 
@@ -36,6 +46,7 @@ def stub_detection(info: DatasetInfo, weights: Path, imgsz: int, conf: float, io
         small_px: Small-object threshold.
         device: Device (unused).
         domain_rules: Domain rules (unused).
+        ignore_reasons: Ignore-region reasons (unused).
     Returns:
         A detection dict with no ground truth and no predictions.
     """
@@ -231,3 +242,44 @@ def test_labels_and_netlists_dirs_swap_the_last_images_component(tmp_path: Path)
     assert info.netlists_dir == root / "netlists" / "test"
     with pytest.raises(ValueError):
         sibling_dir(Path("/data/test"), "labels")
+
+
+def test_detection_masks_uncertain_ignore_regions_but_scores_unmapped_ones(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    An unmatched prediction inside an `uncertain_*` ignore region is not a false positive; one inside an
+    `unmapped` region (a real object outside the vocabulary) still is.
+    """
+    root = tmp_path / "d"
+    for sub in ("images", "labels", "ignore"):
+        (root / sub / "test").mkdir(parents=True)
+    (root / "images" / "test" / "cghd_0.jpg").write_bytes(b"x")
+    (root / "labels" / "test" / "cghd_0.txt").write_text("0 0.05 0.05 0.1 0.1\n")
+    regions = [{"reason": "uncertain_fet", "xyxy": [40, 40, 60, 60]}, {"reason": "unmapped", "xyxy": [70, 70, 90, 90]}]
+    (root / "ignore" / "test" / "cghd_0.json").write_text(json.dumps(regions))
+    (root / "data.yaml").write_text("path: .\ntest: images/test\nnames: [NMOS, PMOS]\n")
+    preds = np.array([[0, 0.9, 0, 0, 10, 10], [0, 0.8, 42, 42, 58, 58], [1, 0.7, 72, 72, 88, 88]])
+    monkeypatch.setattr(evaluate, "predict_split", lambda *a, **k: ({0: "NMOS", 1: "PMOS"}, {"cghd_0.jpg": (preds, (100, 100))}))
+    info = load_dataset_info(root / "data.yaml", "test")
+    det = evaluate_detection(info, Path("w.pt"), 640, 0.35, 0.5, 24.0, "cpu", ())
+    assert det["ignore_masking"] == {"reasons": list(evaluate.DEFAULT_IGNORE_REASONS), "regions": 1, "dropped_predictions": 1}
+    assert det["per_class"]["NMOS"]["fp"] == 0 and det["per_class"]["PMOS"]["fp"] == 1
+    unmasked = evaluate_detection(info, Path("w.pt"), 640, 0.35, 0.5, 24.0, "cpu", (), ())
+    assert unmasked["per_class"]["NMOS"]["fp"] == 1 and unmasked["ignore_masking"]["dropped_predictions"] == 0
+
+
+def test_detection_splits_held_out_style_images_into_their_own_domain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Images the generate_v2 manifest flags held_out_style are scored under `<domain>_heldout_style`."""
+    root = tmp_path / "d"
+    for sub in ("images", "labels"):
+        (root / sub / "test").mkdir(parents=True)
+    for stem in ("000001", "000002"):
+        (root / "images" / "test" / f"{stem}.jpg").write_bytes(b"x")
+        (root / "labels" / "test" / f"{stem}.txt").write_text("0 0.05 0.05 0.1 0.1\n")
+    samples = [{"files": {"image": {"path": f"images/test/{s}.jpg"}}, "held_out_style": s == "000002"} for s in ("000001", "000002")]
+    (root / "manifest.json").write_text(json.dumps({"samples": samples}))
+    (root / "data.yaml").write_text("path: .\ntest: images/test\nnames: [NMOS, PMOS]\n")
+    hit = np.array([[0, 0.9, 0, 0, 10, 10]])
+    monkeypatch.setattr(evaluate, "predict_split", lambda *a, **k: ({0: "NMOS", 1: "PMOS"}, {f"{s}.jpg": (hit, (100, 100)) for s in ("000001", "000002")}))
+    det = evaluate_detection(load_dataset_info(root / "data.yaml", "test"), Path("w.pt"), 640, 0.35, 0.5, 24.0, "cpu", (("0", "synthetic"),))
+    assert sorted(det["per_domain"]) == ["synthetic", "synthetic_heldout_style"]
+    assert det["per_domain"]["synthetic_heldout_style"]["overall"]["images"] == 1 and det["per_class"]["NMOS"]["tp"] == 2

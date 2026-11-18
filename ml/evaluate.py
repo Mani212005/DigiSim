@@ -42,6 +42,7 @@ from eval_metrics import (
     IOU_MATCH_THRESHOLD,
     DetectionAccumulator,
     domain_for,
+    drop_ignored,
     parse_domain_rule,
 )
 from eval_netlist import evaluate_netlists
@@ -60,6 +61,12 @@ PREDICT_CONF_FLOOR = 0.001
 DEFAULT_OPERATING_CONF = 0.35  # production DETECTION_CONFIDENCE_THRESHOLD (backend/pipeline/detector.py)
 DEFAULT_TOLERANCE = 0.02
 OMP_THREADS = "4"
+# Ignore-region reasons (ml/data_real/yolo/ignore/<split>/<stem>.json, written by real_data.build) masked by default:
+# objects we could not label (undecided polarity, terminal role or supply). Unmapped classes stay scored, so a
+# tier A prediction on, say, an op-amp still counts as a false positive.
+DEFAULT_IGNORE_REASONS = ("uncertain_fet", "uncertain_supply", "uncertain_terminal")
+# Domain suffix for synthetic test images the generator rendered in held-out styles (manifest.json held_out_style).
+HELD_OUT_STYLE_SUFFIX = "_heldout_style"
 EXIT_FROZEN = 3
 EXIT_REPRODUCTION = 4
 
@@ -107,6 +114,24 @@ def load_dataset_info(data: Path, split: str) -> DatasetInfo:
     if not images_dir.is_dir():
         raise FileNotFoundError(f"Split images directory missing: {images_dir}")
     return DatasetInfo(root=root, names=names, images_dir=images_dir, labels_dir=sibling_dir(images_dir, "labels"), netlists_dir=sibling_dir(images_dir, "netlists"))
+
+
+def held_out_style_images(root: Path) -> frozenset[str]:
+    """
+    Image file names the synthetic generator flagged as held-out styles (generate_v2 manifest.json at the dataset root).
+
+    Args:
+        root: Dataset root (holds manifest.json for generate_v2 output).
+    Returns:
+        The flagged image file names; empty when the dataset has no generator manifest.
+    """
+    manifest = root / "manifest.json"
+    if not manifest.is_file():
+        return frozenset()
+    samples = json.loads(manifest.read_text()).get("samples")
+    if not isinstance(samples, list):
+        return frozenset()
+    return frozenset(Path(s["files"]["image"]["path"]).name for s in samples if s.get("held_out_style"))
 
 
 def sibling_dir(images_dir: Path, name: str) -> Path:
@@ -160,6 +185,29 @@ def read_labels(label_file: Path, width: int, height: int) -> np.ndarray:
     return np.asarray(rows, dtype=np.float64).reshape(-1, 5)
 
 
+def read_ignore(ignore_file: Path, reasons: tuple[str, ...]) -> np.ndarray:
+    """
+    Read one image's ignore regions (pixel xyxy) whose reason is in `reasons`.
+
+    Args:
+        ignore_file: JSON list of {"reason", "xyxy", ...} records; may not exist.
+        reasons: Reasons to keep (empty keeps none).
+    Returns:
+        (k, 4) float array of xyxy boxes in pixels (empty when the file is missing or nothing matches).
+    Raises:
+        ValueError: If the file is not a list of records with a 4-number xyxy.
+    """
+    if not reasons or not ignore_file.exists():
+        return np.zeros((0, 4), dtype=np.float64)
+    records = json.loads(ignore_file.read_text())
+    if not isinstance(records, list):
+        raise ValueError(f"{ignore_file}: expected a JSON list")
+    boxes = [r["xyxy"] for r in records if isinstance(r, dict) and r.get("reason") in reasons]
+    if any(len(b) != 4 for b in boxes):
+        raise ValueError(f"{ignore_file}: every xyxy needs 4 numbers")
+    return np.asarray(boxes, dtype=np.float64).reshape(-1, 4)
+
+
 def build_class_map(model_names: dict[int, str], dataset_names: tuple[str, ...], aliases: dict[str, str]) -> list[int]:
     """
     Map each model class id to a dataset class id by name, then by legacy alias.
@@ -185,6 +233,9 @@ def predict_split(weights: Path, image_paths: list[Path], imgsz: int, device: st
     """
     Run the detector once over a list of images at a very low confidence floor.
 
+    Images are predicted one at a time: given a list source, ultralytics decodes every image into memory before
+    the first prediction, which runs out of RAM on a split of several hundred images.
+
     Args:
         weights: Trained .pt weights.
         image_paths: Images to run.
@@ -201,7 +252,8 @@ def predict_split(weights: Path, image_paths: list[Path], imgsz: int, device: st
         raise FileNotFoundError(f"Weights not found: {weights} - train first")
     model = YOLO(str(weights))
     out: dict[str, tuple[np.ndarray, tuple[int, int]]] = {}
-    for path, result in zip(image_paths, model.predict(source=[str(p) for p in image_paths], imgsz=imgsz, conf=PREDICT_CONF_FLOOR, device=device, stream=True, verbose=False), strict=True):
+    for path in image_paths:
+        result = model.predict(source=str(path), imgsz=imgsz, conf=PREDICT_CONF_FLOOR, device=device, verbose=False)[0]
         boxes = result.boxes
         xyxy = boxes.xyxy.cpu().numpy()
         conf = boxes.conf.cpu().numpy()
@@ -220,6 +272,7 @@ def evaluate_detection(
     small_px: float,
     device: str,
     domain_rules: tuple[tuple[str, str], ...],
+    ignore_reasons: tuple[str, ...] = DEFAULT_IGNORE_REASONS,
 ) -> dict[str, Any]:
     """
     Per-class and per-domain detection metrics at one operating confidence.
@@ -232,9 +285,11 @@ def evaluate_detection(
         iou: IoU threshold for prediction-to-GT matching.
         small_px: Longest-side threshold (pixels) for the small-object recall.
         device: Torch device string.
-        domain_rules: (filename prefix, domain) rules.
+        domain_rules: (filename prefix, domain) rules; images flagged held_out_style in the dataset manifest get the
+            domain plus "_heldout_style".
+        ignore_reasons: Ignore-region reasons to mask (read from the split's sibling `ignore` directory when it exists).
     Returns:
-        Dict with overall, per_class, per_domain, confusion_matrix, junction_recall and operating-point settings.
+        Dict with overall, per_class, per_domain, confusion_matrix, junction_recall, ignore-masking counts and operating-point settings.
     Raises:
         FileNotFoundError: If the weights are missing or the split holds no images.
     """
@@ -246,6 +301,11 @@ def evaluate_detection(
     n = len(info.names)
     overall = DetectionAccumulator(n, small_px, iou)
     per_domain: dict[str, DetectionAccumulator] = {}
+    held_out = held_out_style_images(info.root)
+    ignore_dir = sibling_dir(info.images_dir, "ignore")
+    use_ignore = bool(ignore_reasons) and ignore_dir.is_dir()
+    ignore_regions = 0
+    ignored_predictions = 0
     for path in images:
         preds, (height, width) = predictions[path.name]
         preds = preds[preds[:, 1] >= conf] if len(preds) else preds
@@ -253,8 +313,14 @@ def evaluate_detection(
             preds = preds.copy()
             preds[:, 0] = class_map[preds[:, 0].astype(int)]
         gt = read_labels(info.labels_dir / f"{path.stem}.txt", width, height)
+        if use_ignore:
+            ignore = read_ignore(ignore_dir / f"{path.stem}.json", ignore_reasons)
+            ignore_regions += len(ignore)
+            preds, dropped = drop_ignored(gt, preds if len(preds) else np.zeros((0, 6)), ignore, iou)
+            ignored_predictions += dropped
         overall.add_image(gt, preds)
-        per_domain.setdefault(domain_for(path.name, domain_rules), DetectionAccumulator(n, small_px, iou)).add_image(gt, preds)
+        domain = domain_for(path.name, domain_rules) + (HELD_OUT_STYLE_SUFFIX if path.name in held_out else "")
+        per_domain.setdefault(domain, DetectionAccumulator(n, small_px, iou)).add_image(gt, preds)
     per_class = overall.per_class(info.names)
     return {
         "conf": conf,
@@ -266,6 +332,7 @@ def evaluate_detection(
         "per_domain": {d: {"overall": acc.overall(), "per_class": acc.per_class(info.names)} for d, acc in sorted(per_domain.items())},
         "confusion_matrix": overall.confusion(info.names),
         "junction_recall": per_class["JUNCTION"]["recall"] if "JUNCTION" in per_class else None,
+        "ignore_masking": {"reasons": list(ignore_reasons) if use_ignore else [], "regions": ignore_regions, "dropped_predictions": ignored_predictions},
     }
 
 
@@ -428,6 +495,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--iou", type=float, default=IOU_MATCH_THRESHOLD)
     p.add_argument("--small-px", type=float, default=DEFAULT_SMALL_PX, help="GT boxes with longest side <= this are 'small objects'")
     p.add_argument("--device", default="cpu")
+    p.add_argument(
+        "--ignore-reason",
+        action="append",
+        default=None,
+        help=f"ignore-region reason to mask (repeatable; default {', '.join(DEFAULT_IGNORE_REASONS)}; 'none' disables masking)",
+    )
     p.add_argument("--domain-rule", action="append", default=[], metavar="PREFIX=NAME", help="Extra filename-prefix domain rule (repeatable)")
     p.add_argument("--skip-legacy", action="store_true", help="Skip the ultralytics validation block")
     p.add_argument("--gt-netlists", type=Path, help="Directory of ground-truth netlists (<image stem>.json)")
@@ -463,7 +536,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--gt-netlists and --pred-netlists go together")
 
     info = load_dataset_info(args.data, args.split)
-    digest: SplitDigest = hash_split(info.images_dir, info.labels_dir, args.gt_netlists or info.netlists_dir, info.names)
+    digest: SplitDigest = hash_split(info.images_dir, info.labels_dir, args.gt_netlists or info.netlists_dir, info.names, sibling_dir(info.images_dir, "ignore"))
     if not args.freeze and not args.frozen_name:
         args.frozen_name = infer_frozen_name(args.split, info.names, args.registry)
         if args.split == "test" and not args.frozen_name:
@@ -505,7 +578,8 @@ def main(argv: list[str] | None = None) -> int:
         },
     }
     status = 0
-    report["detection"] = evaluate_detection(info, args.weights, args.imgsz, args.conf, args.iou, args.small_px, args.device, rules)
+    reasons = tuple(r for r in (args.ignore_reason or DEFAULT_IGNORE_REASONS) if r != "none")
+    report["detection"] = evaluate_detection(info, args.weights, args.imgsz, args.conf, args.iou, args.small_px, args.device, rules, reasons)
     if not args.skip_legacy:
         report["legacy"] = evaluate(args.weights, args.data, args.split, args.imgsz, args.out_dir / "ultralytics_val", args.device)
         print_report(report["legacy"])

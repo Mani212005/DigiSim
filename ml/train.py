@@ -122,6 +122,7 @@ class TrainConfig:
     project: Path
     name: str
     epochs: int
+    time_hours: float | None
     imgsz: int
     batch: int
     device: DevicePlan
@@ -437,6 +438,7 @@ def resolve_config(args: argparse.Namespace) -> TrainConfig:
         project=resume.parent.parent.parent.parent if resume else args.project,
         name=resume.parent.parent.parent.name if resume else (args.name or f"run_{datetime.now():%Y%m%d_%H%M}"),
         epochs=args.epochs if args.epochs is not None else int(saved.get("epochs") or preset.epochs),
+        time_hours=args.time if args.time is not None else (float(str(saved["time_hours"])) if saved.get("time_hours") else None),
         imgsz=args.imgsz if args.imgsz is not None else int(saved.get("imgsz") or preset.imgsz),
         batch=resolve_batch(args.batch if args.batch is not None else saved_batch, preset.batch_per_device, plan),
         device=plan,
@@ -491,6 +493,7 @@ def describe_plan(cfg: TrainConfig) -> dict[str, object]:
         "batch_per_process": cfg.batch // cfg.device.world_size if cfg.batch > 0 else cfg.batch,
         "workers": cfg.workers,
         "epochs": cfg.epochs,
+        "time_hours": cfg.time_hours,
         "imgsz": cfg.imgsz,
         "lr0": cfg.lr0,
         "patience": cfg.patience,
@@ -628,6 +631,7 @@ def train(cfg: TrainConfig) -> Path:
         "imgsz": cfg.imgsz,
         "batch": cfg.batch,
         "device": cfg.device.spec,
+        **({"time": cfg.time_hours} if cfg.time_hours else {}),
         "workers": cfg.workers,
         "patience": cfg.patience,
         "seed": cfg.seed,
@@ -692,7 +696,17 @@ def train(cfg: TrainConfig) -> Path:
             "test_images": len(split_images(data_cfg, cfg.data, "test")),
             "real_oversample": cfg.real_oversample,
         },
-        "settings": {"model": cfg.model, "epochs": cfg.epochs, "imgsz": cfg.imgsz, "batch": cfg.batch, "device": cfg.device.spec, "workers": cfg.workers, "seed": cfg.seed, "lr0": cfg.lr0},
+        "settings": {
+            "model": cfg.model,
+            "epochs": cfg.epochs,
+            "time_hours": cfg.time_hours,
+            "imgsz": cfg.imgsz,
+            "batch": cfg.batch,
+            "device": cfg.device.spec,
+            "workers": cfg.workers,
+            "seed": cfg.seed,
+            "lr0": cfg.lr0,
+        },
         "environment": environment_info(),
         "train_seconds": round(time.time() - started, 1),
         "weights": str(run_dir / "best.pt"),
@@ -722,6 +736,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", default=None, help="pretrained .pt to start from (stage-b: the stage-A best.pt)")
     p.add_argument("--device", default="auto", help="cpu | auto | 0 | 0,1,2,3 (several indices = DDP)")
     p.add_argument("--epochs", type=int, default=None)
+    p.add_argument("--time", type=float, default=None, help="wall-clock training budget in hours; overrides --epochs (ultralytics fits the epoch count and LR schedule to it)")
     p.add_argument("--imgsz", type=int, default=None)
     p.add_argument("--batch", type=int, default=None, help="TOTAL batch across devices (default: preset per-device batch x GPUs)")
     p.add_argument("--workers", type=int, default=None, help="dataloader workers (default: usable CPU count, max 8)")

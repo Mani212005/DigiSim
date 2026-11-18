@@ -428,6 +428,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
         "batch_total": resolve_batch(args.batch if args.batch is not None else saved_batch, preset.batch_per_device, world),
         "workers": args.workers if args.workers is not None else default_workers(),
         "epochs": args.epochs if args.epochs is not None else int(saved.get("epochs") or preset.epochs),
+        "time_hours": args.time if args.time is not None else (float(saved["time_hours"]) if saved.get("time_hours") else None),
         "imgsz": args.imgsz if args.imgsz is not None else int(saved.get("imgsz") or preset.imgsz),
         "patience": args.patience if args.patience is not None else int(saved.get("patience") or preset.patience),
         "lr0": args.lr0 if args.lr0 is not None else float(saved.get("lr0") or preset.lr0),
@@ -490,6 +491,7 @@ def run(plan: dict[str, Any], install: bool) -> Path:
             warmup_epochs=plan["warmup_epochs"],
             close_mosaic=plan["close_mosaic"],
             plots=plan["plots"],
+            **({"time": plan["time_hours"]} if plan["time_hours"] else {}),
             project=str(out),
             name="train",
             exist_ok=True,
@@ -519,7 +521,7 @@ def run(plan: dict[str, Any], install: bool) -> Path:
         "gate": gate_verdict(per_class),
         "class_names": [best_model.names[i] for i in sorted(best_model.names)],
         "dataset": {"data": plan["data_yaml"], "data_effective": str(data_yaml), **{f"{k}_images": v for k, v in counts.items()}, "real_oversample": plan["real_oversample"]},
-        "settings": {k: plan[k] for k in ("model", "epochs", "imgsz", "device", "workers", "seed", "lr0")} | {"batch": plan["batch_total"]},
+        "settings": {k: plan[k] for k in ("model", "epochs", "time_hours", "imgsz", "device", "workers", "seed", "lr0")} | {"batch": plan["batch_total"]},
         "environment": environment_info(),
         "train_seconds": round(time.time() - started, 1),
         "weights": str(out / "best.pt"),
@@ -547,6 +549,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", default=None, help="pretrained .pt to start from (stage-b: the stage-A best.pt)")
     p.add_argument("--device", default="auto", help="auto (all visible GPUs, else CPU) | cpu | 0 | 0,1,2,3")
     p.add_argument("--epochs", type=int, default=None)
+    p.add_argument("--time", type=float, default=None, help="wall-clock training budget in hours; overrides --epochs (ultralytics fits the epoch count and LR schedule to it)")
     p.add_argument("--imgsz", type=int, default=None)
     p.add_argument("--batch", type=int, default=None, help="TOTAL batch across GPUs (default: per-device preset x GPUs)")
     p.add_argument("--workers", type=int, default=None)

@@ -52,7 +52,7 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def hash_split(images_dir: Path, labels_dir: Path, netlists_dir: Path, class_names: Sequence[str]) -> SplitDigest:
+def hash_split(images_dir: Path, labels_dir: Path, netlists_dir: Path, class_names: Sequence[str], ignore_dir: Path | None = None) -> SplitDigest:
     """
     Deterministic digest of a dataset split, over exactly the directories an evaluation reads.
 
@@ -61,8 +61,10 @@ def hash_split(images_dir: Path, labels_dir: Path, netlists_dir: Path, class_nam
         labels_dir: Directory holding the split's YOLO label files.
         netlists_dir: Directory holding the split's ground-truth netlists (may not exist).
         class_names: Class names in id order (label ids are meaningless without them).
+        ignore_dir: Directory of per-image ignore-region JSON files the evaluation masks with (may be None or
+            missing; a split without one hashes exactly as before ignore regions existed).
     Returns:
-        The SplitDigest. Only *.txt labels, image files and *.json netlists count; caches are ignored.
+        The SplitDigest. Only *.txt labels, image files and *.json netlists / ignore regions count; caches are ignored.
     Raises:
         FileNotFoundError: If the image or label directory does not exist.
     """
@@ -75,13 +77,14 @@ def hash_split(images_dir: Path, labels_dir: Path, netlists_dir: Path, class_nam
         ("images", images_dir, lambda p: p.suffix.lower() in IMAGE_SUFFIXES),
         ("labels", labels_dir, lambda p: p.suffix == ".txt"),
         ("netlists", netlists_dir, lambda p: p.suffix == ".json"),
+        ("ignore", ignore_dir, lambda p: p.suffix == ".json"),
     ):
-        if not folder.is_dir():
+        if folder is None or not folder.is_dir():
             continue
         for path in sorted(folder.iterdir()):
             if path.is_file() and keep(path):
                 entries.append((f"{kind}/{path.name}", file_sha256(path)))
-                counts[kind] += 1
+                counts[kind] = counts.get(kind, 0) + 1
     digest = hashlib.sha256()
     digest.update(("classes\t" + json.dumps(list(class_names)) + "\n").encode())
     for rel, file_hash in sorted(entries):

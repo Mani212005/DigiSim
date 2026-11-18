@@ -103,3 +103,17 @@ def test_hash_follows_the_directories_it_is_given(tmp_path: Path) -> None:
     (other / "pics" / "syn_0.jpg").write_bytes(b"image-bytes")
     (other / "tags" / "syn_0.txt").write_text("0 0.5 0.5 0.1 0.1\n")
     assert hash_split(other / "pics", other / "tags", other / "none", NAMES).sha256 == hash_test_split(root, NAMES).sha256
+
+
+def test_ignore_regions_join_the_hash_only_when_present(tmp_path: Path) -> None:
+    """A split without ignore regions hashes as before; adding or editing an ignore file changes the hash."""
+    root = make_dataset(tmp_path / "d")
+    ignore = root / "ignore" / "test"
+    plain = hash_test_split(root, NAMES).sha256
+    assert hash_split(root / "images" / "test", root / "labels" / "test", root / "netlists" / "test", NAMES, ignore).sha256 == plain
+    ignore.mkdir(parents=True)
+    (ignore / "syn_0.json").write_text('[{"reason": "uncertain_fet", "xyxy": [0, 0, 5, 5]}]')
+    with_ignore = hash_split(root / "images" / "test", root / "labels" / "test", root / "netlists" / "test", NAMES, ignore).sha256
+    assert with_ignore != plain
+    (ignore / "syn_0.json").write_text('[{"reason": "uncertain_fet", "xyxy": [0, 0, 6, 5]}]')
+    assert hash_split(root / "images" / "test", root / "labels" / "test", root / "netlists" / "test", NAMES, ignore).sha256 != with_ignore

@@ -171,6 +171,42 @@ def match_boxes(gt: np.ndarray, pred: np.ndarray, iou_threshold: float = IOU_MAT
     return pairs
 
 
+IGNORE_IOA_THRESHOLD = 0.5
+
+
+def drop_ignored(gt: np.ndarray, pred: np.ndarray, ignore: np.ndarray, iou_threshold: float = IOU_MATCH_THRESHOLD, ioa_threshold: float = IGNORE_IOA_THRESHOLD) -> tuple[np.ndarray, int]:
+    """
+    Remove unmatched predictions that fall inside "don't care" regions (COCO-crowd style masking).
+
+    A prediction is dropped only when it matches no ground-truth box and at least `ioa_threshold` of its
+    area lies inside one ignore box, so a correct detection of an object we could not label (for example a
+    transistor of undecided polarity) is not counted as a false positive, while every real error still counts.
+
+    Args:
+        gt: (n, 5) rows [cls, x1, y1, x2, y2].
+        pred: (m, 6) rows [cls, conf, x1, y1, x2, y2].
+        ignore: (k, 4) xyxy ignore boxes in pixels.
+        iou_threshold: IoU used to decide that a prediction matches a ground-truth box.
+        ioa_threshold: Minimum fraction of the prediction's area inside an ignore box.
+    Returns:
+        (the kept predictions, number of dropped predictions).
+    """
+    if len(pred) == 0 or len(ignore) == 0:
+        return pred, 0
+    matched = {p for _, p in match_boxes(gt, pred, iou_threshold)}
+    boxes = pred[:, 2:6].astype(np.float64)
+    ign = ignore.astype(np.float64)
+    ix1 = np.maximum(boxes[:, None, 0], ign[None, :, 0])
+    iy1 = np.maximum(boxes[:, None, 1], ign[None, :, 1])
+    ix2 = np.minimum(boxes[:, None, 2], ign[None, :, 2])
+    iy2 = np.minimum(boxes[:, None, 3], ign[None, :, 3])
+    inter = np.clip(ix2 - ix1, 0, None) * np.clip(iy2 - iy1, 0, None)
+    area = np.clip((boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1]), 1e-9, None)
+    inside = (inter / area[:, None]).max(axis=1) >= ioa_threshold
+    drop = np.array([inside[i] and i not in matched for i in range(len(pred))], dtype=bool)
+    return pred[~drop], int(drop.sum())
+
+
 @dataclass
 class DetectionAccumulator:
     """Accumulates the confusion matrix and small-object counters over many images."""

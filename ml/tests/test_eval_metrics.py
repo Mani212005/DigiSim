@@ -7,7 +7,7 @@ Purpose: Unit tests for ml/eval_metrics.py - Wilson intervals, IoU matching, the
 import numpy as np
 import pytest
 
-from eval_metrics import DetectionAccumulator, box_iou, domain_for, match_boxes, parse_domain_rule, rate, wilson_interval
+from eval_metrics import DetectionAccumulator, box_iou, domain_for, drop_ignored, match_boxes, parse_domain_rule, rate, wilson_interval
 
 
 def gt_rows(*rows: tuple[int, float, float, float, float]) -> np.ndarray:
@@ -108,3 +108,24 @@ def test_domains() -> None:
     assert parse_domain_rule("cghd_=cghd_real") == ("cghd_", "cghd_real")
     with pytest.raises(ValueError):
         parse_domain_rule("nonsense")
+
+
+def test_drop_ignored_masks_only_unmatched_predictions_inside_ignore_boxes() -> None:
+    """
+    A prediction inside an ignore box is dropped unless it matches ground truth; predictions elsewhere are kept.
+    """
+    gt = np.array([[0, 0, 0, 10, 10]], dtype=float)
+    pred = np.array(
+        [
+            [0, 0.9, 0, 0, 10, 10],  # matches GT (also inside the ignore box): kept
+            [1, 0.8, 52, 52, 58, 58],  # unmatched, fully inside the ignore box: dropped
+            [1, 0.7, 80, 80, 90, 90],  # unmatched, outside: kept (a real false positive)
+            [1, 0.6, 50, 50, 70, 70],  # unmatched, only 25% inside: kept
+        ]
+    )
+    ignore = np.array([[0, 0, 60, 60]], dtype=float)
+    kept, dropped = drop_ignored(gt, pred, ignore)
+    assert dropped == 1
+    assert kept[:, 1].tolist() == [0.9, 0.7, 0.6]
+    same, none = drop_ignored(gt, pred, np.zeros((0, 4)))
+    assert none == 0 and len(same) == len(pred)
