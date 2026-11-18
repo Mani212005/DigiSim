@@ -62,6 +62,14 @@ class Preset:
     plots: bool
 
 
+# Augmentation profiles (ultralytics train hyperparameters on top of its defaults). "strong" targets real hand-drawn
+# photos: lighting/paper colour (hsv), small rotation, shear and perspective of a hand-held camera, wider scale range
+# for small junctions, and light mixup. Keep this table equal to ml/train.py (tests assert it).
+AUGMENT_PROFILES: dict[str, dict[str, float]] = {
+    "default": {},
+    "strong": {"hsv_s": 0.6, "hsv_v": 0.5, "degrees": 5.0, "translate": 0.15, "scale": 0.6, "shear": 2.0, "perspective": 0.0005, "mixup": 0.1},
+}
+
 PRESETS: dict[str, Preset] = {
     "smoke": Preset("smoke", "yolov8n.pt", 320, 2, 8, 2, 0.01, 0.01, 0.0, 0, 1, False),
     "stage-a": Preset("stage-a", "yolov8s.pt", 960, 100, 16, 20, 0.01, 0.01, 3.0, 10, 1, True),
@@ -436,6 +444,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
         "warmup_epochs": preset.warmup_epochs,
         "close_mosaic": preset.close_mosaic,
         "plots": preset.plots if args.plots is None else args.plots,
+        "augment": args.augment or str(saved.get("augment") or "default"),
         "seed": args.seed if args.seed is not None else int(saved.get("seed") or SEED),
         "real_train": [str(p) for p in real_train],
         "real_oversample": oversample,
@@ -491,6 +500,7 @@ def run(plan: dict[str, Any], install: bool) -> Path:
             warmup_epochs=plan["warmup_epochs"],
             close_mosaic=plan["close_mosaic"],
             plots=plan["plots"],
+            **AUGMENT_PROFILES[plan["augment"]],
             **({"time": plan["time_hours"]} if plan["time_hours"] else {}),
             project=str(out),
             name="train",
@@ -521,7 +531,7 @@ def run(plan: dict[str, Any], install: bool) -> Path:
         "gate": gate_verdict(per_class),
         "class_names": [best_model.names[i] for i in sorted(best_model.names)],
         "dataset": {"data": plan["data_yaml"], "data_effective": str(data_yaml), **{f"{k}_images": v for k, v in counts.items()}, "real_oversample": plan["real_oversample"]},
-        "settings": {k: plan[k] for k in ("model", "epochs", "time_hours", "imgsz", "device", "workers", "seed", "lr0")} | {"batch": plan["batch_total"]},
+        "settings": {k: plan[k] for k in ("model", "epochs", "time_hours", "imgsz", "device", "workers", "seed", "lr0", "patience", "augment")} | {"batch": plan["batch_total"]},
         "environment": environment_info(),
         "train_seconds": round(time.time() - started, 1),
         "weights": str(out / "best.pt"),
@@ -557,6 +567,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--lr0", type=float, default=None)
     p.add_argument("--seed", type=int, default=None, help=f"default {SEED} (or the resumed run's seed)")
     p.add_argument("--plots", action=argparse.BooleanOptionalAction, default=None)
+    p.add_argument("--augment", choices=sorted(AUGMENT_PROFILES), default=None, help="augmentation profile (default: default; strong: real-photo augmentation, see AUGMENT_PROFILES)")
     p.add_argument("--real-train", action="append", default=[], help="real training image folder/list, relative to the dataset folder (repeatable)")
     p.add_argument("--real-oversample", type=int, default=None, help="times each real image repeats per epoch (stage-b default 4)")
     p.add_argument("--resume", type=Path, default=None, help="run dir, train dir or last.pt of an interrupted run; reuses its saved config.yaml and folder")

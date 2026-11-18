@@ -80,3 +80,34 @@ def test_build_writes_stage_layouts(tmp_path: Path) -> None:
     assert (out / "train_kaggle.py").is_file() and t7_session.find_dataset(tmp_path) == out
     with pytest.raises(FileExistsError):
         build_dataset.build(synth, real, out, 40, 5)
+
+
+def test_retrain_yaml_boosts_gates_and_validates_on_real_only(tmp_path: Path) -> None:
+    """
+    The retrain dataset keeps every gate image, adds the transistor images richest in VDD/GND/INPUT_PORT, validates on
+    real images only, and is accepted by the Kaggle trainer's data preparation with real oversampling.
+    """
+    dataset = tmp_path / "ds"
+    names = ["NMOS", "PMOS", "VDD", "GND", "INPUT_PORT", "OUTPUT_PORT", "JUNCTION", "AND", "OR", "NOT", "NAND", "NOR", "XOR", "XNOR"]
+    labels = {"g1": "7 0.5 0.5 0.1 0.1\n", "t_rich": "2 0.1 0.1 0.1 0.1\n3 0.2 0.2 0.1 0.1\n4 0.3 0.3 0.1 0.1\n", "t_poor": "0 0.5 0.5 0.1 0.1\n2 0.1 0.1 0.1 0.1\n", "t_none": "0 0.5 0.5 0.1 0.1\n"}
+    for sub in ("images", "labels"):
+        (dataset / "synth" / sub / "train").mkdir(parents=True)
+    for stem, text in labels.items():
+        (dataset / "synth" / "labels" / "train" / f"{stem}.txt").write_text(text)
+        (dataset / "synth" / "images" / "train" / f"{stem}.jpg").write_bytes(b"x")
+    for split in ("train", "valid", "test"):
+        (dataset / "real" / "images" / split).mkdir(parents=True)
+        (dataset / "real" / "images" / split / f"cghd_{split}.jpg").write_bytes(b"x")
+    (dataset / "stage_b.yaml").write_text(yaml.safe_dump({"train": "x", "val": "y", "names": names}))
+    out = t7_session.write_retrain_yaml(dataset, tmp_path / "work", transistor_images=2)
+    cfg = yaml.safe_load(out.read_text())
+    assert [Path(p).stem for p in Path(cfg["train"]).read_text().split()] == ["g1", "t_rich", "t_poor"]
+    assert cfg["val"] == str((dataset / "real" / "images" / "valid").resolve()) and cfg["names"] == names
+    train_kaggle = load("train_kaggle")
+    mixed, counts = train_kaggle.prepare_data_yaml(out, tmp_path / "run", [dataset / "real" / "images" / "train"], 8)
+    assert counts == {"train": 3 + 8, "val": 1, "test": 1} and yaml.safe_load(mixed.read_text())["val"] == cfg["val"]
+    (tmp_path / "input" / "prev" / "stage_a").mkdir(parents=True)
+    (tmp_path / "input" / "prev" / "stage_a" / "best.pt").write_bytes(b"pt")
+    assert t7_session.find_stage_a_weights(tmp_path / "input") == tmp_path / "input" / "prev" / "stage_a" / "best.pt"
+    with pytest.raises(FileNotFoundError):
+        t7_session.find_stage_a_weights(tmp_path / "work")
