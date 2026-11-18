@@ -220,13 +220,15 @@ The kernel ran `ml/kaggle/t7_session.py` (ultralytics 8.4.215, torch 2.11 cu130)
 
 ### T7 retrain cycle (2026-11-18): gates still NOT met
 
-One retrain cycle aimed at the causes above, all without touching the test sets: `DIGISIM_MODE=retrain` in `ml/kaggle/t7_session.py`
+One retrain cycle aimed at the causes above: `DIGISIM_MODE=retrain` in `ml/kaggle/t7_session.py`
 ([digisim-t7-retrain](https://www.kaggle.com/code/manijos/digisim-t7-retrain), private, Kaggle 2x T4).
 It starts from the Run A stage A `best.pt` and changes four things at once:
 - **Selection on real images only.** Validation is the 100 drafter-16 images, and early stopping is off (patience 1000).
 - **More real data.** The real training images are oversampled x8.
 - **Stronger augmentation** (`--augment strong`).
 - **Targeted synthetic boost.** Training uses 3370 synthetic images: all 1870 with a gate, plus the 1500 gate-free images richest in VDD, GND and INPUT_PORT.
+
+The boosted class targets (VDD, GND, INPUT_PORT, gates) came from Run A's test-set misses, as directed by main. Checkpoint selection used only the real validation set (drafter 16). The retrain numbers below are therefore slightly optimistic for the boosted classes.
 
 Training ran at imgsz 1280 for 1.45 h, 29 epochs. The best real-validation epoch was 26.
 
