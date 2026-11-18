@@ -83,15 +83,22 @@ Current phase: `ml/experiments/current_phase.txt`
 - **Detection:** per-class and per-domain precision / recall / F1 / accuracy with Wilson 95% CIs, confusion matrix, small-object (junction) recall,
   at one operating confidence (default 0.35). "accuracy" = TP / GT instances of the class (the phase-gate number). Domains come from the image file
   name prefix (`syn_` synthetic, `rf_` roboflow_real, `cghd_` cghd_real, `dss_` digisim_screenshot; add more with `--domain-rule PREFIX=name`).
+  When the dataset root has a `generate_v2` `manifest.json`, test images flagged `held_out_style` are reported as their own domain
+  `<domain>_heldout_style` (for the synthetic test add `--domain-rule 0=synthetic`, since generator file names have no prefix).
   Classes with fewer than 30 GT instances are labelled `low n` instead of judged. Models are scored in the dataset's vocabulary: predictions map by
   class name, then by legacy alias (`ml/classes.yaml`); predictions with no counterpart are counted as `unmapped`.
+- **Ignore regions:** when the split has a sibling `ignore/` folder (T4 real data), an unmatched prediction with at least half its area inside an
+  `uncertain_fet`, `uncertain_supply` or `uncertain_terminal` box is not counted as a false positive (objects T4 could not label);
+  `unmapped` regions stay scored. `--ignore-reason none` disables it; the report states how many predictions were masked.
 - **Legacy block:** the original ultralytics validation numbers (mAP, max-F1 per class, confusion-matrix accuracy); `--reproduce OLD_eval_test.json` checks them.
 - **End-to-end (optional):** `--gt-netlists DIR --pred-netlists DIR` (files `<image stem>.json`, schema in `ml/eval_netlist.py`; the T2 generator's
   pin-map netlists are read as ground truth directly, and the stage 4 exporter output is a valid prediction) gives net precision/recall/F1 over pin pairs (MOSFET bulk pins unscored), netlist exact-match rate, and truth-table
   equivalence of the rebuilt circuit under DigiSim's own `simulate()` (`ml/sim_bridge/truth_table.cjs`; needs `cd frontend && npm install`; `--no-truth-table` skips it).
-- **Frozen sets:** the SHA-256 of the split's images and labels directories as resolved from `data.yaml`, its netlists directory (`--gt-netlists` when given) and class names must equal the entry in `ml/frozen_sets.json`, otherwise the run exits 3 and writes nothing.
+- **Frozen sets:** the SHA-256 of the split's images and labels directories as resolved from `data.yaml`, its netlists directory (`--gt-netlists` when given), its `ignore/` regions (when present) and class names must equal the entry in `ml/frozen_sets.json`, otherwise the run exits 3 and writes nothing.
   Register a new set once with `--freeze --frozen-name NAME --freeze-note "..."`; tooling never overwrites an entry. `--freeze` exists because the hash check needs a
   recorded hash to compare against, and every later dataset task (T4 onwards) registers its frozen entry this way. A split with no registered set runs unchecked and the report says "(not frozen - unverified)".
+  Registered: `gate12_test`, `real_t4_test` (T4 real test: CGHD drafter 20 + 3 Roboflow images, `ml/data_real/yolo`), `synth_v2_seed1_n8000_test`
+  (`generate_v2.py --count 8000 --seed 1` test split).
 - **Baselines:** `ml/baselines/gate12.json` is the old 12-class model on the gate-era test split (`gate12_test`); compare a new run with `--baseline ml/baselines/gate12.json`.
 
 ## Dataset
@@ -100,8 +107,8 @@ Current phase: `ml/experiments/current_phase.txt`
   topology-hash splits, held-out test styles; see `docs/synth_v2/README.md`); legacy gate-era `backend/data_gen/screenshot_pipeline.py`
 - **Augmentation:** `backend/data_gen/augmentation.py`
 - **Minimum size:** Phase 1 → 500 images. Phase 2+ → 2000 images
-- **Format:** YOLO `.txt` per image — `<class_id> <x_center> <y_center> <width> <height>` (normalized)
-- **Class balance:** no class under 10% — check before every training run
+- **Format:** YOLO `.txt` per image - `<class_id> <x_center> <y_center> <width> <height>` (normalized)
+- **Class balance:** no class under 10% - check before every training run
 
 ### Real data and the frozen eval set (`ml/real_data/`)
 Fetched and converted data live in `ml/data_real/` (gitignored); committed: scripts, `ml/data_manifest.json` (SHA-256 of every
@@ -118,10 +125,98 @@ labels in `ml/real_data/labels/`.
 ## Training Harness
 `ml/train.py` runs on CPU, one GPU or DDP with the same command (`--device cpu | auto | 0 | 0,1,2,3`); `--workers` defaults to the usable CPU count (max 8) and `--batch` is the total across GPUs (default: 16 per device).
 Presets: `smoke` (2 epochs, yolov8n, imgsz 320), `stage-a` (synthetic pretrain, yolov8s, imgsz 960, 100 epochs), `stage-b` (mixed fine-tune from the stage-A `best.pt` via `--model`, real images repeated `--real-oversample` times through `--real-train DIR`, lr0 0.002).
+`--time HOURS` (both trainers) replaces the epoch count with a wall-clock budget; ultralytics fits the epochs and LR schedule to it.
 Always pretrained weights; `--resume RUN_DIR` continues an interrupted run (it keeps the run's base model, total batch and rebuilt mixed/oversampled dataset, and `metrics.json` records `resumed_from`); `--dry-run` prints the resolved plan (device layout, batch per process, dataset counts, class-vocabulary check against `ml/classes.yaml`) without importing torch.
 Each run folder (`ml/experiments/run_*`, gitignored) holds `config.yaml`, `notes.md`, `best.pt`, `best.onnx` and `metrics.json` (per-class P/R/F1/AP/accuracy, the F1/accuracy gate verdict, environment, dataset counts and the effective `data_effective` yaml).
 `ml/kaggle/train_kaggle.py` is the self-contained Kaggle twin (installs ultralytics, finds `data.yaml` under `/kaggle/input`, writes the same artifacts to `/kaggle/working/digisim_run`); `ml/tests/test_train_harness.py` keeps its preset table equal to `train.py`.
+`ml/kaggle/build_dataset.py --synth DIR --out OUT` assembles the stage-A/B dataset folder (synthetic + real tier A labels, real images downsized, `uncertain_*` regions painted out of real train/valid, `stage_a.yaml`, `stage_b.yaml`, the trainer and `t7_session.py`); upload it as one private Kaggle dataset and run `t7_session.py` (stage A then stage B, each time-budgeted) as the kernel.
 `ml/make_smoke_dataset.py` writes a throwaway procedural dataset for harness checks (not training data). Harness tests: `cd ml && uv run pytest` (add `DIGISIM_ML_SMOKE=1` for the 2-epoch CPU run).
+
+## T7 Results (2026-11-18): phase 2 gate NOT met
+
+Tier A detector trained transistor-first: stage A on synthetic data only, stage B mixed with the T4 real data.
+**The synthetic gate is missed on two classes (VDD, XOR), and every real-data gate is missed.** Phase 2 is not reached;
+`ml/experiments/current_phase.txt` is unchanged. All numbers come from the T6 harness (`evaluate.py`, conf 0.35, IoU 0.5, Wilson 95% CIs)
+on the frozen sets `synth_v2_seed1_n8000_test` and `real_t4_test` (hash-verified, never used for tuning or model selection).
+
+**Synthetic held-out-style test** (`synthetic_heldout_style` domain: 391 of the 812 test images, styles never seen in training).
+The cells show F1 / accuracy; the gate is F1 >= 0.95 and accuracy >= 0.95.
+
+| run | NMOS | PMOS | VDD | GND | IN | OUT | JUNC | AND | OR | NOT | NAND | NOR | XOR | XNOR | failing |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| GPU stage A (synthetic only) | .976/.996 | .979/.969 | **.770/.653** | .998/.998 | .998/.998 | .997/1.0 | .976/.999 | .983/.967 | .982/1.0 | .987/.974 | .967/1.0 | .990/1.0 | **.941/.923** | .964/.985 | VDD, XOR |
+| GPU stage B (mixed) | .972/.996 | .975/.966 | **.734/.669** | .992/1.0 | 1.0/1.0 | 1.0/1.0 | .971/.999 | .984/.984 | .991/1.0 | 1.0/1.0 | .989/1.0 | .981/1.0 | .961/**.942** | .964/.971 | VDD, XOR |
+| CPU nano stage A | .878/.954 | .871/.854 | .395/.257 | .941/.930 | .913/.868 | .718/.604 | .937/.994 | .816/.836 | .769/.818 | .920/.885 | .748/.909 | .817/.922 | .684/.769 | .818/.794 | 13 of 14 |
+
+On the seen-style half of the test split, both GPU models reach F1 >= 0.98 and accuracy >= 0.98 for every class.
+
+**Real held-out test** (`real_t4_test`: 99 images, CGHD drafter 20 plus 3 Roboflow images). The cells show F1 [95% CI]; the gate is F1 >= 0.85 for classes with >= 30 test instances, and JUNCTION recall >= 0.90.
+The table covers tier A only; the harness `overall` row also counts the 1614 tier B objects (resistors, capacitors, inductors) as misses.
+
+| class (test n) | GPU stage A (synthetic only) | GPU stage B (mixed) | CPU nano stage A |
+|---|---|---|---|
+| NMOS (116) | 0.000 | 0.601 [0.53, 0.67] | 0.009 |
+| PMOS (78) | 0.000 | 0.564 [0.47, 0.65] | 0.009 |
+| VDD (140) | 0.000 | 0.215 [0.17, 0.28] | 0.012 |
+| GND (551) | 0.119 | 0.630 [0.60, 0.66] | 0.114 |
+| INPUT_PORT (52) | 0.000 | 0.147 [0.08, 0.25] | 0.000 |
+| JUNCTION (5124) | 0.187 | 0.758 [0.75, 0.77] | 0.347 |
+| AND (101) | 0.188 | 0.507 [0.43, 0.59] | 0.113 |
+| OR (35) | 0.301 | 0.436 [0.31, 0.57] | 0.186 |
+| **JUNCTION recall** | 0.154 [0.14, 0.16] | **0.729 [0.72, 0.74]** | 0.260 [0.25, 0.27] |
+| tier A micro P / R / F1 | 0.190 / 0.143 / 0.163 | 0.786 / 0.668 / 0.722 | 0.354 / 0.225 / 0.275 |
+
+Too few real test instances to judge (reported, not gated; the synthetic score is the only evidence for these classes):
+OUTPUT_PORT 28, NOT 10, NAND 1, NOR 1, XOR 1, XNOR 0.
+The ignore regions masked 92 unmatched stage-B predictions (690 `uncertain_*` regions); `unmapped` regions stayed scored.
+
+**Synthetic-only vs mixed ablation.** On real images, stage A to stage B raises tier A F1 from 0.16 to 0.72 and JUNCTION recall from 0.15 to 0.73.
+On the synthetic held-out styles it costs almost nothing (micro F1 0.973 vs 0.968). Synthetic data alone does not transfer to hand-drawn photos.
+Each real class gains 0.3 to 0.6 F1, but none comes near 0.85.
+
+**Run configuration.**
+
+| run | where | model | data | imgsz | budget | result |
+|---|---|---|---|---|---|---|
+| GPU stage A | Kaggle 2x T4 DDP, [digisim-t7-run-a](https://www.kaggle.com/code/manijos/digisim-t7-run-a) (private) | yolov8s from COCO | 6354 synthetic train / 834 valid | 960 | `--time 2.8` | 97 epochs, 2.9 h, batch 32, SGD lr0 0.01 |
+| GPU stage B | same session | stage A `best.pt` | 2500 synthetic + 231 real x4 = 3424 train; valid 834 synthetic + 100 real | 960 | `--time 1.8` | early-stopped at epoch 33 (patience 15), best epoch 18, 0.6 h |
+| CPU nano stage A | local CPU, 4 threads | yolov8n warm-started from the old 12-class gate weights | 6354 synthetic | 640 | `--time 2.5` | 5 epochs, 2.1 h (CPU fallback only, not a candidate) |
+
+Data: `generate_v2.py --count 8000 --seed 1`, plus T4 real data (CGHD drafters 19 and 25 for train, 16 for valid, 20 for test, and Roboflow).
+Both were assembled by `ml/kaggle/build_dataset.py`: tier A labels only, real images capped at 1920 px, `uncertain_*` regions painted out of real train/valid.
+The kernel ran `ml/kaggle/t7_session.py` (ultralytics 8.4.215, torch 2.11 cu130). Local evaluation used ultralytics 8.4.86 and torch 2.12.1 on CPU.
+
+**Artifacts** (outside git, under `/home/mani/linux-fleet-home/data/digisim-t7-train/`; weights are never committed). sha256 values:
+
+| file | sha256 |
+|---|---|
+| `kaggle_out/run_a/stage_a/best.pt` | `6cee6e0c3871a51f1163138838eb4b42cdcb574694256e4c5bcd803688a909d2` |
+| `kaggle_out/run_a/stage_b/best.pt` | `79b3690b78b57112e694fab09bcfdaf817c5e6edb392d518f97ee72da10154b9` |
+| `kaggle_out/run_a/stage_b/best.onnx` | `d8a48245ad3d71c66e149e3e9bf5529267ece82e0a4dda376d902630012ea43d` |
+| `ml/experiments/t7_cpu_nano_stage_a/best.pt` | `402b29dd0fb6dff31450c66b83fd039cfb607046f89c2e424039514a6e5271c5` |
+| trainer `metrics.json` stage A / B / nano | `635f36bd...f414` / `9a1c8857...828a` / `6698b8f1...d508` |
+| `eval/gpu_stage_b_real.json` / `eval/gpu_stage_b_synth.json` | `7a2ba5c18cb3a243...3e4d` / `8a3c83bca38dff69...0657` |
+| `eval/gpu_stage_a_real.json` / `eval/gpu_stage_a_synth.json` | `549a0427e3588ed4...aced` / `adbe1447eaef13ea...4036` |
+| `eval/cpu_nano_a_real.json` / `eval/cpu_nano_a_synth.json` | `4108fe933e5c94be...2d2f` / `1332af23391fe718...9cf1` |
+
+**Why the gates are missed, and what data would fix it.** The architecture is not the bottleneck: the same model reaches about 0.99 on seen synthetic styles.
+- **Real data volume and drafter diversity.** Training saw 231 real images from 2 drafters, and the test set is a third drafter. Recall is the failure mode: precision is 0.79 to 0.92 for NMOS, PMOS, GND and JUNCTION, but recall is 0.42 to 0.73.
+  Fix: label tier A on more CGHD drafters. The T4 pilot used only 4 (`CGHD_PILOT_SPLITS` in `ml/real_data/config.py`). Target at least 1000 real training images from at least 10 drafters, keeping the drafter split; adding drafters to the test split creates a new frozen set.
+  VDD (F1 0.22) and INPUT_PORT (0.15) are the worst, although train has 184 VDD and 207 INPUT_PORT instances. My best read is drafter style: each drafter draws supplies and terminals their own way, so 2 training drafters do not cover drafter 20.
+  In addition, 907 `uncertain_terminal` regions were painted out of the real train images. Resolving those labels (`ml/real_data/labels/`) turns them into positives instead of erased marks.
+- **Model selection on the wrong signal.** Stage B early-stopped, and picked `best.pt`, on a validation set that is 90% synthetic (834 of 934 images).
+  Synthetic fitness was saturated, so selection was close to noise for real-image quality (best epoch 18; stopped at epoch 33, about 1.2 h before the 1.8 h budget ran out).
+  Fix (data/config, not architecture): validate stage B on real images only (drafter 16), or weight real images in the fitness.
+  Disable early stopping for the short fine-tune. This needs no new data and is the cheapest next run. It changes selection only, so the real test set stays untouched.
+- **Small junctions.** CGHD junctions are about 1% of the image width (about 10 px at 960). Small-object recall is 0.65. Fix: train and evaluate real images at 1280, or tile them.
+  This sits ahead of more data for JUNCTION recall.
+- **Synthetic VDD and XOR on held-out styles.** The held-out styles include a `circle` VDD symbol and `sketch` strokes that training never shows, by design. The two misses mean the model learned the specific VDD glyphs, not the concept.
+  Fix: more VDD symbol variants and line styles in the generator's training styles (keep the held-out ones held out). For XOR, more sketch-like double-curve gates.
+
+**Follow-ups (not done here).**
+- `optimizer=auto` in ultralytics ignores `lr0`: stage A ran SGD at 0.01, and stage B AdamW at an auto-computed learning rate. Pin `optimizer` in the presets.
+- The `generate_v2` manifest hash for seed 1 / 8000 differs from the one in `docs/synth_v2/README.md`. Re-check generator determinism across environments.
+- T10 needs a weights distribution path. The stage B weights (`79b3690b...`) are the best tier A model so far, but they do not pass the gate.
 
 ## Key Principle
 Dataset quality > annotation correctness > pipeline correctness > model architecture.

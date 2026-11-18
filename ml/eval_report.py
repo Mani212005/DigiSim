@@ -192,6 +192,21 @@ def _e2e_rows(label: str, rec: JsonDict) -> list[str]:
     ]
 
 
+def _ignore_lines(masking: JsonDict | None) -> list[str]:
+    """
+    One Markdown line describing ignore-region masking, or nothing when no regions were used.
+
+    Args:
+        masking: The detection block's ignore_masking record (reasons, regions, dropped_predictions), or None.
+    Returns:
+        Zero or one lines.
+    """
+    if not masking or not masking.get("reasons"):
+        return []
+    reasons = ", ".join(masking["reasons"])
+    return [f"Ignore regions ({reasons}): {masking['regions']} regions, {masking['dropped_predictions']} unmatched predictions inside them not counted."]
+
+
 def render_markdown(report: JsonDict, baseline: JsonDict | None = None) -> str:
     """
     Render a whole evaluation report as Markdown.
@@ -235,6 +250,7 @@ def render_markdown(report: JsonDict, baseline: JsonDict | None = None) -> str:
         lines += [
             "",
             f"Operating point: conf >= {det['conf']}, IoU >= {det['iou_threshold']}.",
+            *_ignore_lines(det.get("ignore_masking")),
             f"Verdicts: F1 >= {F1_GATE} and accuracy >= {ACC_GATE} (synthetic / overall), F1 >= {REAL_F1_GATE} (real domains); `low n` = fewer than 30 GT instances.",
             "",
         ]
