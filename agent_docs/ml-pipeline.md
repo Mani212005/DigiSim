@@ -218,6 +218,65 @@ The kernel ran `ml/kaggle/t7_session.py` (ultralytics 8.4.215, torch 2.11 cu130)
 - The `generate_v2` manifest hash for seed 1 / 8000 differs from the one in `docs/synth_v2/README.md`. Re-check generator determinism across environments.
 - T10 needs a weights distribution path. The stage B weights (`79b3690b...`) are the best tier A model so far, but they do not pass the gate.
 
+### T7 retrain cycle (2026-11-18): gates still NOT met
+
+One retrain cycle aimed at the causes above, all without touching the test sets: `DIGISIM_MODE=retrain` in `ml/kaggle/t7_session.py`
+([digisim-t7-retrain](https://www.kaggle.com/code/manijos/digisim-t7-retrain), private, Kaggle 2x T4).
+It starts from the Run A stage A `best.pt` and changes four things at once:
+- **Selection on real images only.** Validation is the 100 drafter-16 images, and early stopping is off (patience 1000).
+- **More real data.** The real training images are oversampled x8.
+- **Stronger augmentation** (`--augment strong`).
+- **Targeted synthetic boost.** Training uses 3370 synthetic images: all 1870 with a gate, plus the 1500 gate-free images richest in VDD, GND and INPUT_PORT.
+
+Training ran at imgsz 1280 for 1.45 h, 29 epochs. The best real-validation epoch was 26.
+
+An accidental second full Run A session (the kernel mounted the previous dataset version) gives a **replicate** of stage B with identical settings. It measures run-to-run noise.
+
+| real test (`real_t4_test`), F1 | Run A stage B | replicate stage B | retrain |
+|---|---|---|---|
+| NMOS (116) | 0.601 | 0.230 | 0.244 [0.19, 0.31] |
+| PMOS (78) | 0.564 | 0.400 | 0.553 [0.47, 0.64] |
+| VDD (140) | 0.215 | 0.235 | 0.346 [0.28, 0.42] |
+| GND (551) | 0.630 | 0.661 | 0.680 [0.65, 0.71] |
+| INPUT_PORT (52) | 0.147 | 0.100 | 0.149 [0.08, 0.25] |
+| JUNCTION (5124) | 0.758 | 0.747 | 0.760 [0.75, 0.77] |
+| AND (101) | 0.507 | 0.443 | 0.407 [0.34, 0.48] |
+| OR (35) | 0.436 | 0.393 | 0.853 [0.75, 0.92] |
+| **JUNCTION recall** | 0.729 | 0.731 | 0.720 [0.71, 0.73] |
+| tier A micro F1 | 0.722 | 0.711 | 0.724 |
+
+On the synthetic held-out styles, the retrain still fails **VDD (0.730 / 0.724)**. It also newly fails OR (0.945 / 0.945).
+XOR passes (0.953 / 0.981). The replicate passes XOR too, so the Run A XOR miss was noise.
+On the seen styles, every class is >= 0.99.
+
+**Reading.** The retrain does not move the pooled numbers: tier A F1 is 0.724 against 0.722 / 0.711, and JUNCTION recall is 0.720 against 0.729.
+- **Resolution was not the junction bottleneck.** Training and evaluating at 1280 did not raise JUNCTION recall, which weakens the small-object explanation.
+- **Real-validation fitness plateaued by epoch 5** (0.47 to 0.48 for the rest of the run). More epochs or a longer budget would not help.
+- **Per-class changes, judged against the replicate spread:**
+  - OR (0.44 to 0.85) and VDD (0.22 to 0.35) are the only gains clearly outside it.
+  - OR reaches the 0.85 line only nominally: n=35, CI [0.75, 0.92].
+  - NMOS (0.60, 0.23, 0.24 across the three runs) shows that NMOS/PMOS polarity on drafter 20 is close to a coin flip between runs.
+
+**Conclusion:** selection, augmentation and resampling are exhausted on the current real data, and the remaining gap is real-data coverage.
+
+Artifacts (outside git): `kaggle_out/retrain/stage_b_retrain/best.pt` sha256 `c0f03b40137e4b2421bb4239aaa34ecdfca5d1f81a8f38f2cef1245fe1dea826`;
+`best.onnx` `786720e1...bb03`; `metrics.json` `1e9116a8...65fc1`; `eval/retrain_b_real.json` `c125fba68f3de625...f25d`; `eval/retrain_b_synth.json` `f1b93340f9203f9d...11ad`.
+Replicate stage B weights: `kaggle_out/run_a_replicate/stage_b/best.pt` (`5fbfa077...`).
+
+**Extra real data that would help most** (in priority order):
+1. **More CGHD drafters with tier A labels.** Aim for at least 10 training drafters, about 1000 images; we have 2 drafters and 231 images today.
+   The run-to-run spread and the plateau both point to drafter coverage, not model capacity.
+   Grow the validation split to 2 or 3 drafters too, so checkpoint selection is less noisy than one drafter's 100 images.
+2. **Per class, the most needed, with targets of roughly 300+ training instances from 5+ drafters each:**
+   - VDD and INPUT_PORT: F1 0.35 and 0.15, despite 184 and 207 training instances from only 2 drafters.
+   - NMOS/PMOS polarity: the 0.23 to 0.60 swings.
+   - OUTPUT_PORT: 28 test instances.
+3. **Gates, which CGHD barely has** (test NOT 10, NAND 1, NOR 1, XOR 1, XNOR 0).
+   Real gate photos need a source beyond CGHD (for example our own drafters), with at least 30 test instances per gate so the gate can be judged at all.
+4. **Resolve the 907 `uncertain_terminal` regions** in the existing real train set (no new drafters needed).
+5. **Synthetic:** more VDD symbol variants and line styles in the training styles (keep `circle` held out).
+   This is the only fix for the synthetic VDD miss, which none of the three runs passes.
+
 ## Key Principle
 Dataset quality > annotation correctness > pipeline correctness > model architecture.
 Fix data before changing models.
