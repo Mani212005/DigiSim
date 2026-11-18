@@ -67,6 +67,14 @@ class Preset:
     plots: bool
 
 
+# Augmentation profiles (ultralytics train hyperparameters on top of its defaults). "strong" targets real hand-drawn
+# photos: lighting/paper colour (hsv), small rotation, shear and perspective of a hand-held camera, wider scale range
+# for small junctions, and light mixup. Keep this table equal to ml/kaggle/train_kaggle.py (tests assert it).
+AUGMENT_PROFILES: dict[str, dict[str, float]] = {
+    "default": {},
+    "strong": {"hsv_s": 0.6, "hsv_v": 0.5, "degrees": 5.0, "translate": 0.15, "scale": 0.6, "shear": 2.0, "perspective": 0.0005, "mixup": 0.1},
+}
+
 PRESETS: dict[str, Preset] = {
     "smoke": Preset("smoke", "2-epoch CPU check of the whole harness (train, val, ONNX export, metrics.json)", "yolov8n.pt", 320, 2, 8, 2, 0.01, 0.01, 0.0, 0, 1, False),
     "stage-a": Preset("stage-a", "synthetic pretrain: COCO-pretrained yolov8s on synthetic data", "yolov8s.pt", 960, 100, 16, 20, 0.01, 0.01, 3.0, 10, 1, True),
@@ -133,6 +141,7 @@ class TrainConfig:
     warmup_epochs: float
     close_mosaic: int
     plots: bool
+    augment: str
     seed: int
     real_train: tuple[Path, ...]
     real_oversample: int
@@ -449,6 +458,7 @@ def resolve_config(args: argparse.Namespace) -> TrainConfig:
         warmup_epochs=preset.warmup_epochs,
         close_mosaic=preset.close_mosaic,
         plots=preset.plots if args.plots is None else args.plots,
+        augment=args.augment or str(saved.get("augment") or "default"),
         seed=args.seed if args.seed is not None else int(saved.get("seed") or SEED),
         real_train=real_train,
         real_oversample=oversample,
@@ -497,6 +507,7 @@ def describe_plan(cfg: TrainConfig) -> dict[str, object]:
         "imgsz": cfg.imgsz,
         "lr0": cfg.lr0,
         "patience": cfg.patience,
+        "augment": cfg.augment,
         "real_train": [str(p) for p in cfg.real_train],
         "real_oversample": cfg.real_oversample,
         "resume": str(cfg.resume) if cfg.resume else None,
@@ -640,6 +651,7 @@ def train(cfg: TrainConfig) -> Path:
         "warmup_epochs": cfg.warmup_epochs,
         "close_mosaic": cfg.close_mosaic,
         "plots": cfg.plots,
+        **AUGMENT_PROFILES[cfg.augment],
         "project": str(run_dir),
         "name": "train",
         "exist_ok": True,
@@ -706,6 +718,7 @@ def train(cfg: TrainConfig) -> Path:
             "workers": cfg.workers,
             "seed": cfg.seed,
             "lr0": cfg.lr0,
+            "augment": cfg.augment,
         },
         "environment": environment_info(),
         "train_seconds": round(time.time() - started, 1),
@@ -744,6 +757,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--lr0", type=float, default=None)
     p.add_argument("--seed", type=int, default=None, help=f"default {SEED} (or the resumed run's seed)")
     p.add_argument("--plots", action=argparse.BooleanOptionalAction, default=None)
+    p.add_argument("--augment", choices=sorted(AUGMENT_PROFILES), default=None, help="augmentation profile (default: default; strong: real-photo augmentation, see AUGMENT_PROFILES)")
     p.add_argument("--real-train", type=Path, action="append", default=[], help="real training image folder/list to oversample (repeatable)")
     p.add_argument("--real-oversample", type=int, default=None, help="times each real image repeats per epoch (stage-b default 4)")
     p.add_argument("--resume", type=Path, default=None, help="run dir, train dir or last.pt of an interrupted run; reuses its saved config.yaml and run folder")

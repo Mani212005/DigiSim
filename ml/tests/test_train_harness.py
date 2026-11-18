@@ -235,6 +235,20 @@ def test_device_reaches_ultralytics_and_export_stays_on_cpu(device: str, val_dev
     assert [kw["device"] for kw in exports] == ["cpu", "cpu"] and all(kw["format"] == "onnx" for kw in exports)
 
 
+def test_strong_augment_reaches_ultralytics_and_metrics(fake_yolo: type[FakeYOLO], smoke_data: Path, tmp_path: Path) -> None:
+    """--augment strong passes its hyper-parameters to training in both scripts and records the profile; the default adds none."""
+    run_dir = train.train(parse(["--preset", "smoke", "--data", str(smoke_data), "--device", "cpu", "--augment", "strong", "--project", str(tmp_path / "runs"), "--name", "a"]))
+    args = train_kaggle.build_parser().parse_args(["--preset", "smoke", "--data", str(smoke_data), "--device", "cpu", "--augment", "strong", "--out", str(tmp_path / "kaggle")])
+    kaggle_dir = train_kaggle.run(train_kaggle.build_plan(args), install=False)
+    train.train(parse(["--preset", "smoke", "--data", str(smoke_data), "--device", "cpu", "--project", str(tmp_path / "runs"), "--name", "b"]))
+    strong, kaggle_strong, plain = kinds(fake_yolo, "train")
+    for kw in (strong, kaggle_strong):
+        assert {k: kw[k] for k in train.AUGMENT_PROFILES["strong"]} == train.AUGMENT_PROFILES["strong"]
+    assert not set(train.AUGMENT_PROFILES["strong"]) & set(plain)
+    for out in (run_dir, kaggle_dir):
+        assert json.loads((out / "metrics.json").read_text())["settings"]["augment"] == "strong"
+
+
 def write_resumable_stage_b_run(run_dir: Path, real_dir: Path, data: Path) -> None:
     """
     Lay out an interrupted stage-B run: a last.pt checkpoint plus the config.yaml both scripts write.
@@ -428,6 +442,7 @@ def test_presets_match_between_train_and_kaggle() -> None:
         for field in ("model", "imgsz", "epochs", "batch_per_device", "patience", "lr0", "lrf", "warmup_epochs", "close_mosaic", "real_oversample", "plots"):
             assert getattr(preset, field) == getattr(twin, field), f"{name}.{field} differs"
     assert (train.F1_THRESHOLD, train.ACC_THRESHOLD, train.ONNX_OPSET) == (train_kaggle.F1_THRESHOLD, train_kaggle.ACC_THRESHOLD, train_kaggle.ONNX_OPSET)
+    assert train.AUGMENT_PROFILES == train_kaggle.AUGMENT_PROFILES
 
 
 def test_stage_b_requires_stage_a_weights() -> None:
